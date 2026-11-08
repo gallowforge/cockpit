@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cockpit hero</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .card { padding: 54px 0 0 54px; display: grid; grid-template-columns: 360px 1fr; gap: 40px; height: 600px; }
+  .text { padding-top: 26px; }
+  .mark { display: flex; align-items: center; gap: 14px; }
+  .mark svg { width: 54px; height: 54px; }
+  h1 { font: 800 64px/1 var(--sans); letter-spacing: -0.045em; }
+  .promise { margin-top: 26px; font: 650 27px/1.22 var(--sans); letter-spacing: -0.02em; color: var(--ink); }
+  .promise em { font-style: normal; color: var(--cyan); }
+  .sub { margin-top: 16px; font: 400 15.5px/1.6 var(--sans); color: var(--body); }
+  .chips { margin-top: 28px; display: flex; flex-wrap: nowrap; gap: 8px; }
+  .chip { white-space: nowrap; font: 500 12px/1 var(--mono); color: var(--muted); padding: 8px 11px; border-radius: 9px; border: 1px solid var(--line2); background: rgba(255,255,255,0.025); }
+  .chip b { color: var(--cyan2); font-weight: 600; }
+  .stage { position: relative; }
+  .stage .browser { position: absolute; left: 0; top: 26px; width: 760px; }
+  .stage .phone { position: absolute; left: 500px; top: 190px; width: 214px; }
+  @media (max-width: 700px) {
+    .card { display: block; height: 900px; padding: 34px 26px 0; }
+    .text { padding-top: 0; }
+    h1 { font-size: 52px; }
+    .promise { font-size: 25px; margin-top: 20px; }
+    .stage { margin-top: 30px; }
+    .stage .browser { width: 620px; top: 0; }
+    .stage .phone { left: 260px; top: 120px; width: 200px; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="text">
+    <div class="mark">
+      <svg viewBox="0 0 32 32"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56c8ff"/><stop offset="1" stop-color="#2a7fc4"/></linearGradient><clipPath id="c"><circle cx="16" cy="16" r="11"/></clipPath></defs><circle cx="16" cy="16" r="14.5" fill="#0d1117" stroke="#56c8ff" stroke-opacity=".5"/><g clip-path="url(#c)"><rect x="0" y="0" width="32" height="17.5" fill="url(#s)" transform="rotate(-12 16 16)"/><rect x="0" y="17.5" width="32" height="20" fill="#1a2330" transform="rotate(-12 16 16)"/></g><path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#f4f7fb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1>Cockpit</h1>
+    </div>
+    <p class="promise">Your homelab, <em>at a glance.</em></p>
+    <p class="sub">A read-only dashboard for a self-hosted server: live service health, backups with their restore drills, every alert, timers and config drift. One 8 MB binary, built for a Raspberry Pi.</p>
+    <div class="chips">
+      <span class="chip"><b>read-only</b></span>
+      <span class="chip"><b>0</b> dependencies</span>
+      <span class="chip"><b>27 MB</b> on a Pi</span>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="browser">
+      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url"><b>https</b>raspberrypi.example-tailnet.ts.net:8447</div></div>
+      <img src="shots/overview-calm.png">
+    </div>
+    <div class="phone"><img src="shots/mob-overview-calm.png"></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+== collector
+PASS collector is running
+PASS state.json written, schema 1
+PASS collector holds only CAP_DAC_READ_SEARCH
+PASS host CPU and memory measured
+PASS every source read without error
+== services
+PASS healthy container is up, probe ok
+PASS exited container is down
+PASS systemd unit is up
+PASS dns probe answers
+PASS sandbox blocks probes leaving the host
+== backups and drill
+PASS fresh set is ok, archives listed
+PASS set past max_age_h is crit
+PASS failed run read from the journal
+PASS successful run read from the journal
+PASS restore drill parsed
+== alerts, drift, heartbeat, health
+PASS open incident from the state file
+PASS resolved incident from the journal
+PASS drift found in /etc/hosts only
+PASS uncommitted change counted
+PASS heartbeat runs counted
+PASS health check result and open category
+PASS runbook copied for the web process
+PASS rollup is crit with attention items
+== web on the unix socket
+PASS socket activation starts the web unit
+PASS web runs as a dynamic user, not root
+PASS web has no network of its own
+PASS state refused without a session
+PASS wrong password refused
+== through Caddy (TLS, X-Forwarded-*, streaming)
+PASS login through Caddy
+PASS session cookie is Secure and HttpOnly
+PASS state through Caddy with the cookie
+PASS live stream delivers a snapshot event
+PASS UI served through Caddy
+== hardening (systemd-analyze security, lower is safer)
+cockpit-collect.service    2.4 OK
+cockpit-web.service        0.5 SAFE
+RESULT: 33 passed, 0 failed

@@ -1,0 +1,15 @@
+# The dashboard listens on a unix socket that the reverse proxy reaches; no
+# TCP port is opened. The socket lives in /run/cockpit, which tmpfiles keeps,
+# so a proxy container that mounts the directory never holds a stale socket.
+[Unit]
+Description=Cockpit dashboard socket
+Documentation=https://github.com/gallowforge/cockpit
+
+[Socket]
+ListenStream=/run/cockpit/web.sock
+SocketMode=0660
+SocketUser=root
+SocketGroup=root
+
+[Install]
+WantedBy=sockets.target

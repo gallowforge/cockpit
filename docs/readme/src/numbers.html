@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cockpit numbers</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .card { padding: 46px 40px 42px; }
+  .row { display: grid; grid-template-columns: repeat(6, 1fr); }
+  .n { padding: 4px 12px 4px 20px; }
+  .n + .n { border-left: 1px solid var(--line); }
+  .n:first-child { padding-left: 8px; }
+  .n b { display: block; font: 700 54px/1 var(--sans); letter-spacing: -0.045em; color: var(--ink); white-space: nowrap; }
+  .n b small { font-size: 0.5em; margin-left: 4px; letter-spacing: -0.01em; color: var(--body); font-weight: 600; }
+  .n.hot b { color: var(--cyan); }
+  .n h3 { margin-top: 14px; font: 600 15.5px/1.2 var(--sans); white-space: nowrap; color: var(--ink); }
+  .n p { margin-top: 5px; font: 400 13.5px/1.4 var(--sans); white-space: nowrap; color: var(--muted); }
+  @media (max-width: 700px) {
+    .card { padding: 30px 24px 26px; }
+    .row { grid-template-columns: 1fr 1fr; }
+    .n, .n:first-child { padding: 22px 6px 22px 18px; }
+    .n:nth-child(odd) { padding-left: 4px; border-left: 0; }
+    .n:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .n b { font-size: 50px; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <div class="n"><b>8<small>MB</small></b><h3>One binary</h3><p>UI built in, arm64 or amd64</p></div>
+    <div class="n"><b>0</b><h3>Go dependencies</h3><p>standard library only</p></div>
+    <div class="n"><b>27<small>MB</small></b><h3>RAM on a Pi 5</h3><p>collector 18, web 9</p></div>
+    <div class="n"><b>0.8<small>%</small></b><h3>Of one CPU core</h3><p>sampling every 20 s</p></div>
+    <div class="n"><b>33</b><h3>End-to-end checks</h3><p>under real systemd</p></div>
+    <div class="n hot"><b>0</b><h3>Ways to change the host</h3><p>every route only reads</p></div>
+  </div>
+</div>
+</body>
+</html>

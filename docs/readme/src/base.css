@@ -1,0 +1,138 @@
+/* Shared look for the README visuals (rendered by scripts/readme-visuals.sh).
+   Wide pages are laid out at 1100 CSS px, phone versions at 540 (max-width: 700px).
+   Screenshots in shots/ are taken from `cockpit demo` (synthetic data) by the same script. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=block");
+
+:root {
+  --ink: #eef3f8;
+  --body: #b9c3cf;
+  --muted: #8a95a4;
+  --faint: #5c6675;
+  --line: #ffffff14;
+  --line2: #ffffff24;
+  --cyan: #56c8ff;
+  --cyan2: #a9e2ff;
+  --cyan-dim: rgba(86, 200, 255, 0.13);
+  --green: #3ddc97;
+  --amber: #f5b942;
+  --red: #ff5c6c;
+  --violet: #8b9dff;
+  --sans: Inter, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; }
+body {
+  width: 1100px;
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+@media (max-width: 700px) { body { width: 540px; } }
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(780px 380px at 50% -8%, rgba(86, 200, 255, 0.16), transparent 72%),
+    radial-gradient(560px 420px at 100% 100%, rgba(61, 220, 151, 0.05), transparent 70%),
+    linear-gradient(180deg, #0f1318 0%, #0a0c0f 100%);
+  padding: 48px;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(820px 440px at 50% 0%, #000 0%, transparent 75%);
+  pointer-events: none;
+}
+.card > * { position: relative; }
+@media (max-width: 700px) { .card { border-radius: 26px; padding: 30px 22px; } }
+
+.kicker { font: 600 12.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); }
+.title { font: 700 34px/1.12 var(--sans); letter-spacing: -0.025em; margin-top: 12px; }
+.lede { margin-top: 10px; font: 400 16px/1.55 var(--sans); color: var(--body); max-width: 760px; }
+@media (max-width: 700px) { .title { font-size: 28px; } .lede { font-size: 15px; } }
+
+.source {
+  margin-top: 20px;
+  font: 500 12.5px/1.4 var(--mono);
+  color: var(--faint);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.source b { color: var(--muted); font-weight: 500; }
+
+/* Browser window around a desktop screenshot */
+.browser {
+  border-radius: 16px;
+  border: 1px solid var(--line2);
+  background: #0b0d10;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 80px rgba(86, 200, 255, 0.06);
+  overflow: hidden;
+}
+.browser .bar {
+  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px;
+  background: linear-gradient(180deg, #14181e, #101318); border-bottom: 1px solid var(--line);
+}
+.dots { display: flex; gap: 7px; }
+.dots i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; display: block; }
+.dots i:nth-child(2) { background: #febc2e; }
+.dots i:nth-child(3) { background: #28c840; }
+.url {
+  flex: 1; margin: 0 70px 0 18px; height: 24px; border-radius: 7px; background: #0b0e12; border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; gap: 7px; font: 500 12px/1 var(--mono); color: var(--muted);
+}
+.url b { color: var(--green); font-weight: 600; }
+.browser img { display: block; width: 100%; }
+
+/* Phone frame around a phone screenshot */
+.phone {
+  position: relative; width: 250px; border-radius: 40px; padding: 38px 9px 12px; background: #090c10;
+  border: 1px solid #ffffff22; box-shadow: 0 40px 80px rgba(0, 0, 0, 0.65), inset 0 0 0 2px #1b2028;
+}
+.phone img { display: block; width: 100%; border-radius: 4px 4px 28px 28px; }
+.phone::after { /* the camera island sits in its own strip, above the screen */
+  content: ""; position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 78px; height: 20px; border-radius: 12px; background: #000;
+}
+
+/* Terminal window */
+.term {
+  border-radius: 16px;
+  border: 1px solid var(--line2);
+  background: linear-gradient(180deg, #0e1216, #0a0c0f);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.term .bar { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 14px; border-bottom: 1px solid var(--line); background: #11151a; }
+.term .bar span { flex: 1; text-align: center; margin-right: 50px; font: 500 12px/1 var(--mono); color: var(--muted); }
+.term pre { padding: 18px 22px 20px; font: 400 13.5px/1.62 var(--mono); color: var(--body); white-space: pre; overflow: hidden; }
+.term .p { color: var(--cyan); }
+.term .c { color: var(--ink); }
+.term .ok { color: var(--green); }
+.term .warn { color: var(--amber); }
+.term .bad { color: var(--red); }
+.term .dim { color: var(--faint); }
+.term .hd { color: var(--cyan2); }
+
+.pill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border-radius: 999px; font: 600 12.5px/1 var(--sans);
+  color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(86, 200, 255, 0.28); }
+
+/* Feature visuals: a browser on wide screens, a phone on phones */
+.wide-only { display: block; }
+.phone-only { display: none; }
+@media (max-width: 700px) {
+  .wide-only { display: none; }
+  .phone-only { display: flex; justify-content: center; gap: 18px; }
+}
+.view { overflow: hidden; }
+.feature .card { padding: 40px 40px 30px; }
+.feature .phone { width: 300px; }
+@media (max-width: 700px) { .feature .card { padding: 30px 22px 24px; } }

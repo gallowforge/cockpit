@@ -1,0 +1,52 @@
+# Cockpit collector: reads the homelab's state and writes /run/cockpit/state.json.
+# It runs as root because the journal, the Docker socket and the backup status
+# files are root's, but it keeps only the one capability it needs to read
+# them, cannot write outside /run/cockpit, and can reach only localhost.
+[Unit]
+Description=Cockpit collector (read-only state for the dashboard)
+Documentation=https://github.com/gallowforge/cockpit
+After=docker.service network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cockpit collect -config /etc/cockpit/cockpit.conf
+Restart=on-failure
+RestartSec=15s
+Nice=10
+IOSchedulingClass=idle
+CPUQuota=50%
+TasksMax=64
+
+# read anything, change nothing
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+AmbientCapabilities=
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/cockpit
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# vcgencmd (Raspberry Pi throttle flags) needs /dev/vcio; nothing else
+DevicePolicy=closed
+DeviceAllow=/dev/vcio rw
+# probes reach this machine and its container networks, never the internet
+# (private ranges, because Docker can NAT a loopback port to a container
+# address before this filter sees the packet)
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+IPAddressDeny=any
+IPAddressAllow=localhost 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 fc00::/7
+
+[Install]
+WantedBy=multi-user.target

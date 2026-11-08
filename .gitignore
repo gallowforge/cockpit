@@ -1,0 +1,8 @@
+/bin/
+/dist/
+/web/node_modules/
+/internal/web/ui/dist/*
+!/internal/web/ui/dist/.gitkeep
+*.test
+coverage.out
+/docs/readme/src/shots/

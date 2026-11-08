@@ -1,0 +1,61 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: UI typecheck, tests and build
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run build
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - name: go vet and tests (race detector)
+        run: |
+          go vet ./...
+          go test -race -count=1 ./...
+      - name: shellcheck
+        run: shellcheck -S warning scripts/*.sh
+      - name: build both architectures
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o bin/cockpit ./cmd/cockpit
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o bin/cockpit-arm64 ./cmd/cockpit
+          ls -la bin
+      - name: systemd unit files are valid
+        run: |
+          sudo install -m 755 bin/cockpit /usr/local/bin/cockpit
+          systemd-analyze verify deploy/systemd/*.service deploy/systemd/*.socket
+      - name: end to end under systemd, with Docker and Caddy
+        run: sudo scripts/e2e.sh bin/cockpit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cockpit-linux
+          path: bin/
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

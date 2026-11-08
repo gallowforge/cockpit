@@ -1,0 +1,95 @@
+# /etc/cockpit/cockpit.conf - Cockpit's configuration (no secrets in here).
+# Paths match the layout of github.com/gallowforge/homelab; change what differs.
+
+[cockpit]
+title = raspberrypi
+state = /run/cockpit/state.json
+runbook_dir = /run/cockpit/runbooks
+interval = 20s            # containers, units, probes, host
+slow_interval = 5m        # journal, backups, alerts, drift
+
+[web]
+listen = systemd          # socket activation (cockpit-web.socket); or 127.0.0.1:8080
+auth = password           # password, or none when the proxy does auth
+password_hash_file = /etc/cockpit/password.hash
+session_days = 365
+
+[host]
+mounts = /
+throttle_cmd = vcgencmd get_throttled
+write_device = sda
+
+[docker]
+socket = /var/run/docker.sock
+
+[homelab]
+repo = /home/pi/docker
+backup_conf = /etc/homelab/backups.conf
+notify_tag = homelab-notify
+info_keys = caretaker-*   # periodic notes, never "open"
+
+[timers]
+highlight = homelab-* tailscale-cert-renew.timer caretaker-tick.timer kuma-wake.timer adguard-pin.timer
+
+# One block per row on the Services page. A row can join a container, a unit
+# and a probe; containers you do not list still show, under their own name.
+[service:adguard]
+title = AdGuard Home
+note = DNS for the house
+group = Network
+container = adguard
+probe = dns://127.0.0.1:53/example.com
+
+[service:caddy]
+title = Caddy
+note = the TLS front door
+group = Network
+container = caddy
+
+[service:tailscale]
+title = Tailscale
+note = access from away
+group = Network
+unit = tailscaled.service
+
+[service:vaultwarden]
+title = Vaultwarden
+note = passwords
+group = Apps
+container = vaultwarden
+probe = https://127.0.0.1:8452/alive
+sni = raspberrypi.example-tailnet.ts.net
+url = https://raspberrypi.example-tailnet.ts.net:8452
+
+[service:homeassistant]
+title = Home Assistant
+note = smart home
+group = Apps
+container = homeassistant
+probe = https://127.0.0.1:8443/manifest.json
+sni = raspberrypi.example-tailnet.ts.net
+url = https://raspberrypi.example-tailnet.ts.net:8443
+
+[service:uptime-kuma]
+title = Uptime Kuma
+note = endpoint monitors
+group = Operations
+container = uptime-kuma
+url = https://raspberrypi.example-tailnet.ts.net:8446
+
+# Runbooks: local Markdown files (rendered in the dashboard) or links.
+# "match" ties them to alert keys, service ids and areas (glob patterns).
+[runbook:restore]
+title = Restore a backup
+file = /home/pi/docker/docs/backups-and-restore.md
+match = backups backup-* drill health-backups unit-failed-homelab-backup*
+
+[runbook:monitoring]
+title = Monitoring and alerts
+file = /home/pi/docker/docs/monitoring-and-alerts.md
+match = alerts health-* kuma-* heartbeat
+
+[runbook:design]
+title = Design decisions
+url = https://github.com/gallowforge/homelab/blob/main/docs/design-decisions.md
+match = drift config-drift

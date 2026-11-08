@@ -1,0 +1,44 @@
+# Cockpit dashboard: serves the UI and the snapshot. It runs as a throwaway
+# user with no network of its own (only the socket systemd hands it), reads
+# state.json and the runbooks, and gets the password hash as a credential.
+[Unit]
+Description=Cockpit dashboard (read-only web UI)
+Documentation=https://github.com/gallowforge/cockpit
+Requires=cockpit-web.socket
+After=cockpit-web.socket cockpit-collect.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cockpit serve -config /etc/cockpit/cockpit.conf
+LoadCredential=password.hash:/etc/cockpit/password.hash
+Restart=on-failure
+RestartSec=5s
+TasksMax=64
+
+DynamicUser=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+PrivateNetwork=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+RestrictAddressFamilies=AF_UNIX
+UMask=0077
