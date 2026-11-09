@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- The demo container image now builds both architectures natively: the UI is built once and Go cross-compiles for arm64. The 1.1.0 image build ran `npm ci` under arm64 emulation, which crashed with an illegal instruction and hung, so 1.1.0 has binaries but no image. The program itself is unchanged from 1.1.0.
+
 ## 1.1.0 "Night flight"
 
 A new face, and three ways to get to the answer faster.
