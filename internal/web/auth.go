@@ -39,6 +39,15 @@ func HashPassword(pw string) (string, error) {
 	return fmt.Sprintf("%s$%d$%s$%s", hashPrefix, hashIter, enc.EncodeToString(salt), enc.EncodeToString(key)), nil
 }
 
+// SameUsername compares a submitted username with the account's in constant
+// time (both are hashed first, so even their lengths do not show). Spaces a
+// phone keyboard adds around it are ignored.
+func SameUsername(got, want string) bool {
+	a := sha256.Sum256([]byte(strings.TrimSpace(got)))
+	b := sha256.Sum256([]byte(want))
+	return subtle.ConstantTimeCompare(a[:], b[:]) == 1
+}
+
 // CheckPassword reports whether pw matches hash, in constant time.
 func CheckPassword(hash, pw string) bool {
 	parts := strings.Split(strings.TrimSpace(hash), "$")

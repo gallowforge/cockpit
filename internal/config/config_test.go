@@ -26,6 +26,7 @@ slow_interval = 2m
 [web]
 listen = systemd
 auth = none
+username = pilot
 
 [homelab]
 repo = /home/alex/docker
@@ -49,7 +50,7 @@ match = backups backup-*
 	if c.Title != "pi-one" || c.Interval != 15*time.Second || c.SlowInterval != 2*time.Minute {
 		t.Fatalf("cockpit section not applied: %+v", c)
 	}
-	if c.Web.Listen != "systemd" || c.Web.Auth != "none" {
+	if c.Web.Listen != "systemd" || c.Web.Auth != "none" || c.Web.Username != "pilot" {
 		t.Fatalf("web: %+v", c.Web)
 	}
 	if c.Homelab.Manifest != "/home/alex/docker/_host/MANIFEST" {
@@ -82,6 +83,7 @@ func TestRejectsMistakes(t *testing.T) {
 		"runbook both":      "[runbook:r]\nfile = /a.md\nurl = https://x\n",
 		"runbook relative":  "[runbook:r]\nfile = a.md\n",
 		"auth mode":         "[web]\nauth = maybe\n",
+		"username spaces":   "[web]\nusername = the owner\n",
 		"unnamed service":   "[service]\ncontainer = x\n",
 		"named cockpit":     "[cockpit:x]\n",
 	}

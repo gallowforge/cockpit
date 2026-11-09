@@ -96,7 +96,7 @@ func newServer(t *testing.T, auth string) (*Server, *Store, string) {
 	st := NewStore()
 	st.Set([]byte(`{"schema":1,"title":"pi"}`), time.Now())
 	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Cockpit</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}}
-	s, err := New(st, Options{Title: "pi", Version: "test", AuthMode: auth, PasswordHash: testHash, MachineID: "m",
+	s, err := New(st, Options{Title: "pi", Version: "test", AuthMode: auth, Username: "owner", PasswordHash: testHash, MachineID: "m",
 		RunbookDir: dir, UI: ui, TrustProxy: true})
 	if err != nil {
 		t.Fatal(err)
@@ -129,18 +129,18 @@ func TestLoginFlow(t *testing.T) {
 		t.Fatalf("session: %s", r.Body)
 	}
 	json := map[string]string{"Content-Type": "application/json", "X-Forwarded-For": "192.168.1.20", "X-Forwarded-Proto": "https"}
-	if r := do(s, "POST", "/api/login", `{"password":"wrong one here"}`, json); r.Code != 401 {
+	if r := do(s, "POST", "/api/login", `{"username":"owner","password":"wrong one here"}`, json); r.Code != 401 {
 		t.Fatalf("wrong password: %d", r.Code)
 	}
 	cross := map[string]string{"Content-Type": "application/json", "Origin": "https://evil.example"}
-	if r := do(s, "POST", "/api/login", `{"password":"`+testPassword+`"}`, cross); r.Code != 403 {
+	if r := do(s, "POST", "/api/login", `{"username":"owner","password":"`+testPassword+`"}`, cross); r.Code != 403 {
 		t.Fatalf("cross-origin login must be refused: %d", r.Code)
 	}
 	form := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
 	if r := do(s, "POST", "/api/login", "password=x", form); r.Code != 403 {
 		t.Fatalf("form posts must be refused: %d", r.Code)
 	}
-	r := do(s, "POST", "/api/login", `{"password":"`+testPassword+`"}`, json)
+	r := do(s, "POST", "/api/login", `{"username":"owner","password":"`+testPassword+`"}`, json)
 	if r.Code != 204 {
 		t.Fatalf("login: %d %s", r.Code, r.Body)
 	}
@@ -162,9 +162,9 @@ func TestLoginRateLimit(t *testing.T) {
 	s, _, _ := newServer(t, "password")
 	h := map[string]string{"Content-Type": "application/json", "X-Forwarded-For": "10.0.0.9"}
 	for i := 0; i < 5; i++ {
-		do(s, "POST", "/api/login", `{"password":"nope nope nope"}`, h)
+		do(s, "POST", "/api/login", `{"username":"owner","password":"nope nope nope"}`, h)
 	}
-	r := do(s, "POST", "/api/login", `{"password":"`+testPassword+`"}`, h)
+	r := do(s, "POST", "/api/login", `{"username":"owner","password":"`+testPassword+`"}`, h)
 	if r.Code != 429 || r.Header().Get("Retry-After") == "" {
 		t.Fatalf("expected 429 with Retry-After, got %d", r.Code)
 	}
@@ -308,7 +308,9 @@ func TestParallelLoginsCannotOutrunTheLimiter(t *testing.T) {
 	h := map[string]string{"Content-Type": "application/json", "X-Forwarded-For": "10.0.0.66"}
 	codes := make(chan int, 12)
 	for i := 0; i < 12; i++ {
-		go func() { codes <- do(s, "POST", "/api/login", `{"password":"wrong wrong wrong"}`, h).Code }()
+		go func() {
+			codes <- do(s, "POST", "/api/login", `{"username":"owner","password":"wrong wrong wrong"}`, h).Code
+		}()
 	}
 	wrong, limited := 0, 0
 	for i := 0; i < 12; i++ {
@@ -336,5 +338,33 @@ func TestManifestHasItsType(t *testing.T) {
 	r := do(s, "GET", "/manifest.webmanifest", "", nil)
 	if r.Code != 200 || r.Header().Get("Content-Type") != "application/manifest+json" {
 		t.Fatalf("manifest: %d %q", r.Code, r.Header().Get("Content-Type"))
+	}
+}
+
+func TestWrongUsernameLooksLikeWrongPassword(t *testing.T) {
+	s, _, _ := newServer(t, "password")
+	h := map[string]string{"Content-Type": "application/json", "X-Forwarded-For": "10.0.0.77"}
+	badUser := do(s, "POST", "/api/login", `{"username":"admin","password":"`+testPassword+`"}`, h)
+	badPass := do(s, "POST", "/api/login", `{"username":"owner","password":"not the password"}`, h)
+	if badUser.Code != 401 || badPass.Code != 401 || badUser.Body.String() != badPass.Body.String() {
+		t.Fatalf("wrong username %d %q, wrong password %d %q: must be identical", badUser.Code, badUser.Body, badPass.Code, badPass.Body)
+	}
+	// wrong usernames feed the same back-off: three more and the right login waits
+	for i := 0; i < 3; i++ {
+		do(s, "POST", "/api/login", `{"username":"root","password":"`+testPassword+`"}`, h)
+	}
+	if r := do(s, "POST", "/api/login", `{"username":"owner","password":"`+testPassword+`"}`, h); r.Code != 429 {
+		t.Fatalf("after 5 failures the next try must wait, got %d", r.Code)
+	}
+	// a password manager's padding around the name is fine; a missing name is refused outright
+	s2, _, _ := newServer(t, "password")
+	if r := do(s2, "POST", "/api/login", `{"username":" owner ","password":"`+testPassword+`"}`, map[string]string{"Content-Type": "application/json"}); r.Code != 204 {
+		t.Fatalf("padded username: %d", r.Code)
+	}
+	if r := do(s2, "POST", "/api/login", `{"password":"`+testPassword+`"}`, map[string]string{"Content-Type": "application/json"}); r.Code != 400 {
+		t.Fatalf("missing username: %d", r.Code)
+	}
+	if _, err := New(NewStore(), Options{AuthMode: "password", PasswordHash: testHash}); err == nil {
+		t.Fatal("password mode must refuse to start without a username")
 	}
 }

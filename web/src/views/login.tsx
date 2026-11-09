@@ -3,14 +3,18 @@ import type { Session } from '../types'
 import { login } from '../api'
 import { Mark } from '../components/icons'
 
+// A real login form, so password managers (Bitwarden and the rest) save and fill
+// one complete login. They fill fields without typing, so nothing here waits for
+// key or input events: the fields are uncontrolled, the button is never disabled
+// because a field looks empty, and the values are read when the form is sent.
 export function Login({ session, onDone }: { session: Session; onDone: () => void }) {
-  const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [wait, setWait] = useState(0)
-  const input = useRef<HTMLInputElement>(null)
+  const user = useRef<HTMLInputElement>(null)
+  const pass = useRef<HTMLInputElement>(null)
 
-  useEffect(() => input.current?.focus(), [])
+  useEffect(() => (user.current?.value ? pass.current : user.current)?.focus(), [])
   useEffect(() => {
     if (wait <= 0) return
     const t = setTimeout(() => setWait((w) => w - 1), 1000)
@@ -19,10 +23,17 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
 
   const submit = async (e: Event) => {
     e.preventDefault()
-    if (!pw || busy || wait > 0) return
+    if (busy || wait > 0) return
+    const username = user.current?.value.trim() ?? ''
+    const password = pass.current?.value ?? ''
+    if (!username || !password) {
+      setErr(username ? 'Enter your password.' : 'Enter your username.')
+      ;(username ? pass : user).current?.focus()
+      return
+    }
     setBusy(true)
     setErr('')
-    const r = await login(pw).catch(() => ({ ok: false as const, error: 'The server did not answer.' }))
+    const r = await login(username, password).catch(() => ({ ok: false as const, error: 'The server did not answer.' }))
     setBusy(false)
     if (r.ok) {
       onDone()
@@ -30,32 +41,30 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
     }
     setErr(r.error)
     if ('retryAfter' in r && r.retryAfter) setWait(r.retryAfter)
-    setPw('')
-    input.current?.focus()
+    if (pass.current) {
+      pass.current.value = ''
+      pass.current.focus()
+    }
   }
 
   return (
     <div class="login">
       <div class="login-glow" />
-      <form class="login-card" onSubmit={submit}>
+      <form class="login-card" method="post" action="/api/login" onSubmit={submit} noValidate>
         <Mark size={48} />
         <h1>Cockpit</h1>
         <p class="muted">Sign in to the flight deck of <b>{session.title}</b></p>
-        {/* a username field helps password managers file the entry */}
-        <input type="text" name="username" autocomplete="username" value="cockpit" hidden readOnly />
-        <label class="field">
-          <span>Password</span>
-          <input
-            ref={input}
-            type="password"
-            name="password"
-            autocomplete="current-password"
-            value={pw}
-            onInput={(e) => setPw((e.target as HTMLInputElement).value)}
-            disabled={busy}
-          />
+        <label class="field" for="username">
+          <span>Username</span>
+          <input ref={user} id="username" name="username" type="text" autocomplete="username"
+            autocapitalize="none" autocorrect="off" spellcheck={false} required readOnly={busy} />
         </label>
-        <button class="btn btn-primary" type="submit" disabled={busy || !pw || wait > 0}>
+        <label class="field" for="password">
+          <span>Password</span>
+          <input ref={pass} id="password" name="password" type="password" autocomplete="current-password"
+            required readOnly={busy} />
+        </label>
+        <button class="btn btn-primary" type="submit" disabled={busy || wait > 0}>
           {busy ? 'Checking…' : wait > 0 ? `Wait ${wait}s` : 'Sign in'}
         </button>
         <p class={`login-err${err ? ' on' : ''}`} role="alert">{err}</p>

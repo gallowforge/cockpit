@@ -25,6 +25,7 @@ Durations are Go durations (`20s`, `5m`) or days (`8d`). Lists are separated by 
 | --- | --- | --- |
 | `listen` | `127.0.0.1:8080` | `systemd` (socket activation), `unix:/path`, or `host:port` |
 | `auth` | `password` | or `none` when the proxy authenticates |
+| `username` | `owner` | the one account's username, 1 to 64 characters with no spaces; renaming it signs every device out |
 | `password_hash_file` | `/etc/cockpit/password.hash` | from `cockpit hash-password`; a systemd credential named `password.hash` wins |
 | `session_days` | `365` | how long a sign-in lasts |
 | `cookie_secure` | `auto` | `auto` (when TLS or `X-Forwarded-Proto: https`), `always`, `never` |

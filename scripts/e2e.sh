@@ -71,6 +71,7 @@ interval = 3s
 slow_interval = 3s
 [web]
 listen = systemd
+username = e2e-owner
 password_hash_file = $W/password.hash
 [host]
 mounts = /
@@ -192,10 +193,13 @@ check "socket activation starts the web unit"   "sock http://x/healthz | grep -q
 check "web runs as a dynamic user, not root"    "[ \"\$(ps -o user= -p \$(systemctl show -p MainPID --value cockpit-web))\" != root ]"
 check "web has no network of its own"           "[ \"\$(systemctl show -p PrivateNetwork --value cockpit-web)\" = yes ]"
 check "state refused without a session"         "[ \"\$(sock -o /dev/null -w '%{http_code}' http://x/api/state)\" = 401 ]"
-check "wrong password refused"                  "[ \"\$(sock -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d '{\"password\":\"nope nope nope\"}' http://x/api/login)\" = 401 ]"
+bad_pw=$(sock -w ' %{http_code}' -H 'Content-Type: application/json' -d '{"username":"e2e-owner","password":"nope nope nope"}' http://x/api/login)
+bad_user=$(sock -w ' %{http_code}' -H 'Content-Type: application/json' -d "{\"username\":\"admin\",\"password\":\"$PW\"}" http://x/api/login)
+alike=no; [ "$bad_pw" = "$bad_user" ] && [ "${bad_pw##* }" = 401 ] && alike=yes
+check "wrong username or password refused alike" "[ $alike = yes ]"
 echo "== through Caddy (TLS, X-Forwarded-*, streaming)"
 C=$(mktemp)
-code=$(curl -sk -c "$C" -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d "{\"password\":\"$PW\"}" https://localhost:18447/api/login --resolve localhost:18447:127.0.0.1)
+code=$(curl -sk -c "$C" -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d "{\"username\":\"e2e-owner\",\"password\":\"$PW\"}" https://localhost:18447/api/login --resolve localhost:18447:127.0.0.1)
 check "login through Caddy"                     "[ $code = 204 ]"
 check "session cookie is Secure and HttpOnly"   "grep -q '#HttpOnly_localhost.*TRUE.*cockpit_session' $C"
 check "state through Caddy with the cookie"     "curl -sk -b $C --resolve localhost:18447:127.0.0.1 https://localhost:18447/api/state | jq -e '.title == \"e2e\"'"

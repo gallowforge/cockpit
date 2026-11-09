@@ -150,7 +150,7 @@ func runServe(args []string) error {
 	machine, _ := os.ReadFile("/etc/machine-id")
 	store := web.NewStore()
 	srv, err := web.New(store, web.Options{
-		Title: cfg.Title, Version: version, AuthMode: cfg.Web.Auth, PasswordHash: readPasswordHash(cfg),
+		Title: cfg.Title, Version: version, AuthMode: cfg.Web.Auth, Username: cfg.Web.Username, PasswordHash: readPasswordHash(cfg),
 		MachineID: strings.TrimSpace(string(machine)), SessionTTL: time.Duration(cfg.Web.SessionDays) * 24 * time.Hour,
 		CookieSecure: cfg.Web.CookieSecure, TrustProxy: cfg.Web.TrustProxy || cfg.Web.Listen == "systemd" || strings.HasPrefix(cfg.Web.Listen, "unix:"),
 		RunbookDir: cfg.RunbookDir, UI: ui.FS(), Log: log.Default(),

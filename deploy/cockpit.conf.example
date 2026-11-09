@@ -11,6 +11,7 @@ slow_interval = 5m        # journal, backups, alerts, drift
 [web]
 listen = systemd          # socket activation (cockpit-web.socket); or 127.0.0.1:8080
 auth = password           # password, or none when the proxy does auth
+username = owner          # the one account's name, as your password manager will store it
 password_hash_file = /etc/cockpit/password.hash
 session_days = 365
 

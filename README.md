@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://github.com/gallowforge/cockpit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/gallowforge/cockpit/actions/workflows/ci.yml/badge.svg" /></a>
-  <img alt="108 tests passing" src="https://img.shields.io/badge/tests-108_passing-49e3a0?labelColor=04070b" />
+  <img alt="113 tests passing" src="https://img.shields.io/badge/tests-113_passing-49e3a0?labelColor=04070b" />
   <img alt="0 Go dependencies" src="https://img.shields.io/badge/Go_dependencies-0-a9d8ff?labelColor=04070b" />
   <img alt="Runs on a Raspberry Pi 5" src="https://img.shields.io/badge/runs_on-Raspberry_Pi_5-a9d8ff?labelColor=04070b" />
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-7e8b9a?labelColor=04070b" /></a>
@@ -117,7 +117,7 @@ Two small processes from the same binary, with a file in RAM between them. `cock
 - **Every page works on a phone,** from the attention list to the drill results, and the browser tab title shows the status while it sits in the background.
 - **Add it to the home screen.** It installs as an app with its own icon and opens full screen, like the rest of your phone.
 - **Your runbooks become checklists.** Point Cockpit at the Markdown files you already keep; their numbered steps become boxes you tick as you work through a problem, kept on that device for 12 hours. Raw HTML is escaped and unsafe links are removed.
-- **Sign in once.** A password (PBKDF2, 600,000 rounds) and a signed session cookie that lasts a year; logins are checked one at a time and rate-limited per client and in total.
+- **Sign in once, with your password manager.** A real username-and-password form that Bitwarden and the like save and fill as one login, a password hashed with PBKDF2 (600,000 rounds), and a signed session cookie that lasts a year. Logins are checked one at a time and rate-limited per client and in total.
 
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/phones-mobile.webp" />
@@ -157,7 +157,7 @@ Cockpit was built around the layout of [gallowforge/homelab](https://github.com/
 
 ```bash
 sudo install -m 755 cockpit-linux-arm64 /usr/local/bin/cockpit
-sudo install -D -m 644 deploy/cockpit.conf.example /etc/cockpit/cockpit.conf      # then edit it
+sudo install -D -m 644 deploy/cockpit.conf.example /etc/cockpit/cockpit.conf      # then edit it (set [web] username)
 sudo install -m 644 deploy/systemd/* /etc/systemd/system/
 sudo install -m 644 deploy/tmpfiles.d/cockpit.conf /etc/tmpfiles.d/ && sudo systemd-tmpfiles --create
 cockpit hash-password | sudo tee /etc/cockpit/password.hash >/dev/null && sudo chmod 600 /etc/cockpit/password.hash
@@ -187,7 +187,7 @@ make e2e        # the end-to-end run under systemd (needs root, Docker)
 | How does the page stay live? | The web process watches `state.json` (one `stat` a second) and pushes each new version over Server-Sent Events, with a comment every 20 s for proxies; each comment re-checks the session, so a signed-out browser stops receiving. |
 | How does it know what happened while you were away? | The browser keeps the time you last looked (only in `localStorage`); the line is built from the snapshot's own backup runs, drill and incidents since then. |
 | How is the web process isolated? | systemd socket activation, `DynamicUser`, `PrivateNetwork=yes`, no capabilities, a strict system-call filter; the password hash arrives as a `LoadCredential`. |
-| How is a login protected? | PBKDF2-SHA256 with 600,000 rounds, an HMAC-signed cookie (`HttpOnly`, `SameSite=Strict`, `Secure` behind TLS), JSON-only same-origin logins, one password check at a time so a burst cannot outrun the limiter, and back-off after 5 failures. |
+| How is a login protected? | One owner account: a username from the config, compared in constant time, and a password hashed with PBKDF2-SHA256 with 600,000 rounds. A wrong username gets the same answer, the same delay and the same back-off as a wrong password. Then an HMAC-signed cookie (`HttpOnly`, `SameSite=Strict`, `Secure` behind TLS), JSON-only same-origin logins, one password check at a time so a burst cannot outrun the limiter, and back-off after 5 failures. |
 | How are log lines kept safe to show? | Titles and summaries pass a redactor that drops URL paths and credentials, `key=value` and `--password` secrets, bearer and basic tokens, JWTs, AWS keys, UUIDs and long hex or base64 runs. |
 | How do runbooks stay safe to render? | Raw HTML is escaped, only `http`, `https`, `mailto` and relative links survive, images become their alt text, and a strict Content-Security-Policy forbids inline script. |
 
@@ -197,8 +197,8 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 
 | Check | What it covers |
 | --- | --- |
-| `go test -race` | 46 tests: config parsing and validation, journal and notifier parsing, incident building, the status rollup, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits, the event stream |
-| `vitest` and `tsc` | 29 tests: formatting, grouping, timers, the server clock, null-safe snapshots, the command bar's search, the while-you-were-away line, Markdown escaping and link filtering |
+| `go test -race` | 47 tests: config parsing and validation, journal and notifier parsing, incident building, the status rollup, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, wrong usernames that look like wrong passwords, sessions, parallel login bursts, rate limits, the event stream |
+| `vitest` and `tsc` | 33 tests: formatting, grouping, timers, the server clock, null-safe snapshots, the command bar's search, the while-you-were-away line, Markdown escaping and link filtering, and a login form filled the way a password manager fills it |
 | [`scripts/e2e.sh`](scripts/e2e.sh) | 33 checks: the shipped units under real systemd with their sandbox, transient units writing real journal entries, real Docker containers, and Caddy in front for TLS, cookies and streaming |
 | `systemd-analyze verify` and `security` | The unit files are valid; exposure 2.4 for the collector, 0.5 for the web process |
 | `gofmt`, `go vet`, `shellcheck` | Formatting and static checks |

@@ -10,9 +10,9 @@ export async function getSession(): Promise<Session> {
 
 export type LoginResult = { ok: true } | { ok: false; error: string; retryAfter?: number }
 
-export async function login(password: string): Promise<LoginResult> {
+export async function login(username: string, password: string): Promise<LoginResult> {
   const r = await fetch('/api/login', {
-    method: 'POST', headers: json, credentials: 'same-origin', body: JSON.stringify({ password }),
+    method: 'POST', headers: json, credentials: 'same-origin', body: JSON.stringify({ username, password }),
   })
   if (r.ok) return { ok: true }
   let body: { error?: string; retry_after?: number } = {}
@@ -22,7 +22,7 @@ export async function login(password: string): Promise<LoginResult> {
     /* not JSON */
   }
   if (r.status === 429) return { ok: false, error: 'Too many attempts.', retryAfter: body.retry_after }
-  if (r.status === 401) return { ok: false, error: 'That password is not right.' }
+  if (r.status === 401) return { ok: false, error: 'That username or password is not right.' }
   return { ok: false, error: body.error || `Sign-in failed (HTTP ${r.status}).` }
 }
 

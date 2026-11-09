@@ -19,9 +19,14 @@ both on every push (2.4 and 0.5 at the time of 1.1.0).
 
 - Every route only reads. The only `POST`s are login and logout, which accept
   JSON from the same origin only.
-- Passwords are stored as PBKDF2-SHA256 with 600,000 rounds and a random salt.
+- One owner account. The username comes from the config and is compared in
+  constant time (both sides hashed first); the password is stored as
+  PBKDF2-SHA256 with 600,000 rounds and a random salt. Both are always checked,
+  so a wrong username gets the same answer, delay and back-off as a wrong
+  password, and nobody can tell whether a username exists.
   Sessions are HMAC-signed cookies (`HttpOnly`, `SameSite=Strict`, `Secure`
-  behind TLS) keyed to the password hash, so a new password signs every device out.
+  behind TLS) keyed to the username and the password hash, so a new password or a renamed
+  account signs every device out.
 - Password checks run one at a time, so parallel requests cannot outrun the
   limiter. Failed logins back off per client after 5 attempts, and stop for
   everyone after 30 a minute from clients that are not already locked out.

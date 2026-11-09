@@ -30,7 +30,7 @@ PASS socket activation starts the web unit
 PASS web runs as a dynamic user, not root
 PASS web has no network of its own
 PASS state refused without a session
-PASS wrong password refused
+PASS wrong username or password refused alike
 == through Caddy (TLS, X-Forwarded-*, streaming)
 PASS login through Caddy
 PASS session cookie is Secure and HttpOnly

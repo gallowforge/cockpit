@@ -498,6 +498,7 @@ dd { margin: 3px 0 0; color: var(--text-2); font-size: 14.5px; overflow-wrap: an
 .login-card p { margin: 0 0 14px; }
 .field { width: 100%; display: flex; flex-direction: column; gap: 7px; text-align: left; font: 500 13.5px/1 var(--sans); color: var(--muted); }
 .field input { height: 46px; border-radius: 10px; border: 1px solid var(--line-2); background: #05080c; color: var(--text); padding: 0 14px; font: 400 16px/1 var(--sans); }
+.field + .field { margin-top: 8px; }
 .field input:focus { outline: none; border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06); }
 .login-card .btn { width: 100%; height: 46px; margin-top: 10px; font-size: 15px; }
 .login-err { min-height: 20px; margin: 6px 0 0 !important; color: var(--amber); font-size: 14px; }

@@ -32,6 +32,7 @@ type Config struct {
 type Web struct {
 	Listen           string // "127.0.0.1:8080", "unix:/run/cockpit/web.sock" or "systemd"
 	Auth             string // "password" or "none"
+	Username         string // the one owner account's name; the password hash is in PasswordHashFile
 	PasswordHashFile string
 	CookieSecure     string // auto, always, never
 	SessionDays      int
@@ -114,6 +115,7 @@ func Default() *Config {
 		Web: Web{
 			Listen:           "127.0.0.1:8080",
 			Auth:             "password",
+			Username:         "owner",
 			PasswordHashFile: "/etc/cockpit/password.hash",
 			CookieSecure:     "auto",
 			SessionDays:      365,
@@ -175,7 +177,7 @@ func FromINI(f *File) (*Config, error) {
 	}
 	known := map[string]map[string]bool{
 		"cockpit": set("title state runbook_dir interval slow_interval history"),
-		"web":     set("listen auth password_hash_file cookie_secure session_days trust_proxy"),
+		"web":     set("listen auth username password_hash_file cookie_secure session_days trust_proxy"),
 		"host":    set("mounts temp_file throttle_cmd write_device"),
 		"docker":  set("enabled socket"),
 		"homelab": set("enabled backup_conf backup_status notify_state maintenance_flag repo manifest health_unit " +
@@ -215,6 +217,7 @@ func FromINI(f *File) (*Config, error) {
 	if s := f.Find("web"); s != nil {
 		c.Web.Listen = s.Get("listen", c.Web.Listen)
 		c.Web.Auth = s.Get("auth", c.Web.Auth)
+		c.Web.Username = s.Get("username", c.Web.Username)
 		c.Web.PasswordHashFile = s.Get("password_hash_file", c.Web.PasswordHashFile)
 		c.Web.CookieSecure = s.Get("cookie_secure", c.Web.CookieSecure)
 		c.Web.SessionDays = num(s, "session_days", c.Web.SessionDays, bad)
@@ -304,6 +307,9 @@ func FromINI(f *File) (*Config, error) {
 	case "password", "none":
 	default:
 		errs = append(errs, fmt.Sprintf("[web] auth must be password or none, not %q", c.Web.Auth))
+	}
+	if !validUsername(c.Web.Username) {
+		errs = append(errs, "[web] username must be 1 to 64 characters with no spaces")
 	}
 	switch c.Web.CookieSecure {
 	case "auto", "always", "never":
@@ -468,4 +474,18 @@ func hostname() string {
 		return "cockpit"
 	}
 	return h
+}
+
+// validUsername accepts what a password manager stores as a login name:
+// 1 to 64 printable characters, no spaces.
+func validUsername(u string) bool {
+	if u == "" || len(u) > 64 {
+		return false
+	}
+	for _, r := range u {
+		if r <= ' ' || r == 0x7f {
+			return false
+		}
+	}
+	return true
 }

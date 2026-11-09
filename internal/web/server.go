@@ -34,6 +34,7 @@ type Options struct {
 	Version      string
 	Demo         bool
 	AuthMode     string // "password" or "none"
+	Username     string // the owner account's name (password mode)
 	PasswordHash string
 	MachineID    string
 	SessionTTL   time.Duration
@@ -80,7 +81,11 @@ func New(store *Store, opt Options) (*Server, error) {
 		if !strings.HasPrefix(opt.PasswordHash, hashPrefix+"$") {
 			return nil, errors.New("auth = password, but no valid password hash was found (create one with: cockpit hash-password)")
 		}
-		s.sessions = newSessions(opt.PasswordHash, opt.MachineID, opt.SessionTTL)
+		if opt.Username == "" {
+			return nil, errors.New("auth = password needs a username")
+		}
+		// the session key covers the username too: renaming the account signs every device out
+		s.sessions = newSessions(opt.Username+"\n"+opt.PasswordHash, opt.MachineID, opt.SessionTTL)
 	default:
 		return nil, fmt.Errorf("unknown auth mode %q", opt.AuthMode)
 	}
@@ -225,18 +230,23 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
+		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil || req.Password == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "password missing"})
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil || req.Username == "" || req.Password == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "username and password are both needed"})
 		return
 	}
-	ok := CheckPassword(s.opt.PasswordHash, req.Password)
+	// Both halves are always checked, the name in constant time, so a wrong
+	// username costs the same time, gets the same answer and the same back-off
+	// as a wrong password: nobody learns whether a name exists.
+	userOK := SameUsername(req.Username, s.opt.Username)
+	passOK := CheckPassword(s.opt.PasswordHash, req.Password)
 	now = s.opt.Now() // the check itself takes a while: a back-off must start after it, not before
-	if !ok {
+	if !userOK || !passOK {
 		s.limit.fail(who, now)
 		s.opt.Log.Printf("login failed from %s", who)
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "wrong password"})
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "wrong username or password"})
 		return
 	}
 	s.limit.succeed(who)
