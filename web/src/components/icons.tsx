@@ -1,154 +1,51 @@
-// Small stroke icons (24-unit grid, 1.75 stroke), drawn for Cockpit.
-import type { JSX } from 'preact'
-import { useMemo } from 'preact/hooks'
+// Line icons on a 24 grid, 1.7 stroke, round caps: one family for the whole app.
+import type { ComponentChildren } from 'preact'
+import type { Level } from '../types'
 
-type P = { size?: number; class?: string }
-
-const Svg = ({ size = 18, class: cls, children }: P & { children: JSX.Element | JSX.Element[] }) => (
-  <svg
-    class={cls}
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    {children}
-  </svg>
-)
-
-export const IconOverview = (p: P) => (
-  <Svg {...p}>
-    <path d="M4 13a8 8 0 0 1 16 0" />
-    <path d="M12 13l4-4" />
-    <circle cx="12" cy="13" r="1.4" />
-    <path d="M4 17h16" />
-  </Svg>
-)
-export const IconServices = (p: P) => (
-  <Svg {...p}>
-    <rect x="3.5" y="4" width="17" height="6.5" rx="2" />
-    <rect x="3.5" y="13.5" width="17" height="6.5" rx="2" />
-    <path d="M7.5 7.25h.01M7.5 16.75h.01" />
-    <path d="M11.5 7.25h5M11.5 16.75h5" />
-  </Svg>
-)
-export const IconBackups = (p: P) => (
-  <Svg {...p}>
-    <path d="M4 7.5h16v10.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
-    <path d="M3 4.5h18v3H3z" />
-    <path d="M9.5 12.5l2 2 3.5-3.5" />
-  </Svg>
-)
-export const IconAlerts = (p: P) => (
-  <Svg {...p}>
-    <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z" />
-    <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
-  </Svg>
-)
-export const IconTimers = (p: P) => (
-  <Svg {...p}>
-    <circle cx="12" cy="13" r="7.5" />
-    <path d="M12 9v4l2.5 2" />
-    <path d="M9.5 2.75h5" />
-  </Svg>
-)
-export const IconDrift = (p: P) => (
-  <Svg {...p}>
-    <circle cx="6.5" cy="6" r="2.25" />
-    <circle cx="17.5" cy="18" r="2.25" />
-    <path d="M6.5 8.25v4.25a3 3 0 0 0 3 3h3" />
-    <path d="M17.5 15.75V11.5a3 3 0 0 0-3-3h-3" />
-    <path d="M14 13.5l-1.5 2 1.5 2M10 6.5l1.5 2-1.5 2" />
-  </Svg>
-)
-export const IconRunbooks = (p: P) => (
-  <Svg {...p}>
-    <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" />
-    <path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" />
-    <path d="M9 7.5h6M9 11h4" />
-  </Svg>
-)
-export const IconExternal = (p: P) => (
-  <Svg {...p}>
-    <path d="M14 4h6v6" />
-    <path d="M20 4l-9 9" />
-    <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
-  </Svg>
-)
-export const IconArrow = (p: P) => (
-  <Svg {...p}>
-    <path d="M5 12h14M13 6l6 6-6 6" />
-  </Svg>
-)
-export const IconBook = IconRunbooks
-export const IconLock = (p: P) => (
-  <Svg {...p}>
-    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
-    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
-  </Svg>
-)
-export const IconLogout = (p: P) => (
-  <Svg {...p}>
-    <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
-    <path d="M10 16l-4-4 4-4M6 12h10" />
-  </Svg>
-)
-export const IconHeart = (p: P) => (
-  <Svg {...p}>
-    <path d="M3 12h4l2-5 3.5 10 2.5-7 1.5 2H21" />
-  </Svg>
-)
-export const IconShield = (p: P) => (
-  <Svg {...p}>
-    <path d="M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6z" />
-    <path d="M9 12l2 2 4-4" />
-  </Svg>
-)
-export const IconChip = (p: P) => (
-  <Svg {...p}>
-    <rect x="6" y="6" width="12" height="12" rx="2" />
-    <path d="M9.5 2.5v3M14.5 2.5v3M9.5 18.5v3M14.5 18.5v3M2.5 9.5h3M2.5 14.5h3M18.5 9.5h3M18.5 14.5h3" />
-  </Svg>
-)
-export const IconWrench = (p: P) => (
-  <Svg {...p}>
-    <path d="M14.5 5.5a4 4 0 0 0 4.9 4.9L13 16.8l-2.3 2.4a2 2 0 0 1-2.9-2.8L10.2 14l6.4-6.4" />
-    <path d="M14.5 5.5l2-2" />
-  </Svg>
-)
-
-let markSeq = 0
-
-/** The Cockpit mark: an attitude indicator. Each instance gets its own ids,
- * so a hidden copy (the desktop rail on a phone) cannot blank a visible one. */
-export const Mark = ({ size = 28, bank = -12 }: { size?: number; bank?: number }) => {
-  const id = useMemo(() => `mk${++markSeq}`, [])
-  const horizon = { transform: `rotate(${bank}deg)`, transformOrigin: '16px 16px', transition: 'transform 1.2s cubic-bezier(.3,.7,.3,1)' }
+function I({ size = 20, children, label }: { size?: number; children: ComponentChildren; label?: string }) {
   return (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <defs>
-      <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0a1a2a" />
-        <stop offset="1" stop-color="#2a5d86" />
-      </linearGradient>
-      <clipPath id={`${id}-clip`}>
-        <circle cx="16" cy="16" r="11" />
-      </clipPath>
-    </defs>
-    <circle cx="16" cy="16" r="14.5" fill="#05080c" stroke="#ffffff" stroke-opacity=".22" />
-    <g clip-path={`url(#${id}-clip)`}>
-      <g style={horizon}>
-        <rect x="-8" y="-8" width="48" height="25.5" fill={`url(#${id}-sky)`} />
-        <rect x="-8" y="17.5" width="48" height="24" fill="#16110c" />
-        <path d="M-8 17.5h48" stroke="#e8efe6" stroke-width=".8" />
-      </g>
-    </g>
-    <path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#ffb22e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-  </svg>
+    <svg class="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden={label ? undefined : 'true'} role={label ? 'img' : undefined} aria-label={label}>
+      {children}
+    </svg>
+  )
+}
+type P = { size?: number }
+
+export const IconNow = ({ size }: P) => <I size={size}><path d="M4 11.5 12 5l8 6.5" /><path d="M6.5 10v8.5h11V10" /><path d="M10 18.5v-4h4v4" /></I>
+export const IconServices = ({ size }: P) => <I size={size}><rect x="4" y="4.5" width="16" height="6" rx="2" /><rect x="4" y="13.5" width="16" height="6" rx="2" /><path d="M7.5 7.5h.01M7.5 16.5h.01" /></I>
+export const IconBackups = ({ size }: P) => <I size={size}><path d="M12 3.8 5 6.6v5.1c0 4.2 3 7.2 7 8.5 4-1.3 7-4.3 7-8.5V6.6z" /><path d="m9 12 2.1 2.1L15.2 10" /></I>
+export const IconHistory = ({ size }: P) => <I size={size}><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><path d="M4.5 4.5v3.2h3.2" /><path d="M12 8.2V12l2.6 1.7" /></I>
+export const IconSystem = ({ size }: P) => <I size={size}><rect x="6" y="6" width="12" height="12" rx="2.5" /><rect x="9.5" y="9.5" width="5" height="5" rx="1" /><path d="M9 3.5V6M15 3.5V6M9 18v2.5M15 18v2.5M3.5 9H6M3.5 15H6M18 9h2.5M18 15h2.5" /></I>
+export const IconChecklist = ({ size }: P) => <I size={size}><path d="m5 7 1.6 1.6L9.5 5.6" /><path d="M12.5 7.2H19" /><path d="m5 15 1.6 1.6 2.9-3" /><path d="M12.5 15.2H19" /></I>
+export const IconSearch = ({ size }: P) => <I size={size}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></I>
+export const IconBack = ({ size }: P) => <I size={size}><path d="M14.5 5.5 8 12l6.5 6.5" /></I>
+export const IconChevron = ({ size }: P) => <I size={size}><path d="m9.5 5.5 6.5 6.5-6.5 6.5" /></I>
+export const IconExternal = ({ size }: P) => <I size={size}><path d="M8 16 16 8" /><path d="M9.5 8H16v6.5" /></I>
+export const IconLogout = ({ size }: P) => <I size={size}><path d="M14 4.5H7.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H14" /><path d="M11 12h9M17 8.5l3.5 3.5-3.5 3.5" /></I>
+export const IconInfo = ({ size }: P) => <I size={size}><circle cx="12" cy="12" r="8" /><path d="M12 11v5M12 8h.01" /></I>
+export const IconClose = ({ size }: P) => <I size={size}><path d="m6.5 6.5 11 11M17.5 6.5l-11 11" /></I>
+
+const LIGHT: Record<string, string> = { calm: '#9fb9ff', attn: '#ffb35c', down: '#ff6a5c', blind: '#8f9bb3' }
+
+/** The mark: a pane of glass lit from behind at one corner. The light takes
+ *  the colour of the house's state. */
+export function Mark({ size = 28, level = 'ok' }: { size?: number; level?: Level }) {
+  const light = level === 'crit' ? LIGHT.down : level === 'warn' ? LIGHT.attn : level === 'unknown' ? LIGHT.blind : LIGHT.calm
+  const id = `mk-${size}-${level}`
+  return (
+    <svg class="mark" width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <defs>
+        <radialGradient id={id} cx="0.28" cy="0.26" r="0.85">
+          <stop offset="0" stop-color={light} stop-opacity="0.95" />
+          <stop offset="0.38" stop-color={light} stop-opacity="0.28" />
+          <stop offset="1" stop-color={light} stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="4" y="4" width="40" height="40" rx="12" fill="#0e131c" />
+      <rect x="4" y="4" width="40" height="40" rx="12" fill={`url(#${id})`} />
+      <rect x="4.75" y="4.75" width="38.5" height="38.5" rx="11.25" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" />
+      <circle cx="17" cy="16.5" r="3.4" fill="#f4f6fa" />
+    </svg>
   )
 }

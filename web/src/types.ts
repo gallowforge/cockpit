@@ -7,7 +7,7 @@ export interface Snapshot {
   generated: string
   title: string
   demo?: boolean
-  status: { level: Level; headline: string; attention: Attention[] }
+  status: { level: Level; headline: string; attention: Attention[]; blind?: Attention[] }
   host: Host
   maintenance?: { since: string }
   services: Service[]
@@ -29,6 +29,7 @@ export interface Attention {
   detail?: string
   ref?: string
   runbook?: string
+  evidence?: string
 }
 
 export interface Host {

@@ -81,7 +81,7 @@ Usage:
   cockpit serve   [-config FILE]           serve the dashboard (run unprivileged)
   cockpit check   [-config FILE | -state FILE] [-json]
                                            print the status; exit 0 ok, 1 warn, 2 crit
-  cockpit demo    [-listen ADDR] [-scenario calm|attention|incident] [-at TIME]
+  cockpit demo    [-listen ADDR] [-scenario calm|attention|incident|blind] [-at TIME]
                                            serve synthetic data, nothing to set up
   cockpit hash-password                    read a password on stdin, print its hash
   cockpit version
@@ -191,13 +191,13 @@ func serveHTTP(ctx context.Context, listen string, h http.Handler) error {
 func runDemo(args []string) error {
 	fs := flag.NewFlagSet("demo", flag.ExitOnError)
 	listen := fs.String("listen", "127.0.0.1:8080", "address to serve on")
-	scenario := fs.String("scenario", demo.Attention, "calm, attention or incident")
+	scenario := fs.String("scenario", demo.Attention, "calm, attention, incident or blind")
 	atFlag := fs.String("at", "", "freeze the clock at this RFC 3339 time (for screenshots)")
 	every := fs.Duration("every", 2*time.Second, "how often the synthetic state changes")
 	write := fs.String("write", "", "write one snapshot to this file and exit")
 	fs.Parse(args)
 	switch *scenario {
-	case demo.Calm, demo.Attention, demo.Incident:
+	case demo.Calm, demo.Attention, demo.Incident, demo.Blind:
 	default:
 		return fmt.Errorf("unknown scenario %q", *scenario)
 	}

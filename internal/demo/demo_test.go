@@ -15,7 +15,7 @@ import (
 var clockAt = time.Date(2026, 3, 10, 7, 42, 0, 0, time.UTC)
 
 func TestScenarios(t *testing.T) {
-	for scen, want := range map[string]string{Calm: snapshot.OK, Attention: snapshot.Warn, Incident: snapshot.Crit} {
+	for scen, want := range map[string]string{Calm: snapshot.OK, Attention: snapshot.Warn, Incident: snapshot.Crit, Blind: snapshot.Unknown} {
 		s := (&Generator{Scenario: scen}).Snapshot(clockAt)
 		if s.Status.Level != want {
 			t.Errorf("%s: level %s, want %s (%+v)", scen, s.Status.Level, want, s.Status.Attention)
@@ -23,6 +23,19 @@ func TestScenarios(t *testing.T) {
 		if s.Schema != snapshot.Schema || !s.Demo || len(s.Services) == 0 || len(s.Backups.Sets) != 9 || len(s.Timers) < 10 {
 			t.Errorf("%s: incomplete snapshot", scen)
 		}
+	}
+}
+
+// The incident's alert names the service that is down, so it is one problem.
+func TestIncidentFoldsItsAlert(t *testing.T) {
+	s := (&Generator{Scenario: Incident}).Snapshot(clockAt)
+	for _, a := range s.Status.Attention {
+		if a.Area == "alerts" && strings.Contains(a.Title, "Home Assistant") {
+			t.Fatalf("the Kuma alert should fold into the service: %+v", s.Status.Attention)
+		}
+	}
+	if s.Status.Attention[0].Ref != "homeassistant" || s.Status.Attention[0].Evidence == "" {
+		t.Fatalf("first item %+v", s.Status.Attention[0])
 	}
 }
 

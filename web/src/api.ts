@@ -27,7 +27,37 @@ export async function login(username: string, password: string): Promise<LoginRe
 }
 
 export async function logout(): Promise<void> {
+  forgetSnap()
   await fetch('/api/logout', { method: 'POST', headers: json, credentials: 'same-origin', body: '{}' })
+}
+
+// The last snapshot is kept on this device, so Cockpit opens on the last known
+// state at once (and offline), clearly marked with its time, while it reconnects.
+const SNAP_KEY = 'cockpit-last-snapshot'
+
+export function readCachedSnap(): Snapshot | null {
+  try {
+    const raw = localStorage.getItem(SNAP_KEY)
+    return raw ? (JSON.parse(raw) as Snapshot) : null
+  } catch {
+    return null
+  }
+}
+
+function keepSnap(s: Snapshot) {
+  try {
+    localStorage.setItem(SNAP_KEY, JSON.stringify(s))
+  } catch {
+    /* full or private: the app still works, it just starts empty */
+  }
+}
+
+export function forgetSnap() {
+  try {
+    localStorage.removeItem(SNAP_KEY)
+  } catch {
+    /* private mode */
+  }
 }
 
 export async function getRunbook(id: string): Promise<string> {
@@ -46,6 +76,11 @@ export function follow(onSnap: (s: Snapshot) => void, onState: (s: StreamState) 
   let es: EventSource | null = null
   let poll: number | undefined
   let stopped = false
+  const shot = new URLSearchParams(location.search).has('shot')
+  const got = (s: Snapshot) => {
+    onSnap(s)
+    if (!shot) keepSnap(s)
+  }
 
   const fetchOnce = async () => {
     try {
@@ -55,7 +90,7 @@ export function follow(onSnap: (s: Snapshot) => void, onState: (s: StreamState) 
         stop()
         return
       }
-      if (r.ok) onSnap(await r.json())
+      if (r.ok) got(await r.json())
     } catch {
       /* offline: the next tick retries */
     }
@@ -68,11 +103,12 @@ export function follow(onSnap: (s: Snapshot) => void, onState: (s: StreamState) 
     poll = undefined
   }
   const open = () => {
+    es?.close()
     onState('connecting')
     es = new EventSource('/api/events')
     es.addEventListener('snapshot', (ev) => {
       try {
-        onSnap(JSON.parse((ev as MessageEvent).data))
+        got(JSON.parse((ev as MessageEvent).data))
         onState('live')
         stopPoll()
       } catch {
@@ -86,18 +122,32 @@ export function follow(onSnap: (s: Snapshot) => void, onState: (s: StreamState) 
       fetchOnce()
     }
   }
+  // iOS drops the stream while the app is in the background and may never fire
+  // an error for it (WebKit bug 282526), so coming back always reconnects.
+  const onBack = () => {
+    if (stopped || document.visibilityState !== 'visible') return
+    open()
+    fetchOnce()
+  }
+  const onPageShow = (e: PageTransitionEvent) => e.persisted && onBack()
   const stop = () => {
     stopped = true
     es?.close()
     stopPoll()
+    document.removeEventListener('visibilitychange', onBack)
+    removeEventListener('pageshow', onPageShow)
+    removeEventListener('online', onBack)
   }
   // ?shot renders one snapshot without a stream, for screenshots and tests
-  if (new URLSearchParams(location.search).has('shot')) {
+  if (shot) {
     document.documentElement.classList.add('shot')
     onState('live')
     fetchOnce()
     return stop
   }
+  document.addEventListener('visibilitychange', onBack)
+  addEventListener('pageshow', onPageShow)
+  addEventListener('online', onBack)
   open()
   return stop
 }

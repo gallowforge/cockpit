@@ -1,149 +1,169 @@
+// Backups: is my data safe, and has a restore actually been proven?
 import { useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
-import type { BackupSet, Run } from '../types'
-import { ago, bytes, clock, dateTime, duration, ms, pct, until } from '../format'
-import { Card, Dot, Meter, PageHead, Pill, RunStrip, RunbookLink, Stat } from '../components/ui'
-import { IconShield } from '../components/icons'
+import type { BackupSet, Snapshot } from '../types'
+import { ago, bytes, clock, dateTime, dayLabel, duration, ms, pct, plural, until } from '../format'
+import { Dots, Empty, Figure, Glyph, Meter, PageHead, Section, Spark } from '../components/ui'
+import { IconBack, IconChevron } from '../components/icons'
 
-export function BackupsView({ snap, now }: ViewProps) {
-  const b = snap.backups
-  const ok = b.sets.filter((s) => s.level === 'ok').length
-  const run = b.runs[0]
-  const timer = snap.timers.find((t) => t.activates === run?.unit || /homelab-backup\.timer$/.test(t.unit))
-  const [picked, setPicked] = useState<Run | null>(null)
-  const shown = picked ?? run
-  const rbId = snap.runbooks.find((r) => r.match?.some((m) => m === 'backups'))?.id
-  const failed30 = b.runs.filter((r) => r.result === 'failed').length
+function growth(b: BackupSet): string | null {
+  const a = b.archives.slice().sort((x, y) => ms(x.time) - ms(y.time))
+  if (a.length < 2 || !a[0].bytes) return null
+  const first = a.find((x) => ms(x.time) >= ms(a[a.length - 1].time) - 30 * 86400e3) ?? a[0]
+  if (!first.bytes) return null
+  const d = ((a[a.length - 1].bytes - first.bytes) / first.bytes) * 100
+  if (Math.abs(d) < 0.5) return 'steady'
+  return `${d > 0 ? '+' : ''}${d.toFixed(d > 10 || d < -10 ? 0 : 1)}% in a month`
+}
 
+function nextBackup(snap: Snapshot) {
+  return snap.timers.find((t) => /backup\.service$/.test(t.activates) && !/restore|drill/.test(t.activates))
+}
+
+export function BackupsView(p: ViewProps) {
+  const { snap, now, route } = p
+  const [night, setNight] = useState<number | null>(null)
+  const [week, setWeek] = useState(0)
+  if (route[1]) return <SetDetail {...p} name={route[1]} />
+  const sets = snap.backups.sets
+  const verified = sets.map((b) => ms(b.last_ok)).filter(isFinite)
+  const oldest = verified.length ? new Date(Math.min(...verified)).toISOString() : undefined
+  const bad = sets.filter((b) => b.level !== 'ok')
+  const runs = snap.backups.runs.slice(0, 30)
+  const shown = runs.slice().reverse()
+  const pick = night ?? shown.length - 1
+  const sel = shown[pick]
+  const nb = nextBackup(snap)
+  const drill = snap.drill.runs[0]
+  const dw = snap.drill.runs[week]
   return (
     <div>
-      <PageHead
-        title="Backups"
-        sub="Every set is written, verified, and only then are old archives pruned. The drill restores the newest archive of each set every week."
-        right={<RunbookLink id={rbId} title="Restore a backup" />}
-      />
-      <div class="stats-row">
-        <Stat label="Sets verified" value={`${ok}/${b.sets.length}`} level={b.level} sub={b.level === 'ok' ? 'all within their age limit' : 'see below'} />
-        <Stat label="Newest archives" value={bytes(b.bytes)} sub="one per set, summed" />
-        <Stat label="Last run" value={run ? clock(run.start) : '—'} sub={run ? `${run.result} · took ${duration(run.start, run.end)}` : 'no run in the journal'} level={run?.result === 'failed' ? 'crit' : undefined} />
-        <Stat label="Next run" value={timer?.next ? until(timer.next, now).replace('in ', '') : '—'} sub={timer?.next ? dateTime(timer.next) : ''} />
-        <Stat label="Failed runs" value={`${failed30}`} sub={`of the last ${b.runs.length}`} level={failed30 ? 'warn' : undefined} />
+      <PageHead title="Backups" sub={bad.length
+        ? <span class="st-crit">{plural(bad.length, 'set')} not verified in time.</span>
+        : <>Every set verified{oldest ? `, the oldest ${ago(oldest, now)}` : ''}. {drill ? `The drill restored ${drill.passed} of ${drill.passed + drill.failed} ${ago(drill.end, now)}.` : 'No restore drill has run yet.'}</>} />
+      <div class="figs">
+        <Figure value={`${sets.length - bad.length}`} unit={`of ${sets.length}`} caption="sets verified in time" level={bad.length ? 'crit' : undefined} />
+        <Figure value={bytes(snap.backups.bytes)} caption="newest archives, all sets" />
+        <Figure value={runs[0] ? clock(runs[0].start) : '—'} caption={runs[0] ? `last run, ${dayLabel(runs[0].start, now).toLowerCase()}` : 'no run in the journal'} level={runs[0]?.result === 'failed' ? 'crit' : undefined} />
+        <Figure value={nb?.next ? clock(nb.next) : '—'} caption={nb?.next ? `next run, ${until(nb.next, now)}` : 'no backup timer found'} />
       </div>
 
-      <Card title="Sets" class="mt">
-        <div class="set-table" role="table">
-          <div class="set-head" role="row">
-            <span>Set</span><span>Verified</span><span>Freshness</span><span>Size</span><span>Archives kept</span><span>Checks</span>
-          </div>
-          {b.sets.map((s) => <SetRow key={s.name} s={s} now={now} />)}
-        </div>
-      </Card>
-
-      <div class="two mt">
-        <Card title={<>Nightly runs <span class="count">last {b.runs.length}</span></>}>
-          <RunStrip runs={b.runs} n={30} onPick={setPicked} />
-          {shown && (
-            <div class={`run-detail r-${shown.result}`}>
-              <div>
-                <Dot level={shown.result === 'success' ? 'ok' : shown.result === 'failed' ? 'crit' : 'info'} size={8} />{' '}
-                <b>{dateTime(shown.start)}</b> <span class="muted">· {shown.result} · {duration(shown.start, shown.end)}</span>
-              </div>
-              {shown.summary && <code class="run-summary">{shown.summary}</code>}
-            </div>
-          )}
-          <Durations runs={b.runs} />
-          <p class="hint">Tap a square for that night. Red means the engine refused to prune: the older archives were kept.</p>
-        </Card>
-        <DrillCard snap={snap} now={now} />
-      </div>
-    </div>
-  )
-}
-
-function SetRow({ s, now }: { s: BackupSet; now: number }) {
-  const ageH = s.last_ok ? (now - ms(s.last_ok)) / 3600000 : Infinity
-  const used = isFinite(ageH) ? pct(ageH, s.max_age_h) : 100
-  const sizes = s.archives.slice(0, 14).reverse()
-  const peak = Math.max(1, ...sizes.map((a) => a.bytes))
-  const low = Math.min(...sizes.map((a) => a.bytes))
-  const checks = Object.entries(s.checks ?? {})
-    .filter(([k]) => k !== 'members')
-    .map(([k, v]) => `${k.replace(/^rows_/, '')} ${v}`)
-  return (
-    <div class={`set-row lv-${s.level}`} role="row">
-      <span class="set-name"><Dot level={s.level} size={8} /> {s.name} <span class="set-type">{s.type}</span></span>
-      <span>{s.last_ok ? ago(s.last_ok, now) : <Pill level="crit">never</Pill>}</span>
-      <span class="set-fresh">
-        <Meter value={100 - used} level={s.level !== 'ok' ? s.level : used > 75 ? 'warn' : 'ok'} />
-        <span class="muted">limit {s.max_age_h}h</span>
-      </span>
-      <span class="mono">{bytes(s.bytes)}</span>
-      <span class="set-arch" title={`${s.archives.length} of ${s.keep} kept`}>
-        <span class="arch-bars" aria-hidden="true">
-          {sizes.map((a) => {
-            // scale between the smallest and largest kept archive, so growth shows
-            const span = peak - low
-            const h = span > 0 ? 6 + ((a.bytes - low) / span) * 14 : 14
-            return <i key={a.time} style={{ height: `${h}px` }} />
+      <Section title="Sets">
+        <div class="rows">
+          {sets.map((b) => {
+            const age = ms(b.last_ok) ? now - ms(b.last_ok) : Infinity
+            const used = b.max_age_h ? pct(age, b.max_age_h * 3600e3) : 0
+            const lit = b.level === 'crit' ? ' lit lit-down' : b.level === 'warn' ? ' lit lit-attn' : ''
+            const g = growth(b)
+            return (
+              <a key={b.name} class={`row set${lit}`} href={`#/backups/${encodeURIComponent(b.name)}`}>
+                <span class="row-main">
+                  <span class="row-title">{b.name}{b.level !== 'ok' && <Glyph level={b.level} size={13} />}</span>
+                  <span class="row-sub">{b.type} · {b.level === 'ok' ? b.detail : <span class="st-crit">{b.detail}</span>}</span>
+                </span>
+                <span class="set-fresh"><Meter pct={used} level={b.level === 'ok' ? (used > 80 ? 'warn' : 'ok') : b.level} /><small>limit {b.max_age_h}h</small></span>
+                <Spark values={b.archives.slice().sort((x, y) => ms(x.time) - ms(y.time)).map((a) => a.bytes)} w={90} h={22} />
+                <span class="row-num">{bytes(b.bytes)}<small>{g ?? ''}</small></span>
+                <IconChevron size={16} />
+              </a>
+            )
           })}
-        </span>
-        <span class="muted">{s.archives.length}/{s.keep}</span>
-      </span>
-      <span class="muted set-checks">{checks.join(' · ') || (s.checks?.members ? `${s.checks.members} members` : '—')}</span>
+        </div>
+      </Section>
+
+      <Section title="Nightly runs" aside={<span class="muted">tap a night</span>}>
+        <div class="pane pad">
+          {shown.length === 0 ? <Empty>No backup run in the journal yet.</Empty> : (
+            <>
+              <Dots items={shown.map((r) => ({ level: r.result === 'failed' ? 'crit' : r.result === 'success' ? 'ok' : 'info', label: `${dateTime(r.start)}: ${r.result}` }))} selected={pick} onPick={setNight} />
+              {sel && (
+                <div class="run-sel">
+                  <Glyph level={sel.result === 'failed' ? 'crit' : sel.result === 'success' ? 'ok' : 'info'} size={15} />
+                  <span><b>{dateTime(sel.start)}</b>, took {duration(sel.start, sel.end)}{sel.summary ? <>: {sel.summary}</> : ''}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Section>
+
+      <Section title="Restore drill" aside={snap.drill.runs.length > 1 && (
+        <div class="seg">
+          {snap.drill.runs.slice(0, 6).map((d, i) => (
+            <button key={d.end} type="button" class={week === i ? 'on' : ''} onClick={() => setWeek(i)}>{i === 0 ? 'Latest' : new Date(ms(d.end)).toLocaleDateString([], { day: 'numeric', month: 'short' })}</button>
+          ))}
+        </div>
+      )}>
+        {!dw ? <Empty>No restore drill in the journal yet. The drill runs weekly; until one has run, no backup has been proven restorable.</Empty> : (
+          <div class={`pane pad${dw.failed ? ' lit lit-down' : ''}`}>
+            <p class="drill-sum">{dw.failed ? <span class="st-crit">{dw.failed} of {dw.passed + dw.failed} sets failed to restore.</span> : <>All {dw.passed} sets restored and checked.</>} <span class="muted">{dateTime(dw.end)}, took {duration(dw.start, dw.end)}.</span></p>
+            <ul class="drill-grid">
+              {dw.results.map((r) => (
+                <li key={r.set} class={r.ok ? '' : 'bad'}>
+                  <Glyph level={r.ok ? 'ok' : 'crit'} size={14} />
+                  <span><b>{r.set}</b>{r.detail && <small>{r.detail}</small>}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Section>
     </div>
   )
 }
 
-function Durations({ runs }: { runs: Run[] }) {
-  const list = runs.slice(0, 30).reverse()
-  const secs = list.map((r) => Math.max(0, (ms(r.end) - ms(r.start)) / 1000))
-  const peak = Math.max(1, ...secs)
-  if (!list.length) return null
+function SetDetail({ snap, now, name }: ViewProps & { name: string }) {
+  const b = snap.backups.sets.find((x) => x.name === name)
+  if (!b) return <Empty>No backup set called <code>{name}</code>. <a href="#/backups">All sets</a></Empty>
+  const arch = b.archives.slice().sort((x, y) => ms(x.time) - ms(y.time))
+  const drills = snap.drill.runs.map((d) => ({ d, r: d.results.find((x) => x.set === b.name) })).filter((x) => x.r)
+  const passed = drills.filter((x) => x.r!.ok).length
+  const rb = snap.runbooks.find((r) => (r.match ?? []).some((m) => m === 'backup-' + b.name || m === 'backups' || m === 'backup-*'))
+  const g = growth(b)
   return (
-    <>
-      <div class="durations" aria-label="How long each night's run took">
-        {list.map((r, i) => (
-          <i key={r.start} class={r.result === 'failed' ? 'bad' : ''} style={{ height: `${(secs[i] / peak) * 100}%` }}
-            title={`${new Date(r.start).toLocaleDateString()}: ${Math.round(secs[i])} s`} />
-        ))}
+    <div class="detail">
+      <a class="back" href="#/backups"><IconBack size={16} /> Backups</a>
+      <PageHead title={b.name} sub={<>{b.type} set, keeps {b.keep}. {b.level === 'ok' ? <>Verified {b.last_ok ? ago(b.last_ok, now) : 'never'}.</> : <span class="st-crit">{b.detail}.</span>}</>} />
+      <div class="figs">
+        <Figure value={bytes(b.bytes)} caption={g ? `newest archive, ${g}` : 'newest archive'} />
+        <Figure value={`${arch.length}`} unit={`of ${b.keep}`} caption="archives kept" />
+        <Figure value={`${b.max_age_h}h`} caption="age limit before it counts as stale" />
+        <Figure value={drills.length ? `${passed}` : '—'} unit={drills.length ? `of ${drills.length}` : undefined} caption="drills restored it" level={passed < drills.length ? 'crit' : undefined} />
       </div>
-      <div class="dur-axis"><span>run time, oldest left</span><span>longest {Math.round(peak / 60)}m {Math.round(peak % 60)}s</span></div>
-    </>
-  )
-}
-
-function DrillCard({ snap, now }: { snap: ViewProps['snap']; now: number }) {
-  const runs = snap.drill.runs
-  const [i, setI] = useState(0)
-  const r = runs[i]
-  return (
-    <Card title={<>Restore drill <span class="count">{runs.length ? `${runs.length} weeks` : 'none yet'}</span></>} icon={<IconShield size={16} />}>
-      {!r ? (
-        <p class="muted">No drill in the journal yet.</p>
-      ) : (
-        <>
-          <div class="drill-tabs">
-            {runs.slice(0, 6).map((d, j) => (
-              <button key={d.start} type="button" class={`wk-tab ${d.failed ? 'bad' : 'good'}${i === j ? ' on' : ''}`} onClick={() => setI(j)}>
-                {new Date(d.start).toLocaleDateString([], { day: 'numeric', month: 'short' })}
-              </button>
-            ))}
-          </div>
-          <div class="drill-head">
-            <span class={r.failed ? 'lv-text-crit' : 'lv-text-ok'}><b>{r.passed} passed, {r.failed} failed</b></span>
-            <span class="muted"> · {ago(r.end, now)} · {duration(r.start, r.end)}, unpacked in RAM and compared with live</span>
-          </div>
-          <ul class="drill-list">
-            {r.results.map((x) => (
-              <li key={x.set} class={x.ok ? 'ok' : 'bad'}>
-                <span class="drill-mark">{x.ok ? 'PASS' : 'FAIL'}</span>
-                <span class="drill-set">{x.set}</span>
-                <span class="drill-detail">{x.detail}</span>
-              </li>
-            ))}
-          </ul>
-        </>
+      <Section title="Archive sizes">
+        <div class="pane pad">
+          {arch.length < 2 ? <Empty>Not enough archives to draw yet.</Empty> : (
+            <>
+              <Spark values={arch.map((a) => a.bytes)} w={600} h={80} />
+              <div class="axis"><span>{dateTime(arch[0].time)}</span><span>{dateTime(arch[arch.length - 1].time)}</span></div>
+            </>
+          )}
+        </div>
+      </Section>
+      {b.checks && Object.keys(b.checks).length > 0 && (
+        <Section title="Checks on the newest archive">
+          <dl class="facts pane">
+            {Object.entries(b.checks).map(([k, v]) => <div key={k}><dt>{k.replace(/^rows_/, 'rows in ').replace('members', 'files in the archive')}</dt><dd>{v.toLocaleString()}</dd></div>)}
+          </dl>
+        </Section>
       )}
-    </Card>
+      {drills.length > 0 && (
+        <Section title="Restore drills">
+          <div class="rows">
+            {drills.map(({ d, r }) => (
+              <div key={d.end} class={`row static${r!.ok ? '' : ' lit lit-down'}`}>
+                <Glyph level={r!.ok ? 'ok' : 'crit'} size={14} />
+                <span class="row-main"><span class="row-title">{dateTime(d.end)}</span><span class="row-sub">{r!.ok ? 'restored and checked' : r!.detail}</span></span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+      {rb && (
+        <Section title="To restore it">
+          <a class="row" href={`#/runbooks/${encodeURIComponent(rb.id)}`}><span class="row-main"><span class="row-title">{rb.title}</span><span class="row-sub">Checklist</span></span><IconChevron size={16} /></a>
+        </Section>
+      )}
+    </div>
   )
 }

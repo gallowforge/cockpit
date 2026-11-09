@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { Snapshot } from '../types'
 import { prioLevel } from '../derive'
-import { Dot } from './ui'
-import { IconExternal } from './icons'
+import { Glyph } from './ui'
+import { IconExternal, IconSearch } from './icons'
 import { safeHref } from '../markdown'
 
 export interface PaletteItem {
@@ -12,21 +12,20 @@ export interface PaletteItem {
   sub?: string
   href: string
   external?: boolean
-  level?: Parameters<typeof Dot>[0]['level']
+  level?: Parameters<typeof Glyph>[0]['level']
   keys?: string
 }
 
 export const PAGES: { id: string; title: string; key: string }[] = [
-  { id: '', title: 'Overview', key: 'O' },
+  { id: '', title: 'Now', key: 'N' },
   { id: 'services', title: 'Services', key: 'S' },
   { id: 'backups', title: 'Backups', key: 'B' },
-  { id: 'alerts', title: 'Alerts', key: 'A' },
-  { id: 'timers', title: 'Timers', key: 'T' },
-  { id: 'drift', title: 'Drift and checks', key: 'D' },
+  { id: 'history', title: 'History', key: 'H' },
+  { id: 'system', title: 'System', key: 'Y' },
   { id: 'runbooks', title: 'Checklists', key: 'C' },
 ]
 
-/** Everything the deck knows about, as places to jump to. */
+/** Everything Cockpit knows about, as places to jump to. */
 export function paletteItems(s: Snapshot): PaletteItem[] {
   const out: PaletteItem[] = PAGES.map((p) => ({ id: 'page:' + p.id, group: 'Go to', title: p.title, href: `#/${p.id}`, keys: `G ${p.key}` }))
   for (const sv of s.services) {
@@ -42,13 +41,13 @@ export function paletteItems(s: Snapshot): PaletteItem[] {
     }
   }
   for (const b of s.backups.sets) {
-    out.push({ id: 'bk:' + b.name, group: 'Backup sets', title: b.name, sub: b.detail, href: '#/backups', level: b.level })
+    out.push({ id: 'bk:' + b.name, group: 'Backup sets', title: b.name, sub: b.detail, href: `#/backups/${encodeURIComponent(b.name)}`, level: b.level })
   }
   for (const i of s.alerts.incidents.filter((x) => x.state !== 'info').slice(0, 20)) {
-    out.push({ id: 'al:' + i.key + i.opened, group: 'Alerts', title: i.title, sub: i.state === 'open' ? 'open now' : i.state, href: '#/alerts', level: i.state === 'open' ? prioLevel(i.prio) : 'off' })
+    out.push({ id: 'al:' + i.key + i.opened, group: 'Alerts', title: i.title, sub: i.state === 'open' ? 'open now' : i.state, href: `#/history/alert/${encodeURIComponent(i.key)}`, level: i.state === 'open' ? prioLevel(i.prio) : 'off' })
   }
   for (const t of s.timers) {
-    out.push({ id: 'tm:' + t.unit, group: 'Timers', title: t.activates.replace(/\.service$/, ''), sub: t.description, href: '#/timers', level: t.result === 'failed' ? 'warn' : 'ok' })
+    out.push({ id: 'tm:' + t.unit, group: 'Timers', title: t.activates.replace(/\.service$/, ''), sub: t.description, href: '#/system', level: t.result === 'failed' ? 'warn' : undefined })
   }
   return out
 }
@@ -118,13 +117,13 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
     <div class="palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div class="palette" role="dialog" aria-label="Jump to anything">
         <div class="palette-input">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+          <IconSearch size={18} />
           <input ref={input} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} onKeyDown={onKey}
             placeholder="Jump to a service, backup, alert, timer or checklist" aria-label="Search" spellcheck={false} autocomplete="off" />
           <kbd>esc</kbd>
         </div>
         <div class="palette-list" ref={list} role="listbox">
-          {results.length === 0 && <div class="palette-empty">Nothing on the deck matches "{q}".</div>}
+          {results.length === 0 && <div class="palette-empty">Nothing matches "{q}".</div>}
           {results.map((it, n) => {
             const head = it.group !== lastGroup ? <div class="palette-group" key={'g' + it.group}>{it.group}</div> : null
             lastGroup = it.group
@@ -133,7 +132,7 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
                 {head}
                 <button type="button" key={it.id} data-i={n} role="option" aria-selected={n === active}
                   class={`palette-item${n === active ? ' on' : ''}`} onMouseMove={() => setActive(n)} onClick={() => open(it)}>
-                  {it.level ? <Dot level={it.level} size={7} /> : <span class="palette-bullet" />}
+                  {it.level && it.level !== 'ok' ? <Glyph level={it.level} size={13} /> : <span class="palette-bullet" />}
                   <span class="palette-title">{it.title}</span>
                   {it.sub && <span class="palette-sub">{it.sub}</span>}
                   {it.external && <IconExternal size={14} />}

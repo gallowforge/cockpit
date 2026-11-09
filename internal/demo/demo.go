@@ -18,6 +18,7 @@ const (
 	Calm      = "calm"      // everything fine
 	Attention = "attention" // one config drift, one low alert
 	Incident  = "incident"  // a container down and an urgent alert
+	Blind     = "blind"     // Docker cannot be read: nothing is wrong that Cockpit can see
 )
 
 // Generator builds snapshots for a fixed scenario. Histories are seeded, so
@@ -93,7 +94,11 @@ func (g *Generator) Snapshot(now time.Time) *snapshot.Snapshot {
 	s.Health = g.health(now)
 	s.Runbooks = Runbooks()
 	for _, n := range []string{"alerts", "backups", "drift", "host", "journal", "runbooks", "services", "timers"} {
-		s.Sources = append(s.Sources, snapshot.Source{Name: n, OK: true, At: now, DurationMS: 2 + float64(len(n))})
+		src := snapshot.Source{Name: n, OK: true, At: now, DurationMS: 2 + float64(len(n))}
+		if g.Scenario == Blind && n == "services" {
+			src.OK, src.Error = false, "docker: dial unix /var/run/docker.sock: connect: permission denied"
+		}
+		s.Sources = append(s.Sources, src)
 	}
 	snapshot.Finalize(s, now)
 	return s
@@ -188,7 +193,8 @@ func (g *Generator) services(now time.Time, r *rand.Rand) []snapshot.Service {
 			sv.Detail += fmt.Sprintf(" · %.0f ms", p.LatencyMS)
 		}
 		if g.Scenario == Incident && d.id == "homeassistant" {
-			sv.State = "down"
+			down := now.Add(-4 * time.Minute)
+			sv.State, sv.Since = "down", &down
 			sv.Detail = "unhealthy · 4 failed checks · https://127.0.0.1:8443 timeout"
 			for j := 84; j < 90; j++ {
 				beats[j] = 'x'
@@ -198,6 +204,12 @@ func (g *Generator) services(now time.Time, r *rand.Rand) []snapshot.Service {
 				for j := 84; j < 90; j++ {
 					sv.Probe.Latencies[j] = -1
 				}
+			}
+		}
+		if g.Scenario == Blind && d.kind == "container" { // the Docker API cannot be read
+			sv.State, sv.Detail, sv.Since, sv.Image = "unknown", "Docker could not be read", nil, d.image
+			for j := 84; j < 90; j++ {
+				beats[j] = '?'
 			}
 		}
 		sv.Beats = string(beats)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSnap, alertHistogram, areaHref, byDay, groupServices, prioLevel, serverNow, sortTimers, uptimeOf, worst } from './derive'
+import { normalizeSnap, alertHistogram, areaHref, awayEvents, byDay, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, proof, serverNow, sortTimers, uptimeOf, worst } from './derive'
 import type { Incident, Service, Snapshot, Timer } from './types'
 
 const svc = (id: string, group?: string): Service =>
@@ -47,6 +47,11 @@ describe('derive', () => {
     expect(uptimeOf('uuoo??')).toBe(100)
     expect(uptimeOf('oo')).toBeNull()
   })
+  it('names only the jobs that run hourly or less often', () => {
+    const t = (unit: string, last: string, next: string) => ({ unit, activates: unit, last, next, highlight: true, level: 'ok' }) as Timer
+    const list = [t('probe', '2026-03-10T07:41:30Z', '2026-03-10T07:42:30Z'), t('backup', '2026-03-09T05:00:00Z', '2026-03-10T05:00:00Z')]
+    expect(notableTimers(list).map((x) => x.unit)).toEqual(['backup'])
+  })
   it('carries the server clock forward', () => {
     const snap = { generated: '2026-03-10T07:42:00Z' } as Snapshot
     expect(serverNow(snap, 1000, 4000)).toBe(Date.parse('2026-03-10T07:42:03Z'))
@@ -61,6 +66,82 @@ describe('derive', () => {
   it('links attention items to their page', () => {
     expect(areaHref('services', 'vault warden')).toBe('#/services/vault%20warden')
     expect(areaHref('drill')).toBe('#/backups')
-    expect(areaHref('heartbeat')).toBe('#/drift')
+    expect(areaHref('heartbeat')).toBe('#/system')
+    expect(areaHref('alerts', 'kuma-down')).toBe('#/history')
+    expect(areaHref('backups', 'vaultwarden')).toBe('#/backups/vaultwarden')
+    expect(areaHref('services', 'unknown')).toBe('#/services')
+  })
+})
+
+const NOW = Date.parse('2026-03-10T07:42:00Z')
+const base = (): Snapshot => normalizeSnap({
+  schema: 1, generated: '2026-03-10T07:41:58Z', title: 'pi',
+  status: { level: 'ok', headline: 'Nothing needs you.', attention: [], blind: [] },
+  host: { name: 'pi', cpus: 4, uptime_s: 1, load: [0, 0, 0], mem_total: 1, mem_available: 1, swap_total: 0, swap_free: 0, disks: [], level: 'ok' },
+  services: [svc('vault'), { ...svc('ha'), title: 'Home Assistant', url: 'https://ha.example-tailnet.ts.net' }],
+  backups: { level: 'ok', bytes: 0, runs: [{ start: '2026-03-10T05:00:00Z', end: '2026-03-10T05:03:00Z', result: 'success', summary: 'ok' }],
+    sets: [{ name: 'vault', type: 'sqlite', keep: 14, max_age_h: 48, last_ok: '2026-03-10T05:03:00Z', bytes: 1, archives: [], level: 'ok', detail: '' }] },
+  drill: { level: 'ok', runs: [{ start: '2026-03-08T04:00:00Z', end: '2026-03-08T04:10:00Z', passed: 9, failed: 0, result: 'success', results: [] }] },
+  alerts: { level: 'ok', open: [], incidents: [], sent_24h: 0, sent_7d: 0 },
+  timers: [], drift: { level: 'ok', result: 'clean', tracked: 1, files: [], uncommitted: 0, disabled_timers: [] },
+  heartbeat: { level: 'ok', ok: true, pings_24h: 1, runs_24h: 1 }, health: { level: 'ok', categories: [] }, runbooks: [], sources: [],
+} as unknown as Snapshot)
+
+describe('the hero', () => {
+  it('says nothing needs you, with its proof', () => {
+    const h = heroOf(base(), NOW)
+    expect([h.kind, h.light, h.title]).toEqual(['clear', 'calm', 'Nothing needs you.'])
+    const text = proof(base(), NOW).map((p) => p.text).join('')
+    expect(text).toMatch(/^2 services up, 1 backup verified, the oldest 2h ago and the drill restored 9 of 9 on /)
+  })
+  it('names a single problem and offers its checklist first', () => {
+    const s = base()
+    s.status.attention = [{ level: 'crit', area: 'services', ref: 'ha', title: 'Home Assistant is down', detail: 'probe timed out', runbook: 'ha', evidence: 'Uptime Kuma: Home Assistant is DOWN, open since 4m ago' }]
+    const h = heroOf(s, NOW)
+    expect([h.kind, h.light, h.title]).toEqual(['down', 'down', 'Home Assistant is down.'])
+    expect(h.detail[0].text).toBe('Probe timed out. Also: Uptime Kuma: Home Assistant is DOWN, open since 4m ago.')
+    expect(h.actions.map((a) => [a.label, a.primary ?? false])).toEqual([['Open the checklist', true], ['Open Home Assistant', false], ['Details', false]])
+  })
+  it('counts several problems and links the worst', () => {
+    const s = base()
+    s.status.attention = [{ level: 'warn', area: 'drift', title: 'Config drift: 1 file differs from the repo' }, { level: 'warn', area: 'timers', title: 'x failed' }]
+    const h = heroOf(s, NOW)
+    expect([h.kind, h.light, h.title]).toEqual(['several', 'attn', '2 things need you.'])
+    expect(h.detail[1]).toEqual({ text: 'Config drift: 1 file differs from the repo.', href: '#/system' })
+  })
+  it('never calls a blind spot all clear', () => {
+    const s = base()
+    s.status.headline = "Cockpit can't read Docker."
+    s.status.blind = [{ level: 'unknown', area: 'services', ref: 'source-services', title: "Cockpit can't read Docker", detail: '14 services can\'t be confirmed.' }]
+    const h = heroOf(s, NOW)
+    expect([h.kind, h.light, h.title]).toEqual(['blind', 'blind', "Cockpit can't read Docker."])
+    expect(h.detail[0].text).toBe("14 services can't be confirmed. Everything it can see is fine.")
+  })
+  it('turns stale, offline and maintenance into their own states', () => {
+    expect(heroOf(base(), NOW + 5 * 60e3).kind).toBe('stale')
+    expect(heroOf(base(), NOW, { online: false }).kind).toBe('offline')
+    const s = base()
+    s.maintenance = { since: '2026-03-10T07:00:00Z' }
+    expect(heroOf(s, NOW).title).toBe('Maintenance mode.')
+  })
+})
+
+describe('events', () => {
+  it('merges alerts, backups and drills newest first, and folds a flapping key', () => {
+    const s = base()
+    const flap = (h: number) => ({ key: 'kuma-dns', title: 'Kuma: DNS flapped', prio: 'low', opened: `2026-03-10T0${h}:10:00Z`, resolved: `2026-03-10T0${h}:12:00Z`, sends: 1, suppressed: 0, failed: 0, state: 'resolved' as const })
+    s.alerts.incidents = [flap(4), flap(3), flap(2)]
+    const list = events(s)
+    expect(list.map((e) => e.kind)).toEqual(['backup', 'alert', 'alert', 'alert', 'drill'])
+    expect(list[1].sub).toBe('cleared after 2 minutes')
+    const folded = foldRepeats(list, NOW)
+    expect(folded.filter((e) => e.kind === 'alert')).toHaveLength(1)
+    expect(folded.find((e) => e.kind === 'alert')!.count).toBe(3)
+  })
+  it('uses the last look, or the last 24 hours, as the away window', () => {
+    const s = base()
+    expect(awayEvents(s, NOW - 3 * 3600e3, NOW).list.map((e) => e.kind)).toEqual(['backup'])
+    expect(awayEvents(s, null, NOW).from).toBe(NOW - 24 * 3600e3)
+    expect(durationWords(90 * 60e3)).toBe('2 hours')
   })
 })

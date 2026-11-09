@@ -34,7 +34,7 @@ func healthy() *Snapshot {
 func TestHealthyIsAllNormal(t *testing.T) {
 	s := healthy()
 	Finalize(s, now)
-	if s.Status.Level != OK || s.Status.Headline != "All systems normal" || len(s.Status.Attention) != 0 {
+	if s.Status.Level != OK || s.Status.Headline != "Nothing needs you." || len(s.Status.Attention) != 0 || len(s.Status.Blind) != 0 {
 		t.Fatalf("status %+v", s.Status)
 	}
 	if s.Services[1].Level != Off {
@@ -62,7 +62,7 @@ func TestProblemsAreRankedAndLinked(t *testing.T) {
 	if s.Status.Attention[0].Level != Crit || s.Status.Attention[2].Level != Warn {
 		t.Fatalf("worst first: %+v", s.Status.Attention)
 	}
-	if s.Status.Headline != "3 things need attention" {
+	if s.Status.Headline != "3 things need you." {
 		t.Fatalf("headline %q", s.Status.Headline)
 	}
 	for _, a := range s.Status.Attention {
@@ -110,8 +110,68 @@ func TestDrillAndHeartbeat(t *testing.T) {
 	if s.Drill.Level != Crit || s.Timers[0].Level != Warn {
 		t.Fatalf("drill %s timer %s", s.Drill.Level, s.Timers[0].Level)
 	}
-	if s.Status.Headline != "Maintenance · 2 things need attention" {
+	if s.Status.Headline != "Maintenance mode. 2 things need you." {
 		t.Fatalf("headline %q", s.Status.Headline)
+	}
+}
+
+// Not knowing is never shown as fine: a source Cockpit cannot read, services it
+// cannot confirm and checks with nothing to go on keep the status off all clear.
+func TestBlindSpotsAreNotAllClear(t *testing.T) {
+	s := healthy()
+	s.Services = append(s.Services, Service{ID: "ha", Title: "Home Assistant", State: "unknown"}, Service{ID: "kuma", Title: "Uptime Kuma", State: "unknown"})
+	s.Sources = []Source{{Name: "services", OK: false, Error: "docker: dial unix /var/run/docker.sock: permission denied"}, {Name: "host", OK: true}}
+	Finalize(s, now)
+	if s.Status.Level != Unknown || len(s.Status.Attention) != 0 {
+		t.Fatalf("status %+v", s.Status)
+	}
+	if len(s.Status.Blind) != 1 || s.Status.Blind[0].Title != "Cockpit can't read Docker" {
+		t.Fatalf("one blind spot for the services area, got %+v", s.Status.Blind)
+	}
+	if s.Status.Blind[0].Detail != "2 services can't be confirmed: Home Assistant, Uptime Kuma." || !strings.Contains(s.Status.Blind[0].Evidence, "docker.sock") {
+		t.Fatalf("detail %q evidence %q", s.Status.Blind[0].Detail, s.Status.Blind[0].Evidence)
+	}
+	if s.Status.Headline != "Cockpit can't read Docker." {
+		t.Fatalf("headline %q", s.Status.Headline)
+	}
+
+	s = healthy()
+	s.Drill.Runs = nil
+	s.Drift = Drift{Result: "unknown", Error: "open /srv/homelab/_host/MANIFEST: no such file"}
+	Finalize(s, now)
+	if s.Status.Level != Unknown || len(s.Status.Blind) != 2 || s.Status.Headline != "Cockpit can't see 2 things." {
+		t.Fatalf("status %+v", s.Status)
+	}
+
+	// a real problem still leads; the blind spot is listed beside it
+	s = healthy()
+	s.Services[0].State = "down"
+	s.Services = append(s.Services, Service{ID: "ha", Title: "Home Assistant", State: "unknown"})
+	Finalize(s, now)
+	if s.Status.Level != Crit || s.Status.Headline != "Vaultwarden is down." || len(s.Status.Blind) != 1 {
+		t.Fatalf("status %+v", s.Status)
+	}
+}
+
+// One fault, one item: an alert about a service that is already down is folded
+// into that service, and failed pushes raise their own warning.
+func TestFoldingAndDelivery(t *testing.T) {
+	s := healthy()
+	s.Services[0].State = "down"
+	s.Alerts.Incidents = append(s.Alerts.Incidents, Incident{Key: "kuma-vault", Title: "Uptime Kuma: Vaultwarden is DOWN", Prio: "high", State: "open", Opened: now.Add(-4 * time.Minute)})
+	Finalize(s, now)
+	if len(s.Status.Attention) != 1 || s.Status.Attention[0].Area != "services" || !strings.Contains(s.Status.Attention[0].Evidence, "Uptime Kuma: Vaultwarden is DOWN") {
+		t.Fatalf("the alert should fold into the service: %+v", s.Status.Attention)
+	}
+	if len(s.Alerts.Open) != 1 || s.Alerts.Level != Crit {
+		t.Fatalf("the alert is still open on the alerts page: %+v", s.Alerts)
+	}
+
+	s = healthy()
+	s.Alerts.Incidents = append(s.Alerts.Incidents, Incident{Key: "health-dns", Title: "Homelab: dns needs attention", Prio: "default", State: "resolved", Opened: now.Add(-3 * time.Hour), Failed: 2})
+	Finalize(s, now)
+	if len(s.Status.Attention) != 1 || s.Status.Attention[0].Title != "Alerts may not reach your phone" || s.Status.Level != Warn {
+		t.Fatalf("failed pushes: %+v", s.Status)
 	}
 }
 

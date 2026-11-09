@@ -138,10 +138,14 @@ func Finalize(s *Snapshot, now time.Time) {
 	// alerts
 	s.Alerts.Level = OK
 	s.Alerts.Open = []Incident{}
+	failedSends := 0
 	for i := range s.Alerts.Incidents {
 		in := &s.Alerts.Incidents[i]
 		if in.Runbook == "" {
 			in.Runbook = RunbookFor(s.Runbooks, in.Key, "alerts")
+		}
+		if now.Sub(in.Opened) <= 24*time.Hour {
+			failedSends += in.Failed
 		}
 		if in.State != "open" {
 			continue
@@ -149,7 +153,18 @@ func Finalize(s *Snapshot, now time.Time) {
 		s.Alerts.Open = append(s.Alerts.Open, *in)
 		l := PrioLevel(in.Prio)
 		s.Alerts.Level = Worst(s.Alerts.Level, l)
+		// one fault, one item: an alert that names a service already down or
+		// degraded becomes evidence on that service instead of a second problem
+		if j := foldInto(att, s.Services, in.Title); j >= 0 {
+			att[j].Evidence = in.Title + ", open since " + Ago(now.Sub(in.Opened)) + " ago"
+			continue
+		}
 		add(l, "alerts", in.Key, in.Title, "Open since "+Ago(now.Sub(in.Opened))+" ago", in.Key)
+	}
+	if failedSends > 0 {
+		s.Alerts.Level = Worst(s.Alerts.Level, Warn)
+		add(Warn, "alerts", "delivery", "Alerts may not reach your phone",
+			fmt.Sprintf("%s failed to send in the last 24 hours.", plural(failedSends, "push", "pushes")), "alert-delivery", "alerts")
 	}
 
 	// timers
@@ -215,21 +230,152 @@ func Finalize(s *Snapshot, now time.Time) {
 
 	sort.SliceStable(att, func(i, j int) bool { return Rank(att[i].Level) > Rank(att[j].Level) })
 	s.Status.Attention = att
+	s.Status.Blind = blindSpots(s)
 	s.Status.Level = OK
 	for _, a := range att {
 		s.Status.Level = Worst(s.Status.Level, a.Level)
 	}
-	switch n := len(att); {
-	case n == 0:
-		s.Status.Headline = "All systems normal"
-	case n == 1:
-		s.Status.Headline = "1 thing needs attention"
-	default:
-		s.Status.Headline = fmt.Sprintf("%d things need attention", n)
+	// not knowing is never shown as fine
+	if s.Status.Level == OK && len(s.Status.Blind) > 0 {
+		s.Status.Level = Unknown
 	}
+	s.Status.Headline = headline(att, s.Status.Blind)
 	if s.Maintenance != nil {
-		s.Status.Headline = "Maintenance · " + strings.ToLower(s.Status.Headline[:1]) + s.Status.Headline[1:]
+		s.Status.Headline = "Maintenance mode. " + s.Status.Headline
 	}
+}
+
+// headline says the state of the house in one plain sentence.
+func headline(att, blind []Attention) string {
+	switch n := len(att); {
+	case n == 0 && len(blind) == 0:
+		return "Nothing needs you."
+	case n == 0 && len(blind) == 1:
+		return sentence(blind[0].Title)
+	case n == 0:
+		return fmt.Sprintf("Cockpit can't see %d things.", len(blind))
+	case n == 1:
+		return sentence(att[0].Title)
+	}
+	return fmt.Sprintf("%d things need you.", len(att))
+}
+
+func sentence(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.HasSuffix(s, ".") || strings.HasSuffix(s, "?") || strings.HasSuffix(s, "!") {
+		return s
+	}
+	return s + "."
+}
+
+// sourceTitles names, in plain words, what Cockpit loses when a source fails.
+var sourceTitles = map[string][3]string{
+	"services": {"services", "Cockpit can't read the service states", "Services can't be confirmed."},
+	"timers":   {"timers", "Cockpit can't read the timers", "Scheduled jobs can't be confirmed."},
+	"journal":  {"backups", "Cockpit can't read the journal", "Backup runs, restore drills and the heartbeat can't be confirmed."},
+	"backups":  {"backups", "Cockpit can't read the backup status", "Backups can't be confirmed as verified."},
+	"alerts":   {"alerts", "Cockpit can't read the alert history", "Open alerts can't be confirmed."},
+	"drift":    {"drift", "Cockpit can't check for config drift", "The live files can't be compared with the repo."},
+	"host":     {"host", "Cockpit can't read the host", "Temperature, memory and disks can't be confirmed."},
+	"runbooks": {"runbooks", "Cockpit can't copy the checklists", "Checklists may be out of date."},
+}
+
+// blindSpots lists what Cockpit cannot see: every source that failed, every
+// service it cannot confirm, and the checks that have nothing to go on yet.
+func blindSpots(s *Snapshot) []Attention {
+	out := []Attention{}
+	byArea := map[string]int{}
+	// put adds a blind spot, or folds it into the one already there for the area.
+	// A failing source names the spot (its title wins); the raw error is kept as
+	// evidence for the System page, the plain sentence is the detail.
+	put := func(area, ref, title, detail, evidence string, names bool) {
+		if i, ok := byArea[area]; ok {
+			if names {
+				out[i].Title, out[i].Ref = title, ref
+			}
+			if detail != "" && !strings.Contains(out[i].Detail, detail) {
+				out[i].Detail = strings.TrimSpace(detail + " " + out[i].Detail)
+			}
+			if evidence != "" {
+				out[i].Evidence = evidence
+			}
+			return
+		}
+		byArea[area] = len(out)
+		out = append(out, Attention{Level: Unknown, Area: area, Ref: ref, Title: title, Detail: detail, Evidence: evidence})
+	}
+	var unknown []string
+	for _, sv := range s.Services {
+		if sv.State == "unknown" {
+			unknown = append(unknown, sv.Title)
+		}
+	}
+	if n := len(unknown); n > 0 {
+		names := strings.Join(unknown, ", ")
+		if n > 3 {
+			names = strings.Join(unknown[:3], ", ") + fmt.Sprintf(" and %d more", n-3)
+		}
+		put("services", "unknown", fmt.Sprintf("Cockpit can't confirm %s", plural(n, "service", "services")),
+			fmt.Sprintf("%s can't be confirmed: %s.", plural(n, "service", "services"), names), "", false)
+	}
+	for _, src := range s.Sources {
+		if src.OK {
+			continue
+		}
+		t, ok := sourceTitles[src.Name]
+		if !ok {
+			t = [3]string{src.Name, "Cockpit can't read " + src.Name, ""}
+		}
+		title := t[1]
+		if src.Name == "services" && strings.Contains(strings.ToLower(src.Error), "docker") {
+			title = "Cockpit can't read Docker"
+		}
+		detail := t[2]
+		if _, has := byArea[t[0]]; has {
+			detail = "" // the area's own sentence already says what can't be confirmed
+		}
+		put(t[0], "source-"+src.Name, title, detail, firstLine(src.Error), true)
+	}
+	if s.Drift.Result != "clean" && s.Drift.Result != "drift" {
+		put("drift", "manifest", "Cockpit can't check for config drift", "The live files can't be compared with the repo.", firstLine(s.Drift.Error), false)
+	}
+	if s.Heartbeat.Unit != "" && s.Heartbeat.Last == nil {
+		put("heartbeat", "none", "No heartbeat in the journal yet", "The dead-man switch has not pinged since the journal begins.", "", false)
+	}
+	if len(s.Drill.Runs) == 0 {
+		put("drill", "none", "No restore drill in the journal yet", "The drill runs weekly; until one has run, no backup has been proven restorable.", "", false)
+	}
+	return out
+}
+
+func firstLine(s string) string {
+	l, _, _ := strings.Cut(strings.TrimSpace(s), "\n")
+	return l
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
+}
+
+// foldInto returns the index of the service item an alert is about, or -1.
+// An alert is about a service when its title names the service and that
+// service is already down or degraded.
+func foldInto(att []Attention, svcs []Service, alertTitle string) int {
+	t := strings.ToLower(alertTitle)
+	for j, a := range att {
+		if a.Area != "services" {
+			continue
+		}
+		for _, sv := range svcs {
+			if sv.ID == a.Ref && sv.Title != "" && strings.Contains(t, strings.ToLower(sv.Title)) {
+				return j
+			}
+		}
+	}
+	return -1
 }
 
 func stateLevel(state string) string {

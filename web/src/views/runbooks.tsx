@@ -3,7 +3,7 @@ import type { ViewProps } from '../app'
 import { getRunbook } from '../api'
 import { outline, renderMarkdown, safeHref } from '../markdown'
 import { PageHead } from '../components/ui'
-import { IconExternal, IconRunbooks } from '../components/icons'
+import { IconChecklist, IconExternal } from '../components/icons'
 
 // Ticks are kept on this device for 12 hours: long enough for an incident,
 // short enough that tomorrow's run starts clean.
@@ -115,20 +115,20 @@ export function RunbooksView({ snap, route }: ViewProps) {
 
   return (
     <div>
-      <PageHead title="Checklists" sub="Your runbooks, read as checklists. Tap each step as you do it; ticks stay on this device for 12 hours." />
+      <PageHead title={current?.title ?? 'Checklists'} sub="Tap each step as you do it. Ticks stay on this device for 12 hours." />
       {list.length === 0 ? (
-        <div class="empty">No runbooks configured. Add [runbook:name] blocks to cockpit.conf.</div>
+        <div class="empty">No checklists configured. Add [runbook:name] blocks to cockpit.conf.</div>
       ) : (
         <div class="rb-layout">
           <nav class="rb-nav">
             {list.map((r) =>
               r.local ? (
                 <a key={r.id} href={`#/runbooks/${encodeURIComponent(r.id)}`} class={r.id === id ? 'on' : ''}>
-                  <IconRunbooks size={15} /> {r.title}
+                  <IconChecklist size={16} /> {r.title}
                 </a>
               ) : (
                 <a key={r.id} href={safeHref(r.url ?? '') ?? undefined} target="_blank" rel="noopener noreferrer">
-                  <IconExternal size={15} /> {r.title}
+                  <IconExternal size={16} /> {r.title}
                 </a>
               ),
             )}
@@ -139,7 +139,7 @@ export function RunbooksView({ snap, route }: ViewProps) {
             {steps > 0 && (
               <div class="rb-progress">
                 <span class={`rb-count${ticked === steps ? ' all' : ''}`}>
-                  {ticked === steps ? 'CHECKLIST COMPLETE' : `${ticked} OF ${steps} STEPS DONE`}
+                  {ticked === steps ? 'Checklist complete' : `${ticked} of ${steps} steps done`}
                 </span>
                 <span class="rb-bar"><i style={{ width: `${(ticked / steps) * 100}%` }} /></span>
                 {ticked > 0 && <button type="button" class="linklike" onClick={reset}>Reset</button>}

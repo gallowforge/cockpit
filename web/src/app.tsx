@@ -1,22 +1,19 @@
 import { Component, type ComponentChildren } from 'preact'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { Level, Session, Snapshot } from './types'
-import { follow, getSession, logout, type StreamState } from './api'
+import { follow, getSession, logout, readCachedSnap, type StreamState } from './api'
 import { normalizeSnap, serverNow, servicesLevel, worst } from './derive'
 import { ago } from './format'
-import {
-  IconAlerts, IconBackups, IconDrift, IconLogout, IconOverview, IconRunbooks, IconServices, IconTimers, Mark,
-} from './components/icons'
-import { Dot } from './components/ui'
+import { IconBackups, IconHistory, IconLogout, IconNow, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
+import { Glyph } from './components/ui'
 import { Login } from './views/login'
 import { Palette, PAGES } from './components/palette'
 import { readLastLook, writeLastLook } from './lastlook'
-import { Overview } from './views/overview'
+import { Now } from './views/now'
 import { Services } from './views/services'
 import { BackupsView } from './views/backups'
-import { AlertsView } from './views/alerts'
-import { TimersView } from './views/timers'
-import { DriftView } from './views/drift'
+import { HistoryView } from './views/history'
+import { SystemView } from './views/system'
 import { RunbooksView } from './views/runbooks'
 
 export interface ViewProps {
@@ -24,17 +21,19 @@ export interface ViewProps {
   now: number
   route: string[]
   since?: number | null
+  online?: boolean
 }
 
 const NAV = [
-  { id: '', label: 'Overview', icon: IconOverview },
+  { id: '', label: 'Now', icon: IconNow },
   { id: 'services', label: 'Services', icon: IconServices },
   { id: 'backups', label: 'Backups', icon: IconBackups },
-  { id: 'alerts', label: 'Alerts', icon: IconAlerts },
-  { id: 'timers', label: 'Timers', icon: IconTimers },
-  { id: 'drift', label: 'Drift', icon: IconDrift },
-  { id: 'runbooks', label: 'Checklists', icon: IconRunbooks },
+  { id: 'history', label: 'History', icon: IconHistory },
+  { id: 'system', label: 'System', icon: IconSystem },
 ] as const
+
+// Addresses from the earlier layout still land in the right place.
+const MOVED: Record<string, string> = { alerts: 'history', timers: 'system', drift: 'system' }
 
 function useRoute(): string[] {
   const parse = () => location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
@@ -51,23 +50,20 @@ function useRoute(): string[] {
 }
 
 function areaLevels(s: Snapshot): Record<string, Level> {
+  const blind = s.status.blind ?? []
+  const has = (a: string[]) => blind.some((b) => a.includes(b.area))
+  const lv = (l: Level, areas: string[]) => (l === 'ok' && has(areas) ? 'unknown' : l)
   return {
     '': s.status.level,
-    services: servicesLevel(s.services),
-    backups: worst([s.backups.level, s.drill.level === 'unknown' ? 'ok' : s.drill.level]),
-    alerts: s.alerts.level,
-    timers: worst(s.timers.filter((t) => t.highlight).map((t) => t.level)),
-    drift: worst([s.drift.level === 'info' ? 'ok' : s.drift.level, s.heartbeat.level === 'off' ? 'ok' : s.heartbeat.level]),
-    runbooks: 'ok',
+    services: lv(servicesLevel(s.services), ['services']),
+    backups: lv(worst([s.backups.level, s.drill.level === 'unknown' ? 'ok' : s.drill.level]), ['backups', 'drill']),
+    history: s.alerts.level,
+    system: lv(worst([s.host.level, s.drift.level === 'info' ? 'ok' : s.drift.level, s.heartbeat.level === 'off' ? 'ok' : s.heartbeat.level, s.health.level,
+      worst(s.timers.filter((t) => t.highlight).map((t) => t.level))]), ['drift', 'heartbeat', 'timers', 'host', 'runbooks']),
   }
 }
 
-/** The attitude indicator flies level when all is well and banks when it is not. */
-function bankFor(l: Level) {
-  return l === 'crit' ? -34 : l === 'warn' ? -20 : -6
-}
-
-/** One broken page must not blank the whole dashboard. */
+/** One broken page must not blank the whole app. */
 class Guard extends Component<{ page: string; children: ComponentChildren }, { err: string | null }> {
   state = { err: null as string | null }
   static getDerivedStateFromError(e: unknown) {
@@ -78,27 +74,49 @@ class Guard extends Component<{ page: string; children: ComponentChildren }, { e
   }
   render() {
     if (this.state.err) {
-      return <div class="empty">This page hit an error and could not be drawn: <code>{this.state.err}</code></div>
+      return <div class="empty">This page hit an error and could not be drawn. The rest of Cockpit still works. <code>{this.state.err}</code></div>
     }
     return this.props.children
   }
 }
 
+function useOnline(): boolean {
+  const [on, setOn] = useState(typeof navigator === 'undefined' ? true : navigator.onLine !== false)
+  useEffect(() => {
+    const up = () => setOn(true)
+    const down = () => setOn(false)
+    addEventListener('online', up)
+    addEventListener('offline', down)
+    return () => {
+      removeEventListener('online', up)
+      removeEventListener('offline', down)
+    }
+  }, [])
+  return on
+}
+
 export function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionErr, setSessionErr] = useState('')
-  const [snap, setSnap] = useState<Snapshot | null>(null)
-  const [received, setReceived] = useState(0)
+  const shot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot')
+  // open on the last known state at once, clearly marked by its time, while the stream connects
+  const [snap, setSnap] = useState<Snapshot | null>(() => {
+    if (shot) return null
+    const c = readCachedSnap()
+    return c ? normalizeSnap(c) : null
+  })
+  const [received, setReceived] = useState(() => performance.now())
+  const [fresh, setFresh] = useState(false)
   const [stream, setStream] = useState<StreamState>('connecting')
   const [tick, setTick] = useState(0)
   const route = useRoute()
+  const online = useOnline()
   const shotPalette = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('palette') : null
   const [palette, setPalette] = useState(shotPalette !== null)
   const paletteOpen = useRef(palette)
   paletteOpen.current = palette
   const [since, setSince] = useState<number | null | undefined>(undefined)
   const nowRef = useRef(Date.now())
-  const shot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot')
 
   const load = () =>
     getSession()
@@ -120,6 +138,7 @@ export function App() {
       (s) => {
         setSnap(normalizeSnap(s))
         setReceived(performance.now())
+        setFresh(true)
       },
       (st) => {
         setStream(st)
@@ -128,19 +147,18 @@ export function App() {
     )
   }, [authed])
 
-  // a 1 s heartbeat for countdowns and "updated 3s ago"
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000)
     return () => clearInterval(t)
   }, [])
 
-  const now = useMemo(() => serverNow(snap, received, performance.now()), [snap, received, tick])
+  // a cached snapshot is judged against the wall clock until a live one arrives
+  const now = useMemo(() => (fresh ? serverNow(snap, received, performance.now()) : Date.now()), [snap, received, tick, fresh])
   nowRef.current = now
 
-  // "since you last looked": read once the server clock is known, save when the deck is hidden
   useEffect(() => {
-    if (snap && since === undefined) setSince(readLastLook(now))
-  }, [snap])
+    if (snap && fresh && since === undefined) setSince(readLastLook(now))
+  }, [snap, fresh])
   useEffect(() => {
     if (shot) return
     const save = () => writeLastLook(nowRef.current)
@@ -156,7 +174,7 @@ export function App() {
     }
   }, [])
 
-  // keyboard: Cmd/Ctrl-K or / opens the command bar; G then a letter jumps to a page
+  // keyboard: Cmd/Ctrl-K or / opens search; G then a letter jumps to a page
   useEffect(() => {
     let g = 0
     const onKey = (e: KeyboardEvent) => {
@@ -165,7 +183,7 @@ export function App() {
         setPalette((p) => !p)
         return
       }
-      if (paletteOpen.current) { // the command bar has its own keys; Escape closes it from anywhere
+      if (paletteOpen.current) {
         if (e.key === 'Escape') setPalette(false)
         return
       }
@@ -195,51 +213,56 @@ export function App() {
   useEffect(() => {
     if (!snap) return
     const lv = snap.status.level
-    const mark = lv === 'crit' ? '■ ' : lv === 'warn' ? '▲ ' : ''
+    const mark = lv === 'crit' ? '■ ' : lv === 'warn' ? '▲ ' : lv === 'unknown' ? '◌ ' : ''
     document.title = `${mark}${snap.title} · Cockpit`
+    document.documentElement.dataset.light = lv === 'crit' ? 'down' : lv === 'warn' ? 'attn' : lv === 'unknown' ? 'blind' : 'calm'
   }, [snap?.status.level, snap?.title])
 
-  if (sessionErr) {
+  const page0 = route[0] ?? ''
+  useEffect(() => {
+    if (MOVED[page0]) location.replace('#/' + MOVED[page0])
+  }, [page0])
+
+  if (sessionErr && !snap) {
     return (
       <div class="splash">
-        <Mark size={44} />
+        <Mark size={52} />
         <p>Cockpit cannot reach its server.</p>
         <p class="muted">{sessionErr}</p>
         <button class="btn" onClick={load}>Try again</button>
       </div>
     )
   }
-  if (!session) return <div class="splash"><Mark size={44} /></div>
-  if (!authed) return <Login session={session} onDone={load} />
+  if (!session && !snap) return <div class="splash"><Mark size={52} /></div>
+  if (session && !authed) return <Login session={session} onDone={load} />
   if (!snap) {
     return (
       <div class="splash">
-        <Mark size={44} />
-        <p>Waiting for the first snapshot…</p>
-        <p class="muted">The collector writes one every few seconds after it starts.</p>
+        <Mark size={52} />
+        <p>Waiting for the first snapshot.</p>
+        <p class="muted">The collector writes one every 20 seconds after it starts.</p>
       </div>
     )
   }
 
   const levels = areaLevels(snap)
-  const page = route[0] ?? ''
-  const props: ViewProps = { snap, now, route, since }
+  const page = MOVED[page0] ?? page0
+  const props: ViewProps = { snap, now, route, since, online }
   const age = now - Date.parse(snap.generated)
-  const stale = age > 90_000
+  const live = stream === 'live' && age <= 90_000 && online
+  const liveText = !online ? 'Offline' : live ? 'Live' : stream === 'reconnecting' ? 'Reconnecting' : age > 90_000 ? 'Lost sight' : 'Connecting'
+  const known = NAV.some((n) => n.id === page) || page === 'runbooks'
 
   return (
     <div class="shell">
-      <aside class="rail">
+      <aside class="side chrome">
         <a class="brand" href="#/">
-          <Mark size={30} bank={bankFor(snap.status.level)} />
-          <div>
-            <div class="brand-name">Cockpit</div>
-            <div class="brand-host">{snap.title}</div>
-          </div>
+          <Mark size={34} level={snap.status.level} />
+          <span><span class="brand-name">Cockpit</span><span class="brand-host">{snap.title}</span></span>
         </a>
         <button type="button" class="search" onClick={() => setPalette(true)}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
-          <span>Jump to…</span>
+          <IconSearch size={16} />
+          <span>Search or jump</span>
           <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} K</kbd>
         </button>
         <nav class="nav" aria-label="Sections">
@@ -247,78 +270,66 @@ export function App() {
             const Icon = n.icon
             const lv = levels[n.id]
             return (
-              <a key={n.id} href={`#/${n.id}`} class={`nav-item${page === n.id ? ' active' : ''}`} aria-current={page === n.id ? 'page' : undefined}>
-                <Icon size={18} />
-                <span class="nav-label">{n.label}</span>
-                {lv === 'warn' || lv === 'crit' ? <Dot level={lv} size={7} /> : null}
+              <a key={n.id} href={`#/${n.id}`} class={`nav-item${page === n.id ? ' on' : ''}`} aria-current={page === n.id ? 'page' : undefined}>
+                <Icon size={19} />
+                <span>{n.label}</span>
+                {lv === 'warn' || lv === 'crit' || lv === 'unknown' ? <Glyph level={lv} size={13} /> : null}
               </a>
             )
           })}
         </nav>
-        <div class="rail-foot">
-          <div class={`live ${stream === 'live' && !stale ? 'on' : 'off'}`}>
-            <Dot level={stream === 'live' && !stale ? 'ok' : 'warn'} pulse={stream === 'live' && !stale} size={7} />
-            {stream === 'live' && !stale ? 'Live' : stream === 'reconnecting' ? 'Reconnecting' : stale ? 'Stale' : 'Connecting'}
-            <span class="muted">updated {ago(snap.generated, now)}</span>
+        {snap.runbooks.some((r) => r.local) && (
+          <div class="side-list">
+            <span class="side-list-h">Checklists</span>
+            {snap.runbooks.filter((r) => r.local).slice(0, 6).map((r) => (
+              <a key={r.id} href={`#/runbooks/${encodeURIComponent(r.id)}`} class={page === 'runbooks' && route[1] === r.id ? 'on' : ''}>{r.title}</a>
+            ))}
           </div>
-          {snap.demo && <div class="demo-tag">Demo data</div>}
-          {session.auth === 'password' && (
-            <button class="linklike" onClick={() => logout().then(load)}>
-              <IconLogout size={15} /> Sign out
-            </button>
+        )}
+        <div class="side-foot">
+          <span class={`live${live ? ' on' : ''}`}><i />{liveText}<span class="muted"> · {ago(snap.generated, now)}</span></span>
+          {snap.demo && <span class="demo-tag">Demo data</span>}
+          {session?.auth === 'password' && (
+            <button class="linklike" onClick={() => logout().then(load)}><IconLogout size={15} /> Sign out</button>
           )}
-          <div class="version">{/^\d/.test(session.version) ? 'v' : ''}{session.version}</div>
+          {session && <span class="version">{/^\d/.test(session.version) ? 'v' : ''}{session.version}</span>}
         </div>
       </aside>
 
       <header class="topbar">
         <a class="brand" href="#/">
-          <Mark size={26} bank={bankFor(snap.status.level)} />
-          <div class="brand-name">{snap.title}</div>
+          <Mark size={30} level={snap.status.level} />
+          <span><span class="brand-name">{snap.title}</span><span class={`brand-live${live ? ' on' : ''}`}>{liveText}, {ago(snap.generated, now)}</span></span>
         </a>
-        <button type="button" class="top-search" aria-label="Jump to anything" onClick={() => setPalette(true)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
-        </button>
-        <span class={`top-status lv-${snap.status.level}`}>
-          <Dot level={stream === 'live' && !stale ? snap.status.level : 'warn'} pulse={stream === 'live'} size={7} />
-          {stream === 'live' && !stale ? (snap.status.level === 'ok' ? 'Normal' : snap.status.level === 'crit' ? 'Warning' : 'Caution') : 'Offline'}
-        </span>
+        <button type="button" class="icon-btn" aria-label="Search" onClick={() => setPalette(true)}><IconSearch size={20} /></button>
       </header>
-      <nav class="tabs" aria-label="Sections">
-        {NAV.map((n) => (
-          <a key={n.id} href={`#/${n.id}`} class={`tab${page === n.id ? ' active' : ''}`}>
-            {n.label}
-            {levels[n.id] === 'warn' || levels[n.id] === 'crit' ? <Dot level={levels[n.id]} size={6} /> : null}
-          </a>
-        ))}
-      </nav>
 
       <main class="main">
-        {stale && (
-          <div class="banner warn">
-            The collector has not written for {ago(snap.generated, now).replace(' ago', '')}. Showing the last known state.
-          </div>
-        )}
-        {snap.maintenance && (
-          <div class="banner info">Maintenance mode since {ago(snap.maintenance.since, now)}: watchdogs are paused.</div>
-        )}
         <Guard page={page}>
-        <div class="page" key={page}>
-        {page === '' && <Overview {...props} />}
-        {page === 'services' && <Services {...props} />}
-        {page === 'backups' && <BackupsView {...props} />}
-        {page === 'alerts' && <AlertsView {...props} />}
-        {page === 'timers' && <TimersView {...props} />}
-        {page === 'drift' && <DriftView {...props} />}
-        {page === 'runbooks' && <RunbooksView {...props} />}
-        </div>
-        </Guard>
-        {!NAV.some((n) => n.id === page) && (
-          <div class="empty">
-            Nothing here. <a href="#/">Back to the overview</a>
+          <div class="page" key={page + (route[1] ?? '')}>
+            {page === '' && <Now {...props} />}
+            {page === 'services' && <Services {...props} />}
+            {page === 'backups' && <BackupsView {...props} />}
+            {page === 'history' && <HistoryView {...props} />}
+            {page === 'system' && <SystemView {...props} />}
+            {page === 'runbooks' && <RunbooksView {...props} />}
+            {!known && <div class="empty">Nothing here. <a href="#/">Back to Now</a></div>}
           </div>
-        )}
+        </Guard>
       </main>
+
+      <nav class="tabbar chrome" aria-label="Sections">
+        {NAV.map((n) => {
+          const Icon = n.icon
+          const lv = levels[n.id]
+          return (
+            <a key={n.id} href={`#/${n.id}`} class={`tab${page === n.id ? ' on' : ''}`} aria-current={page === n.id ? 'page' : undefined}>
+              <span class="tab-icon"><Icon size={22} />{lv === 'warn' || lv === 'crit' || lv === 'unknown' ? <Glyph level={lv} size={11} /> : null}</span>
+              <span class="tab-label">{n.label}</span>
+            </a>
+          )
+        })}
+      </nav>
       {palette && <Palette snap={snap} initial={shotPalette ?? ''} onClose={() => setPalette(false)} />}
     </div>
   )

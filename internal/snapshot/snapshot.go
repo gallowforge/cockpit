@@ -75,6 +75,10 @@ type Status struct {
 	Level     string      `json:"level"`
 	Headline  string      `json:"headline"`
 	Attention []Attention `json:"attention"`
+	// Blind lists what Cockpit cannot see right now (a source it cannot read,
+	// services it cannot confirm). Never empty-by-accident: a blind spot keeps
+	// the status from reading all clear.
+	Blind []Attention `json:"blind"`
 }
 
 // Attention is one thing that needs a look, worst first.
@@ -84,6 +88,9 @@ type Attention struct {
 	Title   string `json:"title"`
 	Detail  string `json:"detail,omitempty"`
 	Ref     string `json:"ref,omitempty"` // id inside the area
+	// Evidence is a related signal folded into this item instead of being
+	// counted again (an alert about a service that is already down).
+	Evidence string `json:"evidence,omitempty"`
 	Runbook string `json:"runbook,omitempty"`
 }
 

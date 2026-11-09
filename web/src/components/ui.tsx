@@ -1,256 +1,176 @@
+// Small building blocks shared by every page. Backlit rules: healthy things
+// carry no colour; a status always has a shape and a word, never colour alone.
 import type { ComponentChildren } from 'preact'
-import { useMemo } from 'preact/hooks'
-import type { Level, Run } from '../types'
-import { IconArrow, IconBook } from './icons'
+import type { Level } from '../types'
 
-export const levelWord: Record<Level, string> = {
-  ok: 'OK', info: 'Info', warn: 'Attention', crit: 'Problem', unknown: 'Unknown', off: 'Off',
-}
+const WORD: Record<Level, string> = { ok: 'Fine', info: 'Note', warn: 'Needs you', crit: 'Down', unknown: "Can't see", off: 'Off' }
 
-export function Dot({ level, pulse, size = 8 }: { level: Level; pulse?: boolean; size?: number }) {
-  return <span class={`dot lv-${level}${pulse ? ' pulse' : ''}`} style={{ width: `${size}px`, height: `${size}px` }} />
-}
-
-export function Pill({ level, children }: { level: Level; children: ComponentChildren }) {
-  return <span class={`pill lv-${level}`}>{children}</span>
-}
-
-export function Card(props: {
-  title?: ComponentChildren
-  icon?: ComponentChildren
-  href?: string
-  action?: ComponentChildren
-  class?: string
-  children: ComponentChildren
-}) {
+/** The status shape: a disc with a bar when down, a ring with a mark when it
+ *  needs you, a dashed ring when Cockpit can't see, a hollow ring when off. */
+export function Glyph({ level, size = 14, title }: { level: Level; size?: number; title?: string }) {
+  const c = size / 2
+  const r = c - 1.5
+  const label = title ?? WORD[level]
   return (
-    <section class={`card ${props.class ?? ''}`}>
-      {(props.title || props.action) && (
-        <header class="card-head">
-          <h2>
-            {props.icon && <span class="card-icon">{props.icon}</span>}
-            {props.title}
-          </h2>
-          {props.action}
-          {props.href && (
-            <a class="card-more" href={props.href} aria-label="Open">
-              <IconArrow size={16} />
-            </a>
-          )}
-        </header>
+    <svg class={`glyph g-${level}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label}>
+      {level === 'crit' && (<><circle cx={c} cy={c} r={r} class="fill" /><rect x={c - r * 0.5} y={c - 0.9} width={r} height={1.8} rx={0.9} class="cut" /></>)}
+      {level === 'warn' && (<><circle cx={c} cy={c} r={r - 0.4} class="ring" /><rect x={c - 0.8} y={c - r * 0.48} width={1.6} height={r * 0.6} rx={0.8} class="mark" /><circle cx={c} cy={c + r * 0.42} r={0.95} class="mark" /></>)}
+      {level === 'unknown' && <circle cx={c} cy={c} r={r - 0.4} class="ring dashed" />}
+      {level === 'off' && <circle cx={c} cy={c} r={r - 0.6} class="ring faint" />}
+      {level === 'info' && <circle cx={c} cy={c} r={r * 0.42} class="fill" />}
+      {level === 'ok' && <path d={`M${c - r * 0.55} ${c + 0.2} l${r * 0.38} ${r * 0.38} l${r * 0.72} ${-r * 0.8}`} class="check" />}
+    </svg>
+  )
+}
+
+/** A status word, shown only when the thing is not fine. */
+export function StateWord({ level, children }: { level: Level; children?: ComponentChildren }) {
+  if (level === 'ok' && !children) return null
+  return <span class={`state s-${level}`}><Glyph level={level} size={12} />{children ?? WORD[level]}</span>
+}
+
+export function PageHead({ title, sub, aside }: { title: string; sub?: ComponentChildren; aside?: ComponentChildren }) {
+  return (
+    <header class="page-head">
+      <div>
+        <h1>{title}</h1>
+        {sub && <p class="page-sub">{sub}</p>}
+      </div>
+      {aside && <div class="page-aside">{aside}</div>}
+    </header>
+  )
+}
+
+export function Section({ title, aside, children, id, class: cls }: { title?: string; aside?: ComponentChildren; children: ComponentChildren; id?: string; class?: string }) {
+  return (
+    <section class={`section${cls ? ' ' + cls : ''}`} id={id}>
+      {(title || aside) && (
+        <div class="section-head">
+          {title && <h2>{title}</h2>}
+          {aside && <div class="section-aside">{aside}</div>}
+        </div>
       )}
-      {props.children}
+      {children}
     </section>
   )
 }
 
-export function Stat(props: { label: string; value: ComponentChildren; sub?: ComponentChildren; level?: Level }) {
+export function Figure({ value, unit, caption, level }: { value: ComponentChildren; unit?: string; caption?: ComponentChildren; level?: Level }) {
   return (
-    <div class="stat">
-      <div class="stat-label">{props.label}</div>
-      <div class={`stat-value ${props.level ? 'lv-text-' + props.level : ''}`}>{props.value}</div>
-      {props.sub && <div class="stat-sub">{props.sub}</div>}
+    <div class={`figure${level && level !== 'ok' ? ' f-' + level : ''}`}>
+      <div class="figure-v">{value}{unit && <span class="figure-u">{unit}</span>}</div>
+      {caption && <div class="figure-c">{caption}</div>}
     </div>
   )
 }
 
-const beatClass: Record<string, string> = { u: 'b-up', d: 'b-deg', x: 'b-down', o: 'b-off', '?': 'b-unk' }
-
-/** Kuma-style heartbeat bars: one bar per sample, newest on the right. */
-export function Beats({ beats, n = 45, height = 22 }: { beats: string; n?: number; height?: number }) {
-  const s = beats.slice(-n).padStart(n, ' ')
-  const w = 4
-  const gap = 2
-  return (
-    <svg class="beats" viewBox={`0 0 ${n * (w + gap) - gap} ${height}`} preserveAspectRatio="none" height={height} aria-hidden="true">
-      {Array.from(s).map((ch, i) => (
-        <rect
-          key={i}
-          x={i * (w + gap)}
-          y={0}
-          width={w}
-          height={height}
-          rx={1.5}
-          class={ch === ' ' ? 'b-empty' : beatClass[ch] ?? 'b-unk'}
-        />
-      ))}
-    </svg>
-  )
-}
-
-/** A latency sparkline; negative values are failed probes and show as gaps with a red tick. */
-export function Sparkline({ values, height = 28, width = 120, cls = '' }: { values: number[]; height?: number; width?: number; cls?: string }) {
-  const { path, area, fails } = useMemo(() => {
-    const ok = values.filter((v) => v >= 0)
-    if (ok.length < 2) return { path: '', area: '', fails: [] as number[] }
-    const sorted = ok.slice().sort((a, b) => a - b)
-    const hi = Math.max(sorted[Math.floor(sorted.length * 0.95)] * 1.15, 1)
-    const step = width / Math.max(values.length - 1, 1)
-    let d = ''
-    let a = ''
-    let pen = false
-    const f: number[] = []
-    values.forEach((v, i) => {
-      const x = i * step
-      if (v < 0) {
-        f.push(x)
-        pen = false
-        return
-      }
-      const y = height - 2 - (Math.min(v, hi) / hi) * (height - 4)
-      d += `${pen ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)} `
-      pen = true
-    })
-    const firstX = 0
-    a = `${d} L${width} ${height} L${firstX} ${height} Z`
-    return { path: d, area: a, fails: f }
-  }, [values, height, width])
-  if (!path) return <svg class="spark" width={width} height={height} />
-  return (
-    <svg class={`spark ${cls}`} viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" aria-hidden="true">
-      <path d={area} class="spark-area" />
-      <path d={path} class="spark-line" vector-effect="non-scaling-stroke" />
-      {fails.map((x) => (
-        <rect key={x} x={x - 1} y={0} width={2} height={height} class="spark-fail" />
-      ))}
-    </svg>
-  )
-}
-
-/** A ring gauge, 0..100. */
-export function Ring(props: { value: number; level?: Level; size?: number; stroke?: number; children?: ComponentChildren; label?: string }) {
-  const size = props.size ?? 76
-  const sw = props.stroke ?? 7
-  const r = (size - sw) / 2
-  const c = 2 * Math.PI * r
-  const arc = 0.75 // a 270° instrument dial
-  const v = Math.max(0, Math.min(100, props.value))
-  return (
-    <div class="ring" style={{ width: `${size}px`, height: `${size}px` }} aria-label={props.label}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle
-          cx={size / 2} cy={size / 2} r={r} class="ring-track" stroke-width={sw}
-          stroke-dasharray={`${c * arc} ${c}`} transform={`rotate(135 ${size / 2} ${size / 2})`}
-        />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} class={`ring-value lv-stroke-${props.level ?? 'ok'}`} stroke-width={sw}
-          stroke-dasharray={`${(c * arc * v) / 100} ${c}`} transform={`rotate(135 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <div class="ring-center">{props.children}</div>
-    </div>
-  )
-}
-
-/** One square per run, oldest left. */
-export function RunStrip({ runs, n = 30, onPick }: { runs: Run[]; n?: number; onPick?: (r: Run) => void }) {
-  const list = runs.slice(0, n).reverse()
-  return (
-    <div class="runstrip">
-      {Array.from({ length: Math.max(0, n - list.length) }, (_, i) => <span key={'e' + i} class="run run-empty" />)}
-      {list.map((r) => (
-        <button
-          key={r.start}
-          type="button"
-          class={`run run-${r.result}`}
-          title={`${new Date(r.start).toLocaleString()} · ${r.result}${r.summary ? ' · ' + r.summary : ''}`}
-          onClick={() => onPick?.(r)}
-        />
-      ))}
-    </div>
-  )
-}
-
-/** Thin horizontal meter. */
-export function Meter({ value, level = 'ok' }: { value: number; level?: Level }) {
-  return (
-    <div class="meter">
-      <div class={`meter-fill lv-bg-${level}`} style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
-    </div>
-  )
-}
-
-export function RunbookLink({ id, title }: { id?: string; title?: string }) {
-  if (!id) return null
-  return (
-    <a class="rb-link" href={`#/runbooks/${encodeURIComponent(id)}`}>
-      <IconBook size={14} />
-      {title ?? 'Checklist'}
-    </a>
-  )
+export function Btn({ href, children, primary, external, onClick }: { href?: string; children: ComponentChildren; primary?: boolean; external?: boolean; onClick?: () => void }) {
+  const cls = `btn${primary ? ' btn-primary' : ''}`
+  if (href) {
+    return (
+      <a class={cls} href={href} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+        {children}
+      </a>
+    )
+  }
+  return <button type="button" class={cls} onClick={onClick}>{children}</button>
 }
 
 export function Empty({ children }: { children: ComponentChildren }) {
   return <div class="empty">{children}</div>
 }
 
-export function PageHead(props: { title: string; sub?: ComponentChildren; right?: ComponentChildren }) {
+/** One cell per sample: healthy cells are faint neutral ticks, so a good
+ *  stretch is calm and an outage is a short bright bar where it happened. */
+export function Strip({ beats, label }: { beats: string; label?: string }) {
+  const cells = beats.split('')
+  const up = cells.filter((c) => c === 'u').length
+  const counted = cells.filter((c) => c !== 'o' && c !== '?').length
+  const sr = label ?? `${counted ? Math.round((up / counted) * 1000) / 10 : 0}% up over ${cells.length} checks`
   return (
-    <div class="page-head">
-      <div>
-        <h1>{props.title}</h1>
-        {props.sub && <p class="page-sub">{props.sub}</p>}
-      </div>
-      {props.right}
-    </div>
+    <span class="strip" role="img" aria-label={sr}>
+      {cells.map((c, i) => <i key={i} class={`c-${c === 'u' ? 'u' : c === 'd' ? 'd' : c === 'x' ? 'x' : c === '?' ? 'q' : 'o'}`} />)}
+    </span>
   )
 }
 
-// ---- glass-cockpit instruments ---------------------------------------------
-
-const DEG = Math.PI / 180
-const SWEEP = 240
-
-function polar(c: number, r: number, v: number) {
-  const a = (150 + (SWEEP * Math.max(0, Math.min(100, v))) / 100) * DEG
-  return [c + r * Math.cos(a), c + r * Math.sin(a)]
+/** Worst state per sample across many beat strings (for the Services tile). */
+export function mergeBeats(list: string[]): string {
+  const n = Math.max(0, ...list.map((b) => b.length))
+  const rank: Record<string, number> = { o: 0, u: 1, '?': 2, d: 3, x: 4 }
+  let out = ''
+  for (let i = 0; i < n; i++) {
+    let w = 'o'
+    for (const b of list) {
+      const c = b[b.length - n + i] ?? 'o'
+      if ((rank[c] ?? 0) > (rank[w] ?? 0)) w = c
+    }
+    out += w
+  }
+  return out
 }
 
-function arc(c: number, r: number, v1: number, v2: number) {
-  const [x1, y1] = polar(c, r, v1)
-  const [x2, y2] = polar(c, r, Math.max(v1 + 0.01, v2))
-  const large = ((v2 - v1) * SWEEP) / 100 > 180 ? 1 : 0
-  return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`
-}
-
-/** A head-up-display gauge: a thin arc, the value, a caution zone. value is 0..100.
- * The arc and its dot glide to a new value instead of jumping. */
-export function Gauge(props: { value: number; readout: string; unit?: string; label: string; caution?: number; level?: Level }) {
-  const s = 96
-  const c = s / 2
-  const r = 40
-  const v = Math.max(0, Math.min(100, props.value))
-  const circ = 2 * Math.PI * r
-  const sweep = (circ * SWEEP) / 360
-  const rot = `rotate(150 ${c} ${c})`
+/** A line over values; negative values are gaps (a failed probe). */
+export function Spark({ values, w = 120, h = 28, level }: { values: number[]; w?: number; h?: number; level?: Level }) {
+  const ok = values.filter((v) => v >= 0)
+  if (ok.length < 2) return <svg class="spark" width={w} height={h} aria-hidden="true" />
+  const max = Math.max(...ok) || 1
+  const min = Math.min(...ok)
+  const span = max - min || max || 1
+  const step = w / Math.max(1, values.length - 1)
+  let d = ''
+  let pen = false
+  values.forEach((v, i) => {
+    if (v < 0) {
+      pen = false
+      return
+    }
+    const x = i * step
+    const y = h - 2 - ((v - min) / span) * (h - 4)
+    d += `${pen ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`
+    pen = true
+  })
   return (
-    <div class={`gauge lv-${props.level ?? 'ok'}`} role="img" aria-label={`${props.label} ${props.readout}${props.unit ?? ''}`}>
-      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-        <circle cx={c} cy={c} r={r} class="g-track" stroke-dasharray={`${sweep} ${circ}`} transform={rot} />
-        {props.caution !== undefined && <path d={arc(c, r, props.caution, 100)} class="g-zone" />}
-        <circle cx={c} cy={c} r={r} class="g-value" stroke-dasharray={`${(sweep * v) / 100} ${circ}`} transform={rot} />
-        <g class="g-needle" style={{ transform: `rotate(${150 + (SWEEP * v) / 100}deg)`, transformOrigin: `${c}px ${c}px` }}>
-          <circle cx={c + r} cy={c} r={3.2} class="g-dot" />
-        </g>
-      </svg>
-      <div class="g-read"><b key={props.readout} class="flash">{props.readout}</b>{props.unit && <small>{props.unit}</small>}</div>
-      <div class="g-label">{props.label}</div>
-    </div>
+    <svg class={`spark${level && level !== 'ok' ? ' sp-' + level : ''}`} width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={d} />
+    </svg>
   )
 }
 
-/** One cell of the status strip: quiet when normal, lit when it needs you. */
-export function Lamp(props: { legend: string; value: string; level: Level; href?: string; test?: boolean }) {
-  const lit = props.test ? 'test' : props.level === 'crit' ? 'warning' : props.level === 'warn' ? 'caution' : props.level === 'unknown' ? 'unknown' : 'dark'
-  const body = (
-    <>
-      <span class="lamp-legend"><i class="lamp-led" />{props.legend}</span>
-      <span class="lamp-value flash" key={props.value}>{props.value}</span>
-    </>
+/** Run dots (nightly backups, weekly drills): tap one to see what it was. */
+export function Dots({ items, selected, onPick }: { items: { level: Level; label: string }[]; selected?: number; onPick?: (i: number) => void }) {
+  return (
+    <span class="dots" role={onPick ? 'group' : 'list'}>
+      {items.map((it, i) =>
+        onPick ? (
+          <button type="button" key={i} class={`dot d-${it.level}${selected === i ? ' on' : ''}`} aria-label={it.label} aria-pressed={selected === i} onClick={() => onPick(i)} />
+        ) : (
+          <i key={i} role="listitem" class={`dot d-${it.level}`} aria-label={it.label} />
+        ),
+      )}
+    </span>
   )
-  return props.href ? (
-    <a class={`lamp ${lit}`} href={props.href} aria-label={`${props.legend}: ${props.value}`}>{body}</a>
-  ) : (
-    <span class={`lamp ${lit}`}>{body}</span>
+}
+
+/** How full something is against its own limit (a backup's age against max age). */
+export function Meter({ pct, level }: { pct: number; level: Level }) {
+  return (
+    <span class={`meter m-${level}`} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+      <i style={{ width: `${Math.max(2, Math.min(100, pct))}%` }} />
+    </span>
+  )
+}
+
+/** Day bars (alerts per day), oldest first. */
+export function Bars({ bins, h = 32, mono }: { bins: { crit: number; warn: number; info: number; t: number }[]; h?: number; mono?: boolean }) {
+  const max = Math.max(1, ...bins.map((b) => b.crit + b.warn + b.info))
+  return (
+    <span class={`bars${mono ? ' mono' : ''}`} style={{ height: `${h}px` }} aria-hidden="true">
+      {bins.map((b) => {
+        const tot = b.crit + b.warn + b.info
+        const lv = b.crit ? 'crit' : b.warn ? 'warn' : tot ? 'info' : 'none'
+        return <i key={b.t} class={`b-${lv}`} style={{ height: `${tot ? Math.max(12, (tot / max) * 100) : 6}%` }} />
+      })}
+    </span>
   )
 }

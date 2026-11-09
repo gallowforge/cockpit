@@ -53,7 +53,7 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
       <form class="login-card" method="post" action="/api/login" onSubmit={submit} noValidate>
         <Mark size={48} />
         <h1>Cockpit</h1>
-        <p class="muted">Sign in to the flight deck of <b>{session.title}</b></p>
+        <p class="login-sub">for <b>{session.title}</b></p>
         <label class="field" for="username">
           <span>Username</span>
           <input ref={user} id="username" name="username" type="text" autocomplete="username"

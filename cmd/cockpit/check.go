@@ -58,8 +58,8 @@ func exitFor(level string) int {
 	switch level {
 	case snapshot.Crit:
 		return 2
-	case snapshot.Warn:
-		return 1
+	case snapshot.Warn, snapshot.Unknown:
+		return 1 // a blind spot is not all clear
 	}
 	return 0
 }
@@ -89,7 +89,7 @@ func (p painter) bold(s string) string { return p.c("1", s) }
 func report(w io.Writer, s *snapshot.Snapshot, wall time.Time, color bool) {
 	p := painter{color}
 	now := s.Generated
-	dot := map[string]string{snapshot.OK: "●", snapshot.Warn: "▲", snapshot.Crit: "■"}[s.Status.Level]
+	dot := map[string]string{snapshot.OK: "●", snapshot.Warn: "▲", snapshot.Crit: "■", snapshot.Unknown: "◌"}[s.Status.Level]
 	if dot == "" {
 		dot = "●"
 	}
@@ -104,8 +104,17 @@ func report(w io.Writer, s *snapshot.Snapshot, wall time.Time, color bool) {
 		if a.Detail != "" {
 			fmt.Fprintf(w, "        %s\n", p.dim(a.Detail))
 		}
+		if a.Evidence != "" {
+			fmt.Fprintf(w, "        %s\n", p.dim("also: "+a.Evidence))
+		}
 		if a.Runbook != "" {
 			fmt.Fprintf(w, "        %s\n", p.dim("runbook: "+runbookTitle(s, a.Runbook)))
+		}
+	}
+	for _, b := range s.Status.Blind {
+		fmt.Fprintf(w, "  %s  %s\n", p.dim("can't see"), b.Title)
+		if b.Detail != "" {
+			fmt.Fprintf(w, "        %s\n", p.dim(b.Detail))
 		}
 	}
 	fmt.Fprintln(w)
