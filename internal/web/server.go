@@ -231,7 +231,9 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "password missing"})
 		return
 	}
-	if !CheckPassword(s.opt.PasswordHash, req.Password) {
+	ok := CheckPassword(s.opt.PasswordHash, req.Password)
+	now = s.opt.Now() // the check itself takes a while: a back-off must start after it, not before
+	if !ok {
 		s.limit.fail(who, now)
 		s.opt.Log.Printf("login failed from %s", who)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "wrong password"})
