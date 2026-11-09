@@ -14,6 +14,7 @@ A new face, and three ways to get to the answer faster.
 Security:
 
 - Password checks run one at a time, so a burst of parallel logins cannot outrun the limiter.
+- A failed login's back-off starts after the password check. It used to be stamped with the time before the check, so on a machine where the check takes about a second, the first one-second wait had already lapsed.
 - The global login limit no longer counts clients that are already locked out, so one attacker cannot lock everybody else out.
 - The event stream re-checks the session on every keep-alive and stops when it has expired or the password changed.
 - When `cockpit serve` opens its own unix socket, it is created with mode 0660 from the start instead of being changed afterwards.
