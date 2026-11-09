@@ -1,5 +1,5 @@
 import { Component, type ComponentChildren } from 'preact'
-import { useEffect, useMemo, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { Level, Session, Snapshot } from './types'
 import { follow, getSession, logout, type StreamState } from './api'
 import { normalizeSnap, serverNow, servicesLevel, worst } from './derive'
@@ -9,6 +9,8 @@ import {
 } from './components/icons'
 import { Dot } from './components/ui'
 import { Login } from './views/login'
+import { Palette, PAGES } from './components/palette'
+import { readLastLook, writeLastLook } from './lastlook'
 import { Overview } from './views/overview'
 import { Services } from './views/services'
 import { BackupsView } from './views/backups'
@@ -21,6 +23,7 @@ export interface ViewProps {
   snap: Snapshot
   now: number
   route: string[]
+  since?: number | null
 }
 
 const NAV = [
@@ -30,7 +33,7 @@ const NAV = [
   { id: 'alerts', label: 'Alerts', icon: IconAlerts },
   { id: 'timers', label: 'Timers', icon: IconTimers },
   { id: 'drift', label: 'Drift', icon: IconDrift },
-  { id: 'runbooks', label: 'Runbooks', icon: IconRunbooks },
+  { id: 'runbooks', label: 'Checklists', icon: IconRunbooks },
 ] as const
 
 function useRoute(): string[] {
@@ -59,6 +62,11 @@ function areaLevels(s: Snapshot): Record<string, Level> {
   }
 }
 
+/** The attitude indicator flies level when all is well and banks when it is not. */
+function bankFor(l: Level) {
+  return l === 'crit' ? -34 : l === 'warn' ? -20 : -6
+}
+
 /** One broken page must not blank the whole dashboard. */
 class Guard extends Component<{ page: string; children: ComponentChildren }, { err: string | null }> {
   state = { err: null as string | null }
@@ -84,6 +92,13 @@ export function App() {
   const [stream, setStream] = useState<StreamState>('connecting')
   const [tick, setTick] = useState(0)
   const route = useRoute()
+  const shotPalette = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('palette') : null
+  const [palette, setPalette] = useState(shotPalette !== null)
+  const paletteOpen = useRef(palette)
+  paletteOpen.current = palette
+  const [since, setSince] = useState<number | null | undefined>(undefined)
+  const nowRef = useRef(Date.now())
+  const shot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot')
 
   const load = () =>
     getSession()
@@ -120,6 +135,62 @@ export function App() {
   }, [])
 
   const now = useMemo(() => serverNow(snap, received, performance.now()), [snap, received, tick])
+  nowRef.current = now
+
+  // "since you last looked": read once the server clock is known, save when the deck is hidden
+  useEffect(() => {
+    if (snap && since === undefined) setSince(readLastLook(now))
+  }, [snap])
+  useEffect(() => {
+    if (shot) return
+    const save = () => writeLastLook(nowRef.current)
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') save()
+      else setSince(readLastLook(nowRef.current))
+    }
+    document.addEventListener('visibilitychange', onVis)
+    addEventListener('pagehide', save)
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      removeEventListener('pagehide', save)
+    }
+  }, [])
+
+  // keyboard: Cmd/Ctrl-K or / opens the command bar; G then a letter jumps to a page
+  useEffect(() => {
+    let g = 0
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPalette((p) => !p)
+        return
+      }
+      if (paletteOpen.current) { // the command bar has its own keys; Escape closes it from anywhere
+        if (e.key === 'Escape') setPalette(false)
+        return
+      }
+      const t = e.target as HTMLElement
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === '/' || e.key === '?') {
+        e.preventDefault()
+        setPalette(true)
+        return
+      }
+      const k = e.key.toUpperCase()
+      if (k === 'G') {
+        g = Date.now()
+        return
+      }
+      if (Date.now() - g < 900) {
+        const page = PAGES.find((p) => p.key === k)
+        if (page) location.hash = '/' + page.id
+        g = 0
+      }
+    }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     if (!snap) return
@@ -152,7 +223,7 @@ export function App() {
 
   const levels = areaLevels(snap)
   const page = route[0] ?? ''
-  const props: ViewProps = { snap, now, route }
+  const props: ViewProps = { snap, now, route, since }
   const age = now - Date.parse(snap.generated)
   const stale = age > 90_000
 
@@ -160,12 +231,17 @@ export function App() {
     <div class="shell">
       <aside class="rail">
         <a class="brand" href="#/">
-          <Mark size={30} />
+          <Mark size={30} bank={bankFor(snap.status.level)} />
           <div>
             <div class="brand-name">Cockpit</div>
             <div class="brand-host">{snap.title}</div>
           </div>
         </a>
+        <button type="button" class="search" onClick={() => setPalette(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+          <span>Jump to…</span>
+          <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} K</kbd>
+        </button>
         <nav class="nav" aria-label="Sections">
           {NAV.map((n) => {
             const Icon = n.icon
@@ -183,7 +259,7 @@ export function App() {
           <div class={`live ${stream === 'live' && !stale ? 'on' : 'off'}`}>
             <Dot level={stream === 'live' && !stale ? 'ok' : 'warn'} pulse={stream === 'live' && !stale} size={7} />
             {stream === 'live' && !stale ? 'Live' : stream === 'reconnecting' ? 'Reconnecting' : stale ? 'Stale' : 'Connecting'}
-            <span class="muted"> · updated {ago(snap.generated, now)}</span>
+            <span class="muted">updated {ago(snap.generated, now)}</span>
           </div>
           {snap.demo && <div class="demo-tag">Demo data</div>}
           {session.auth === 'password' && (
@@ -197,12 +273,15 @@ export function App() {
 
       <header class="topbar">
         <a class="brand" href="#/">
-          <Mark size={26} />
+          <Mark size={26} bank={bankFor(snap.status.level)} />
           <div class="brand-name">{snap.title}</div>
         </a>
+        <button type="button" class="top-search" aria-label="Jump to anything" onClick={() => setPalette(true)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+        </button>
         <span class={`top-status lv-${snap.status.level}`}>
           <Dot level={stream === 'live' && !stale ? snap.status.level : 'warn'} pulse={stream === 'live'} size={7} />
-          {stream === 'live' && !stale ? (snap.status.level === 'ok' ? 'Normal' : snap.status.attention.length + ' to check') : 'Offline'}
+          {stream === 'live' && !stale ? (snap.status.level === 'ok' ? 'Normal' : snap.status.level === 'crit' ? 'Warning' : 'Caution') : 'Offline'}
         </span>
       </header>
       <nav class="tabs" aria-label="Sections">
@@ -224,6 +303,7 @@ export function App() {
           <div class="banner info">Maintenance mode since {ago(snap.maintenance.since, now)}: watchdogs are paused.</div>
         )}
         <Guard page={page}>
+        <div class="page" key={page}>
         {page === '' && <Overview {...props} />}
         {page === 'services' && <Services {...props} />}
         {page === 'backups' && <BackupsView {...props} />}
@@ -231,6 +311,7 @@ export function App() {
         {page === 'timers' && <TimersView {...props} />}
         {page === 'drift' && <DriftView {...props} />}
         {page === 'runbooks' && <RunbooksView {...props} />}
+        </div>
         </Guard>
         {!NAV.some((n) => n.id === page) && (
           <div class="empty">
@@ -238,6 +319,7 @@ export function App() {
           </div>
         )}
       </main>
+      {palette && <Palette snap={snap} initial={shotPalette ?? ''} onClose={() => setPalette(false)} />}
     </div>
   )
 }

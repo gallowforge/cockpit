@@ -13,6 +13,15 @@ func TestRedacts(t *testing.T) {
 		"manifest 3f2a9c1e-1b2c-4d5e-8f90-a1b2c3d4e5f6 moved": "3f2a9c1e",
 		"password: hunter2hunter2":                            "hunter2",
 		"key 0123456789abcdef0123456789abcdef0123 leaked":     "0123456789abcdef0123",
+		"fetch https://bob:hunter2@host failed":               "hunter2",
+		"fetch https://bob:hunter2@host/x failed":             "hunter2",
+		"postgres://u:pw123@db:5432/app refused":              "pw123",
+		"Authorization: Basic dXNlcjpwYXNzd29yZA== sent":      "dXNlcjpwYXNz",
+		`log {"token":"abcd1234","password":"hunter2"}`:       "hunter2",
+		"login --password hunter2 ok":                         "hunter2",
+		"pwd=hunter2":                                         "hunter2",
+		"aws AKIAIOSFODNN7EXAMPLE used":                       "AKIAIOSFODNN7EXAMPLE",
+		"jwt eyJhbGciOi.eyJzdWIiOi.c2lnbmF0dXJl here":         "eyJzdWIiOi",
 	}
 	for in, secret := range cases {
 		if out := String(in); strings.Contains(out, secret) {

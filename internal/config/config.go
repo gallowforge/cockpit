@@ -323,7 +323,11 @@ func FromINI(f *File) (*Config, error) {
 		errs = append(errs, "[cockpit] state must be an absolute path")
 	}
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("%d problem(s):\n  %s", len(errs), strings.Join(errs, "\n  "))
+		head := "1 problem"
+		if len(errs) > 1 {
+			head = fmt.Sprintf("%d problems", len(errs))
+		}
+		return nil, fmt.Errorf("%s:\n  %s", head, strings.Join(errs, "\n  "))
 	}
 	return c, nil
 }

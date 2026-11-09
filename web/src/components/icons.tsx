@@ -126,25 +126,29 @@ let markSeq = 0
 
 /** The Cockpit mark: an attitude indicator. Each instance gets its own ids,
  * so a hidden copy (the desktop rail on a phone) cannot blank a visible one. */
-export const Mark = ({ size = 28 }: { size?: number }) => {
+export const Mark = ({ size = 28, bank = -12 }: { size?: number; bank?: number }) => {
   const id = useMemo(() => `mk${++markSeq}`, [])
+  const horizon = { transform: `rotate(${bank}deg)`, transformOrigin: '16px 16px', transition: 'transform 1.2s cubic-bezier(.3,.7,.3,1)' }
   return (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
     <defs>
       <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#56c8ff" />
-        <stop offset="1" stop-color="#2a7fc4" />
+        <stop offset="0" stop-color="#0a1a2a" />
+        <stop offset="1" stop-color="#2a5d86" />
       </linearGradient>
       <clipPath id={`${id}-clip`}>
         <circle cx="16" cy="16" r="11" />
       </clipPath>
     </defs>
-    <circle cx="16" cy="16" r="14.5" fill="#0d1117" stroke="#56c8ff" stroke-opacity=".45" />
+    <circle cx="16" cy="16" r="14.5" fill="#05080c" stroke="#ffffff" stroke-opacity=".22" />
     <g clip-path={`url(#${id}-clip)`}>
-      <rect x="0" y="0" width="32" height="17.5" fill={`url(#${id}-sky)`} transform="rotate(-12 16 16)" />
-      <rect x="0" y="17.5" width="32" height="20" fill="#1a2330" transform="rotate(-12 16 16)" />
+      <g style={horizon}>
+        <rect x="-8" y="-8" width="48" height="25.5" fill={`url(#${id}-sky)`} />
+        <rect x="-8" y="17.5" width="48" height="24" fill="#16110c" />
+        <path d="M-8 17.5h48" stroke="#e8efe6" stroke-width=".8" />
+      </g>
     </g>
-    <path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#f4f7fb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#ffb22e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
   )
 }

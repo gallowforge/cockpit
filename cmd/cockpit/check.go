@@ -183,7 +183,7 @@ func report(w io.Writer, s *snapshot.Snapshot, wall time.Time, color bool) {
 	case "clean":
 		row(s.Drift.Level, "drift", "no drift"+p.dim(fmt.Sprintf(" · %d files tracked · %d uncommitted", s.Drift.Tracked, max(s.Drift.Uncommitted, 0))))
 	case "drift":
-		row(s.Drift.Level, "drift", fmt.Sprintf("%d file(s) differ", len(s.Drift.Files)+len(s.Drift.Disabled))+p.dim(fmt.Sprintf(" · %d files tracked", s.Drift.Tracked)))
+		row(s.Drift.Level, "drift", snapshot.FilesDiffer(len(s.Drift.Files)+len(s.Drift.Disabled))+p.dim(fmt.Sprintf(" · %d files tracked", s.Drift.Tracked)))
 	}
 	if hb := s.Heartbeat; hb.Unit != "" && hb.Last != nil {
 		text := fmt.Sprintf("%d/%d pings in 24 h", hb.Pings24h, hb.Runs24h) + p.dim(" · last "+snapshot.Ago(now.Sub(*hb.Last))+" ago")

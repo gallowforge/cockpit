@@ -17,7 +17,7 @@ build: ui
 
 test:
 	go vet ./...
-	go test -race ./...
+	CGO_ENABLED=1 go test -race ./...    # the race detector needs cgo; builds stay static
 	cd web && npm run typecheck && npm test
 
 e2e: build

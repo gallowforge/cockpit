@@ -1,6 +1,6 @@
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/hero-mobile.webp" />
-  <img src="docs/readme/hero.webp" width="100%" alt="Cockpit: your homelab, at a glance. A read-only dashboard for a self-hosted server, shown in a desktop browser with All systems normal, host gauges and twelve services with heartbeat bars, and on a phone." />
+  <img src="docs/readme/hero.webp" width="100%" alt="Cockpit. Level flight, nothing needs you. The flight deck of your homelab: a desktop browser shows a calm blue artificial horizon with All systems normal, four host gauges, eight status lamps all dark, and a line that tells you what happened in the 9 hours since you last looked." />
 </picture>
 
 <p align="center">
@@ -17,17 +17,17 @@
 
 <p align="center">
   <a href="https://github.com/gallowforge/cockpit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/gallowforge/cockpit/actions/workflows/ci.yml/badge.svg" /></a>
-  <img alt="97 tests passing" src="https://img.shields.io/badge/tests-97_passing-56c8ff?labelColor=0f1217" />
-  <img alt="0 Go dependencies" src="https://img.shields.io/badge/Go_dependencies-0-56c8ff?labelColor=0f1217" />
-  <img alt="Runs on a Raspberry Pi 5" src="https://img.shields.io/badge/runs_on-Raspberry_Pi_5-56c8ff?labelColor=0f1217" />
-  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-9aa1ad?labelColor=0f1217" /></a>
+  <img alt="108 tests passing" src="https://img.shields.io/badge/tests-108_passing-49e3a0?labelColor=04070b" />
+  <img alt="0 Go dependencies" src="https://img.shields.io/badge/Go_dependencies-0-a9d8ff?labelColor=04070b" />
+  <img alt="Runs on a Raspberry Pi 5" src="https://img.shields.io/badge/runs_on-Raspberry_Pi_5-a9d8ff?labelColor=04070b" />
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-7e8b9a?labelColor=04070b" /></a>
 </p>
 
 <br />
 
 A well-run homelab already knows a lot about itself. The backup job writes what it verified, a weekly drill restores the archives, a notifier remembers every alert, systemd runs the timers, and a repo says what every config file should contain. But each of those answers lives in a different log or state file, so checking "is the house OK?" means five commands over SSH, and a problem waits until somebody looks.
 
-**Cockpit puts all of it on one page.** It reads the state your scripts already write, adds live service health from the client's side, and shows the result as one calm dashboard on a phone or a desktop. It only reads: there is no button that changes anything. It is one 8 MB binary with the UI inside, and it runs on a Raspberry Pi with room to spare.
+**Cockpit puts all of it on one page.** It reads the state your scripts already write, adds live service health from the client's side, and shows the result as one calm flight deck on a phone or a desktop. While the horizon is level and blue, nothing needs you; when something does, it banks amber or red and lights the lamp for whatever needs you. It only reads: there is no button that changes anything. It is one 8 MB binary with the UI inside, and it runs on a Raspberry Pi with room to spare.
 
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/numbers-mobile.webp" />
@@ -44,14 +44,15 @@ Two small processes from the same binary, with a file in RAM between them. `cock
 
 ## Know in one glance if the house is fine
 
-- **One headline.** "All systems normal", or "2 things need attention" with each thing listed worst first: a stopped container, a stale backup, a failed run, an open alert, config drift, a withheld heartbeat.
-- **The fix is one tap away.** Every problem links to the runbook that covers it, matched by alert key, service or area.
-- **Live, without refreshing.** New snapshots arrive over Server-Sent Events as soon as the collector writes them; if the stream drops, the page falls back to polling and says so.
-- **The host at a glance.** CPU, memory, temperature and disk as instrument dials, plus the Raspberry Pi's throttle flags.
+- **One horizon, one headline.** Level and blue with "All systems normal", or banked amber or red with "1 caution" or "2 warnings", and each thing listed worst first: a stopped container, a stale backup, a failed run, an open alert, config drift, a withheld heartbeat.
+- **Eight lamps, dark until needed.** Services, backups, drill, alerts, timers, config drift, heartbeat and host sit in one strip; only the lamps that need you light, and the rest stay dark. A lamp-test button lights them all, as on a real panel.
+- **While you were away.** Come back after a night and one line tells you what happened: the backup ran at 05:00 and verified every set, and "Home Assistant is DOWN" came and went in 4 minutes. Your browser remembers when you last looked; the server stores nothing.
+- **The fix is one tap away.** Every problem links to the checklist that covers it, matched by alert key, service or area.
+- **Live, without refreshing.** New snapshots arrive over Server-Sent Events as soon as the collector writes them, and the gauges and numbers move to their new values; if the stream drops, the page falls back to polling and says so.
 
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/overview-mobile.webp" />
-  <img src="docs/readme/overview.webp" width="100%" alt="The Overview page: Needs attention, 1 thing needs attention, with a config drift in /etc/fail2ban/jail.local and a link to its runbook; CPU, memory, temperature and disk dials; twelve services with heartbeat bars and latencies; nine backup sets with freshness bars; a restore drill ring showing 9 of 9." />
+  <img src="docs/readme/overview.webp" width="100%" alt="The Overview with one caution: the horizon banks amber behind the CPU, memory, temperature and disk gauges, only the Config drift lamp is lit in a strip of eight, a line says that in the 3 hours since you last looked Home Assistant went down and came back in 4 minutes, and the caution row names the drifted file with a link to its checklist." />
 </picture>
 
 ## Every service, seen the way a client sees it
@@ -63,6 +64,17 @@ Two small processes from the same binary, with a file in RAM between them. `cock
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/services-mobile.webp" />
   <img src="docs/readme/services.webp" width="100%" alt="The Services page grouped into Network and Apps. Home Assistant is expanded: container image, 97.8% up over 90 samples, the probe to port 8443 answering 200, latency min, median and p95, and a certificate that expires in 58 days." />
+</picture>
+
+## One keystroke to anywhere
+
+- **A command bar for the whole deck.** Press <kbd>Ctrl</kbd> <kbd>K</kbd> or <kbd>/</kbd>, type three letters, and land on the service, the backup set, the alert, the timer or the checklist. The same box opens the app itself in a new tab.
+- **Pages by letter.** <kbd>G</kbd> then <kbd>B</kbd> goes to Backups, <kbd>G</kbd> <kbd>A</kbd> to Alerts, and so on; <kbd>?</kbd> opens the box with every page and its key.
+- **Empty box, useful list.** Before you type, it offers the pages and whatever needs you right now.
+
+<picture>
+  <source media="(max-width: 700px)" srcset="docs/readme/jump-mobile.webp" />
+  <img src="docs/readme/jump.webp" width="100%" alt="The command bar over the Overview: the query vau finds the Vaultwarden service, the vaultwarden backup set and a link to open the Vaultwarden app, with arrow keys to move and Enter to open." />
 </picture>
 
 ## Backups you can trust, with the proof beside them
@@ -103,12 +115,13 @@ Two small processes from the same binary, with a file in RAM between them. `cock
 ## Made for the phone in your hand
 
 - **Every page works on a phone,** from the attention list to the drill results, and the browser tab title shows the status while it sits in the background.
-- **Your own runbooks, rendered.** Point Cockpit at the Markdown files you already keep; it renders them with raw HTML escaped and unsafe links removed, and shows a short outline of each.
-- **Sign in once.** A password (PBKDF2, 600,000 rounds) and a signed session cookie that lasts a year; logins are rate-limited per client and in total.
+- **Add it to the home screen.** It installs as an app with its own icon and opens full screen, like the rest of your phone.
+- **Your runbooks become checklists.** Point Cockpit at the Markdown files you already keep; their numbered steps become boxes you tick as you work through a problem, kept on that device for 12 hours. Raw HTML is escaped and unsafe links are removed.
+- **Sign in once.** A password (PBKDF2, 600,000 rounds) and a signed session cookie that lasts a year; logins are checked one at a time and rate-limited per client and in total.
 
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/phones-mobile.webp" />
-  <img src="docs/readme/phones.webp" width="100%" alt="Three phones: the Overview with 2 things need attention, Home Assistant down and its runbook link; the When DNS stops runbook rendered from Markdown; and the Timers page counting down to each homelab job." />
+  <img src="docs/readme/phones.webp" width="100%" alt="Two phones. Something is down: the Overview with 2 warnings, the horizon banked red and the Services and Alerts lamps lit, worst first with its checklist. Run the checklist: the When DNS stops runbook rendered from Markdown, with its first step ticked." />
 </picture>
 
 ## Why it is different
@@ -121,7 +134,7 @@ Two small processes from the same binary, with a file in RAM between them. `cock
 | Config drift       | The repo compared with the live host, byte for byte        | Found when something breaks                    |
 | What it can do     | Read                                                       | Admin panels that can also stop things         |
 | Footprint          | One binary, 27 MB of RAM, no database                      | A metrics stack with its own storage           |
-| Answer when it breaks | A runbook link on the problem itself                    | Searching the wiki                             |
+| Answer when it breaks | A checklist on the problem itself                       | Searching the wiki                             |
 
 ## Quickstart
 
@@ -171,10 +184,11 @@ make e2e        # the end-to-end run under systemd (needs root, Docker)
 | Where do backups and drills come from? | The backup engine's per-set status files and archive directory, plus `journalctl` for each run's result and the drill's `PASS`/`FAIL` lines, grouped by invocation ID. |
 | How are alerts turned into incidents? | The notifier's log lines (`sent`, `suppressed`, `resolved`, `closed`) are grouped per key; its state directory decides what is still open, and an incident whose push has not repeated in 8 days is marked stale. |
 | How is drift found? | Every `_host/MANIFEST` entry is compared with the live file: content, mode and owner. Timers listed there must be enabled, and `git status --porcelain` counts uncommitted changes. |
-| How does the page stay live? | The web process watches `state.json` (one `stat` a second) and pushes each new version over Server-Sent Events, with a comment every 20 s for proxies. |
+| How does the page stay live? | The web process watches `state.json` (one `stat` a second) and pushes each new version over Server-Sent Events, with a comment every 20 s for proxies; each comment re-checks the session, so a signed-out browser stops receiving. |
+| How does it know what happened while you were away? | The browser keeps the time you last looked (only in `localStorage`); the line is built from the snapshot's own backup runs, drill and incidents since then. |
 | How is the web process isolated? | systemd socket activation, `DynamicUser`, `PrivateNetwork=yes`, no capabilities, a strict system-call filter; the password hash arrives as a `LoadCredential`. |
-| How is a login protected? | PBKDF2-SHA256 with 600,000 rounds, an HMAC-signed cookie (`HttpOnly`, `SameSite=Strict`, `Secure` behind TLS), JSON-only same-origin logins, and back-off after 5 failures. |
-| How are log lines kept safe to show? | Titles and summaries pass a redactor that drops URL paths, `key=value` secrets, bearer tokens, UUIDs and long hex or base64 runs. |
+| How is a login protected? | PBKDF2-SHA256 with 600,000 rounds, an HMAC-signed cookie (`HttpOnly`, `SameSite=Strict`, `Secure` behind TLS), JSON-only same-origin logins, one password check at a time so a burst cannot outrun the limiter, and back-off after 5 failures. |
+| How are log lines kept safe to show? | Titles and summaries pass a redactor that drops URL paths and credentials, `key=value` and `--password` secrets, bearer and basic tokens, JWTs, AWS keys, UUIDs and long hex or base64 runs. |
 | How do runbooks stay safe to render? | Raw HTML is escaped, only `http`, `https`, `mailto` and relative links survive, images become their alt text, and a strict Content-Security-Policy forbids inline script. |
 
 ## Quality
@@ -183,8 +197,8 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 
 | Check | What it covers |
 | --- | --- |
-| `go test -race` | 43 tests: config parsing and validation, journal and notifier parsing, incident building, the status rollup, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, rate limits, the event stream |
-| `vitest` and `tsc` | 21 tests: formatting, grouping, timers, the server clock, null-safe snapshots, Markdown escaping and link filtering |
+| `go test -race` | 46 tests: config parsing and validation, journal and notifier parsing, incident building, the status rollup, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits, the event stream |
+| `vitest` and `tsc` | 29 tests: formatting, grouping, timers, the server clock, null-safe snapshots, the command bar's search, the while-you-were-away line, Markdown escaping and link filtering |
 | [`scripts/e2e.sh`](scripts/e2e.sh) | 33 checks: the shipped units under real systemd with their sandbox, transient units writing real journal entries, real Docker containers, and Caddy in front for TLS, cookies and streaming |
 | `systemd-analyze verify` and `security` | The unit files are valid; exposure 2.4 for the collector, 0.5 for the web process |
 | `gofmt`, `go vet`, `shellcheck` | Formatting and static checks |
@@ -192,7 +206,7 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 
 <picture>
   <source media="(max-width: 700px)" srcset="docs/readme/proof-mobile.webp" />
-  <img src="docs/readme/proof.webp" width="100%" alt="Terminal output of sudo scripts/e2e.sh: 33 PASS lines in groups for the collector, services, backups and drill, alerts and drift, the web socket and Caddy, then systemd-analyze scores 2.4 OK and 0.5 SAFE, RESULT: 33 passed, 0 failed. Beside it cockpit check on demo data, and the figures measured on a Raspberry Pi 5." />
+  <img src="docs/readme/proof.webp" width="100%" alt="Terminal output of sudo scripts/e2e.sh: 33 PASS lines in groups for the collector, services, backups and drill, alerts and drift, the web socket and Caddy, then systemd-analyze scores 2.4 OK and 0.5 SAFE, RESULT: 33 passed, 0 failed. Beside it cockpit check on demo data with one config drift, and the figures measured on a Raspberry Pi 5: 18 MB and 9 MB of RAM, 1.0 s of CPU per 2 minutes, probes in 1 to 79 ms." />
 </picture>
 
 ## FAQ
@@ -206,7 +220,7 @@ No, and it is not related to it. The <a href="https://cockpit-project.org">Cockp
 <details>
 <summary><b>Can it restart a service or run a backup?</b></summary>
 <br />
-No, on purpose. The web process has no network, no capabilities and no write access, and the collector only reads. A dashboard you open on your phone on the sofa should not be able to break the house. The runbooks tell you what to run.
+No, on purpose. The web process has no network, no capabilities and no write access, and the collector only reads. A dashboard you open on your phone on the sofa should not be able to break the house. The checklists tell you what to run.
 </details>
 
 <details>
@@ -237,7 +251,7 @@ Reading a host's journal, systemd and Docker socket from inside a container mean
 
 Issues and pull requests are welcome, especially a new source (another backup tool's status, another notifier) or a check that would have caught a real problem earlier. Run `make test` before opening one; CI also runs the end-to-end script. Demo data must stay obviously fake: `example-tailnet.ts.net`, placeholder hosts, no real addresses.
 
-The README images come from [`scripts/readme-visuals.sh`](scripts/readme-visuals.sh): it screenshots `cockpit demo` on a frozen clock and renders the pages in `docs/readme/src/`.
+The README images come from [`scripts/readme-visuals.sh`](scripts/readme-visuals.sh): it screenshots `cockpit demo` on a frozen clock and renders the pages in `docs/readme/src/`. The look, night flight, is written down in [`docs/readme/IDENTITY.md`](docs/readme/IDENTITY.md).
 
 ## Licence
 

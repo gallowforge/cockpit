@@ -375,6 +375,7 @@ var timers = []timerDef{
 	{"fstrim.timer", "Discard unused blocks once a week", 0, 0, 30, 1, false},
 	{"systemd-tmpfiles-clean.timer", "Daily cleanup of temporary directories", 0, 3, 3, -1, false},
 	{"e2scrub_all.timer", "Periodic ext4 online metadata check", 0, 3, 10, 0, false},
+	{"kettle-descale.timer", "Remind the humans to descale the kettle", 0, 9, 0, 6, false},
 }
 
 func (g *Generator) timers(now time.Time) []snapshot.Timer {

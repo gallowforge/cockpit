@@ -13,7 +13,7 @@ on a phone: it can read, and it cannot change anything.
 Both units also use `NoNewPrivileges`, `MemoryDenyWriteExecute`, a
 `@system-service` system-call filter, and the kernel and namespace protections in
 [`deploy/systemd/`](deploy/systemd). CI prints `systemd-analyze security` for
-both on every push (2.4 and 0.5 at the time of 1.0.0).
+both on every push (2.4 and 0.5 at the time of 1.1.0).
 
 ## The web side
 
@@ -22,14 +22,23 @@ both on every push (2.4 and 0.5 at the time of 1.0.0).
 - Passwords are stored as PBKDF2-SHA256 with 600,000 rounds and a random salt.
   Sessions are HMAC-signed cookies (`HttpOnly`, `SameSite=Strict`, `Secure`
   behind TLS) keyed to the password hash, so a new password signs every device out.
-- Failed logins back off per client after 5 attempts, and stop for everyone after
-  30 a minute.
+- Password checks run one at a time, so parallel requests cannot outrun the
+  limiter. Failed logins back off per client after 5 attempts, and stop for
+  everyone after 30 a minute from clients that are not already locked out.
+- The event stream re-checks the session with every keep-alive (20 s) and ends
+  when it has expired or the password changed.
+- The unix socket is mode 0660: `SocketMode=` under systemd, and when
+  `cockpit serve` opens the socket itself, a umask at creation, so there is no
+  moment when it is wider.
 - Headers: a strict Content-Security-Policy (no inline script, no framing),
   `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`.
 - Runbooks are Markdown rendered with raw HTML escaped; only `http`, `https`,
   `mailto` and relative links survive.
-- Alert titles and run summaries pass a redactor (URL paths, `key=value`
-  secrets, bearer tokens, UUIDs, long hex and base64 runs) before they reach the page.
+- Alert titles and run summaries pass a redactor (URL paths and credentials,
+  `key=value` and `--password` secrets, bearer and basic tokens, JWTs, AWS keys,
+  UUIDs, long hex and base64 runs) before they reach the page.
+- The checklist ticks and the time you last looked live only in the browser's
+  `localStorage`; the server stores nothing about you.
 
 Put Cockpit behind TLS (see [`deploy/caddy/Caddyfile.example`](deploy/caddy/Caddyfile.example))
 and keep it on your LAN or tailnet. `auth = none` is meant for a proxy that does

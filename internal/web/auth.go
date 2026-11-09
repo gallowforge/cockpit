@@ -142,8 +142,11 @@ func (l *limiter) allow(client string, now time.Time) (bool, time.Duration) {
 func (l *limiter) fail(client string, now time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.global = append(l.global, now)
 	a := l.clients[client]
+	// a client already serving a wait does not push everyone else out
+	if a == nil || !now.Before(a.until) {
+		l.global = append(l.global, now)
+	}
 	if a == nil || now.Sub(a.last) > time.Hour {
 		a = &attempts{}
 		l.clients[client] = a

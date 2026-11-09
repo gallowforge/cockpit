@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -22,6 +23,10 @@ import (
 )
 
 const cookieName = "cockpit_session"
+
+// The web process runs as a DynamicUser with no /etc/mime.types to fall back
+// on, so the app manifest's type is registered here.
+func init() { _ = mime.AddExtensionType(".webmanifest", "application/manifest+json") }
 
 // Options configure a Server.
 type Options struct {
@@ -49,6 +54,7 @@ type Server struct {
 	limit    *limiter
 	mux      *http.ServeMux
 	streams  atomic.Int32
+	checking chan struct{} // one password check at a time: a burst cannot outrun the limiter
 	static   http.Handler
 	index    []byte
 }
@@ -67,7 +73,7 @@ func New(store *Store, opt Options) (*Server, error) {
 	if opt.SessionTTL == 0 {
 		opt.SessionTTL = 365 * 24 * time.Hour
 	}
-	s := &Server{opt: opt, store: store, limit: newLimiter(), mux: http.NewServeMux()}
+	s := &Server{opt: opt, store: store, limit: newLimiter(), mux: http.NewServeMux(), checking: make(chan struct{}, 1)}
 	switch opt.AuthMode {
 	case "none":
 	case "password":
@@ -201,8 +207,18 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "cross-origin login refused"})
 		return
 	}
-	now := s.opt.Now()
 	who := s.client(r)
+	select {
+	case s.checking <- struct{}{}:
+		defer func() { <-s.checking }()
+	case <-time.After(10 * time.Second):
+		w.Header().Set("Retry-After", "10")
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "too many attempts", "retry_after": 10})
+		return
+	case <-r.Context().Done():
+		return
+	}
+	now := s.opt.Now()
 	if ok, wait := s.limit.allow(who, now); !ok {
 		w.Header().Set("Retry-After", fmt.Sprint(int(wait.Seconds())+1))
 		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "too many attempts", "retry_after": int(wait.Seconds()) + 1})
@@ -303,6 +319,9 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case <-ping.C:
+			if !s.loggedIn(r) { // the session expired or the password changed: stop streaming
+				return
+			}
 			_ = rc.SetWriteDeadline(time.Now().Add(15 * time.Second))
 			if _, err := fmt.Fprint(w, ": ping\n\n"); err != nil {
 				return
@@ -337,6 +356,10 @@ func (s *Server) ui(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := path.Clean(r.URL.Path)
+	if strings.HasPrefix(p, "/api/") || p == "/api" {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no such API route"})
+		return
+	}
 	if p == "/" || p == "/index.html" || !strings.Contains(path.Base(p), ".") {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

@@ -1,35 +1,37 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Cockpit on a phone</title>
-<link rel="stylesheet" href="base.css">
+<html lang="en"><head><meta charset="utf-8"><title>Cockpit on a phone</title><link rel="stylesheet" href="base.css">
 <style>
-  .card { padding: 44px 40px 30px; }
-  .row { display: flex; justify-content: center; align-items: flex-start; gap: 46px; }
-  .col { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-  .col:nth-child(2) { margin-top: 34px; }
-  .phone { width: 262px; }
-  .cap { font: 600 14px/1.3 var(--sans); color: var(--ink); text-align: center; }
-  .cap span { display: block; margin-top: 3px; font: 400 12.5px/1.4 var(--sans); color: var(--muted); }
+  /* One idea: three phones on the horizon, from "something is down" to "checklist done". */
+  .frame { height: 700px; --hz: 84%; }
+  .row { position: absolute; left: 0; right: 0; bottom: 16%; display: flex; justify-content: center; align-items: flex-end; gap: 46px; }
+  .phone { width: 250px; border-radius: 40px 40px 0 0; padding-bottom: 0; }
+  .phone img { border-radius: 3px 3px 0 0; height: 470px; object-fit: cover; object-position: top; }
+  .phone.mid { width: 276px; }
+  .phone.mid img { height: 540px; }
+  .caps { position: absolute; left: 0; right: 0; bottom: 5.5%; display: flex; justify-content: center; gap: 46px; }
+  .caps div { width: 250px; text-align: center; font: 500 15px/1.3 var(--sans); color: var(--text-2); }
+  .caps div:nth-child(2) { width: 276px; }
+  .caps span { display: block; font: 400 13px/1.3 var(--sans); color: var(--muted); margin-top: 2px; }
   @media (max-width: 700px) {
-    .card { padding: 30px 18px 22px; }
-    .row { gap: 16px; }
-    .col:nth-child(3) { display: none; }
-    .col:nth-child(2) { margin-top: 26px; }
-    .phone { width: 232px; border-radius: 34px; padding: 7px; }
-    .phone img { border-radius: 28px; }
+    .frame { height: 720px; }
+    .row { gap: 14px; }
+    .row .phone:nth-child(3), .caps div:nth-child(3) { display: none; }
+    .phone { width: 220px; } .phone.mid { width: 236px; }
+    .phone img { height: 440px; } .phone.mid img { height: 480px; }
+    .caps { gap: 14px; } .caps div { width: 220px; } .caps div:nth-child(2) { width: 236px; }
   }
-</style>
-</head>
+</style></head>
 <body>
-<div class="card">
+<div class="frame"><div class="ground"></div>
   <div class="row">
-    <div class="col"><div class="phone"><img src="shots/mob-overview-inc.png"></div><div class="cap">Something is down<span>worst first, with its runbook</span></div></div>
-    <div class="col"><div class="phone"><img src="shots/mob-runbook.png"></div><div class="cap">The runbook<span>your own Markdown, rendered safely</span></div></div>
-    <div class="col"><div class="phone"><img src="shots/mob-timers.png"></div><div class="cap">What runs next<span>every systemd timer, counting down</span></div></div>
+    <div class="phone"><img src="shots/mob-overview-inc.png"></div>
+    <div class="phone mid"><img src="shots/mob-runbook.png"></div>
+    <div class="phone"><img src="shots/mob-timers.png"></div>
   </div>
-  <p class="source">synthetic data from <b>cockpit demo -scenario incident</b> · add it to the home screen</p>
+  <div class="caps">
+    <div>Something is down<span>worst first, with its checklist</span></div>
+    <div>Run the checklist<span>tap each step as you do it</span></div>
+    <div>What runs next<span>every timer, counting down</span></div>
+  </div>
 </div>
-</body>
-</html>
+</body></html>

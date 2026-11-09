@@ -1,57 +1,40 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Cockpit hero</title>
-<link rel="stylesheet" href="base.css">
+<html lang="en"><head><meta charset="utf-8"><title>Cockpit</title><link rel="stylesheet" href="base.css">
 <style>
-  .card { padding: 54px 0 0 54px; display: grid; grid-template-columns: 360px 1fr; gap: 40px; height: 600px; }
-  .text { padding-top: 26px; }
-  .mark { display: flex; align-items: center; gap: 14px; }
-  .mark svg { width: 54px; height: 54px; }
-  h1 { font: 800 64px/1 var(--sans); letter-spacing: -0.045em; }
-  .promise { margin-top: 26px; font: 650 27px/1.22 var(--sans); letter-spacing: -0.02em; color: var(--ink); }
-  .promise em { font-style: normal; color: var(--cyan); }
-  .sub { margin-top: 16px; font: 400 15.5px/1.6 var(--sans); color: var(--body); }
-  .chips { margin-top: 28px; display: flex; flex-wrap: nowrap; gap: 8px; }
-  .chip { white-space: nowrap; font: 500 12px/1 var(--mono); color: var(--muted); padding: 8px 11px; border-radius: 9px; border: 1px solid var(--line2); background: rgba(255,255,255,0.025); }
-  .chip b { color: var(--cyan2); font-weight: 600; }
-  .stage { position: relative; }
-  .stage .browser { position: absolute; left: 0; top: 26px; width: 760px; }
-  .stage .phone { position: absolute; left: 500px; top: 190px; width: 214px; }
+  /* One idea: level flight. When the horizon is calm and blue, nothing needs you. */
+  .frame { height: 600px; --hz: 86%; }
+  .copy { position: absolute; left: 64px; top: 64px; width: 410px; }
+  h1 { font: 700 104px/0.86 var(--cond); letter-spacing: -0.01em; }
+  .tag { margin-top: 26px; font: 500 30px/1.18 var(--sans); color: var(--text); }
+  .tag em { font-style: normal; color: var(--text-2); }
+  .sub { margin-top: 20px; font: 400 16.5px/1.55 var(--sans); color: var(--text-2); max-width: 390px; }
+  .stage { position: absolute; left: 474px; width: 596px; bottom: calc(14% - 1px); }
+  .stage .screen { border-radius: 12px 12px 0 0; }
+  .reflect { position: absolute; left: 470px; width: 600px; top: 77%; height: 110px; overflow: hidden; opacity: 0.16; transform: scaleY(-1); transform-origin: top;
+    mask-image: linear-gradient(0deg, #000, transparent 80%); -webkit-mask-image: linear-gradient(0deg, #000, transparent 80%); }
+  .reflect .crop { position: absolute; bottom: 0; left: 0; right: 0; }
+  .foot { position: absolute; left: 64px; bottom: 26px; }
   @media (max-width: 700px) {
-    .card { display: block; height: 900px; padding: 34px 26px 0; }
-    .text { padding-top: 0; }
-    h1 { font-size: 52px; }
-    .promise { font-size: 25px; margin-top: 20px; }
-    .stage { margin-top: 30px; }
-    .stage .browser { width: 620px; top: 0; }
-    .stage .phone { left: 260px; top: 120px; width: 200px; }
+    .frame { height: 1210px; --hz: 85%; }
+    .copy { left: 36px; top: 50px; width: 470px; }
+    h1 { font-size: 92px; }
+    .tag { font-size: 27px; }
+    .sub { max-width: none; font-size: 16px; }
+    .stage { left: 120px; width: 300px; bottom: 15%; }
+    .stage .phone { border-radius: 40px 40px 0 0; padding-bottom: 0; }
+    .stage .phone img { border-radius: 3px 3px 0 0; }
+    .reflect, .foot { display: none; }
   }
-</style>
-</head>
+</style></head>
 <body>
-<div class="card">
-  <div class="text">
-    <div class="mark">
-      <svg viewBox="0 0 32 32"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56c8ff"/><stop offset="1" stop-color="#2a7fc4"/></linearGradient><clipPath id="c"><circle cx="16" cy="16" r="11"/></clipPath></defs><circle cx="16" cy="16" r="14.5" fill="#0d1117" stroke="#56c8ff" stroke-opacity=".5"/><g clip-path="url(#c)"><rect x="0" y="0" width="32" height="17.5" fill="url(#s)" transform="rotate(-12 16 16)"/><rect x="0" y="17.5" width="32" height="20" fill="#1a2330" transform="rotate(-12 16 16)"/></g><path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#f4f7fb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <h1>Cockpit</h1>
-    </div>
-    <p class="promise">Your homelab, <em>at a glance.</em></p>
-    <p class="sub">A read-only dashboard for a self-hosted server: live service health, backups with their restore drills, every alert, timers and config drift. One 8 MB binary, built for a Raspberry Pi.</p>
-    <div class="chips">
-      <span class="chip"><b>read-only</b></span>
-      <span class="chip"><b>0</b> dependencies</span>
-      <span class="chip"><b>27 MB</b> on a Pi</span>
-    </div>
+<div class="frame"><div class="ground"></div>
+  <div class="copy">
+    <h1>Cockpit</h1>
+    <p class="tag">Level flight.<br><em>Nothing needs you.</em></p>
+    <p class="sub">The flight deck of your homelab: service health, proven backups, every alert, timers and config drift on one calm screen that lights up only when something needs you. Read-only. One 8 MB binary.</p>
   </div>
-  <div class="stage">
-    <div class="browser">
-      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url"><b>https</b>raspberrypi.example-tailnet.ts.net:8447</div></div>
-      <img src="shots/overview-calm.png">
-    </div>
-    <div class="phone"><img src="shots/mob-overview-calm.png"></div>
-  </div>
+  <div class="stage wide"><div class="screen"><div class="crop" style="--x:274;--y:30;--w:1128;--h:620;--k:0.532"><img src="shots/overview-calm.png"></div></div></div>
+  <div class="stage narrow"><div class="phone"><img src="shots/mob-overview-calm.png" style="height: 606px; object-fit: cover; object-position: top"></div></div>
+  <p class="foot caption">synthetic data from <b>cockpit demo</b></p>
 </div>
-</body>
-</html>
+</body></html>

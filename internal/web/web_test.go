@@ -95,7 +95,7 @@ func newServer(t *testing.T, auth string) (*Server, *Store, string) {
 	os.WriteFile(filepath.Join(filepath.Dir(dir), "secret.md"), []byte("nope"), 0o644)
 	st := NewStore()
 	st.Set([]byte(`{"schema":1,"title":"pi"}`), time.Now())
-	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Cockpit</title>")}, "assets/app.js": {Data: []byte("1")}}
+	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Cockpit</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}}
 	s, err := New(st, Options{Title: "pi", Version: "test", AuthMode: auth, PasswordHash: testHash, MachineID: "m",
 		RunbookDir: dir, UI: ui, TrustProxy: true})
 	if err != nil {
@@ -300,5 +300,41 @@ func TestListenUnixAndSystemd(t *testing.T) {
 	t.Setenv("LISTEN_FDS", "1")
 	if _, err := Listen("systemd"); err == nil {
 		t.Fatal("a socket for another PID must be refused")
+	}
+}
+
+func TestParallelLoginsCannotOutrunTheLimiter(t *testing.T) {
+	s, _, _ := newServer(t, "password")
+	h := map[string]string{"Content-Type": "application/json", "X-Forwarded-For": "10.0.0.66"}
+	codes := make(chan int, 12)
+	for i := 0; i < 12; i++ {
+		go func() { codes <- do(s, "POST", "/api/login", `{"password":"wrong wrong wrong"}`, h).Code }()
+	}
+	wrong, limited := 0, 0
+	for i := 0; i < 12; i++ {
+		switch <-codes {
+		case 401:
+			wrong++
+		case 429:
+			limited++
+		}
+	}
+	if wrong > 5 || limited < 7 {
+		t.Fatalf("a burst of 12 got %d password checks (want at most 5) and %d refusals", wrong, limited)
+	}
+}
+
+func TestUnknownAPIRouteIs404(t *testing.T) {
+	s, _, _ := newServer(t, "none")
+	if r := do(s, "GET", "/api/typo", "", nil); r.Code != 404 || !strings.Contains(r.Header().Get("Content-Type"), "json") {
+		t.Fatalf("got %d %q", r.Code, r.Header().Get("Content-Type"))
+	}
+}
+
+func TestManifestHasItsType(t *testing.T) {
+	s, _, _ := newServer(t, "none")
+	r := do(s, "GET", "/manifest.webmanifest", "", nil)
+	if r.Code != 200 || r.Header().Get("Content-Type") != "application/manifest+json" {
+		t.Fatalf("manifest: %d %q", r.Code, r.Header().Get("Content-Type"))
 	}
 }

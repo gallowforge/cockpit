@@ -40,7 +40,7 @@ chrome() { # chrome <url> <width> <height> <out.png> <scale> [transparent]
 
 pages=("$@")
 if [ ${#pages[@]} -eq 0 ]; then
-  pages=(hero numbers overview services backups alerts sandbox phones proof)
+  pages=(hero numbers overview services jump backups alerts sandbox phones proof)
   mkdir -p "$SRC/shots"
   port=8190
   for scen in calm attention incident; do
@@ -49,22 +49,23 @@ if [ ${#pages[@]} -eq 0 ]; then
     pids+=($!)
   done
   sleep 1
-  shot() { # shot <name> <scenario port> <WxH> <route>
-    chrome "http://127.0.0.1:$2/?shot#/$4" "${3%x*}" "${3#*x}" "$SRC/shots/$1.png" 2
+  shot() { # shot <name> <scenario port> <WxH> <route> [extra query]
+    chrome "http://127.0.0.1:$2/?shot${5:+&$5}#/$4" "${3%x*}" "${3#*x}" "$SRC/shots/$1.png" 2
     echo "shot  $1"
   }
-  shot overview-calm      8191 1440x1000 ""
-  shot mob-overview-calm  8191 390x844   ""
-  shot overview-attention 8192 1440x1240 ""
-  shot mob-overview-att   8192 390x844   ""
+  shot overview-calm      8191 1440x1000 "" "since=9h"
+  shot mob-overview-calm  8191 390x844   "" "since=9h"
+  shot palette            8192 1440x900  "" "palette=vau"
+  shot overview-attention 8192 1440x1240 "" "since=3h"
+  shot mob-overview-att   8192 390x844   "" "since=3h"
   shot services-open      8192 1440x1300 "services/homeassistant"
   shot mob-services       8192 390x844   "services"
-  shot backups            8192 1440x1250 "backups"
+  shot backups            8192 1440x1400 "backups"
   shot mob-backups        8192 390x844   "backups"
   shot alerts             8192 1440x1300 "alerts"
   shot mob-alerts         8192 390x844   "alerts"
-  shot mob-overview-inc   8193 390x844   ""
-  shot mob-runbook        8193 390x844   "runbooks/dns"
+  shot mob-overview-inc   8193 390x844   "" "since=2h"
+  shot mob-runbook        8193 390x844   "runbooks/dns" "tick=0"
   shot mob-timers         8193 390x844   "timers"
 fi
 

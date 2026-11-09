@@ -40,7 +40,7 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
       <form class="login-card" onSubmit={submit}>
         <Mark size={48} />
         <h1>Cockpit</h1>
-        <p class="muted">Sign in to <b>{session.title}</b></p>
+        <p class="muted">Sign in to the flight deck of <b>{session.title}</b></p>
         {/* a username field helps password managers file the entry */}
         <input type="text" name="username" autocomplete="username" value="cockpit" hidden readOnly />
         <label class="field">
@@ -59,7 +59,7 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
           {busy ? 'Checking…' : wait > 0 ? `Wait ${wait}s` : 'Sign in'}
         </button>
         <p class={`login-err${err ? ' on' : ''}`} role="alert">{err}</p>
-        <p class="login-foot">Read-only dashboard · nothing here can change the server</p>
+        <p class="login-foot">Read-only. Nothing here can change the server.</p>
       </form>
     </div>
   )

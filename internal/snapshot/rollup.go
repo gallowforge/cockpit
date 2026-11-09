@@ -172,7 +172,7 @@ func Finalize(s *Snapshot, now time.Time) {
 	switch s.Drift.Result {
 	case "drift":
 		s.Drift.Level = Warn
-		add(Warn, "drift", "files", fmt.Sprintf("Config drift: %d file(s) differ from the repo", len(s.Drift.Files)+len(s.Drift.Disabled)),
+		add(Warn, "drift", "files", "Config drift: "+filesDiffer(len(s.Drift.Files)+len(s.Drift.Disabled))+" from the repo",
 			driftDetail(s.Drift), "config-drift")
 	case "clean":
 		s.Drift.Level = OK
@@ -377,3 +377,14 @@ func normalize(s *Snapshot) {
 		s.Sources = []Source{}
 	}
 }
+
+// filesDiffer says "1 file differs" or "3 files differ".
+func filesDiffer(n int) string {
+	if n == 1 {
+		return "1 file differs"
+	}
+	return fmt.Sprintf("%d files differ", n)
+}
+
+// FilesDiffer is filesDiffer for other packages (cockpit check).
+func FilesDiffer(n int) string { return filesDiffer(n) }

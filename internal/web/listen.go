@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 // Listen opens the configured listener:
@@ -26,7 +27,9 @@ func Listen(spec string) (net.Listener, error) {
 			}
 			os.Remove(p)
 		}
+		old := syscall.Umask(0o117) // never wider than 0660, not even for an instant
 		l, err := net.Listen("unix", p)
+		syscall.Umask(old)
 		if err != nil {
 			return nil, err
 		}

@@ -1,29 +1,22 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Cockpit social preview</title>
-<link rel="stylesheet" href="base.css">
+<html lang="en"><head><meta charset="utf-8"><title>Cockpit social preview</title><link rel="stylesheet" href="base.css">
 <style>
-  body { width: 1280px; height: 640px; background: #0a0c0f; }
-  .card { width: 1280px; height: 640px; border-radius: 0; border: 0; padding: 70px 0 0 76px; display: grid; grid-template-columns: 470px 1fr; gap: 30px; }
-  h1 { font: 800 92px/1 var(--sans); letter-spacing: -0.05em; display: flex; align-items: center; gap: 18px; }
-  h1 svg { width: 80px; height: 80px; }
-  p { margin-top: 30px; font: 650 40px/1.18 var(--sans); letter-spacing: -0.025em; }
-  p em { font-style: normal; color: var(--cyan); }
-  small { display: block; margin-top: 26px; font: 500 21px/1.45 var(--mono); color: var(--muted); }
-  .shot { position: relative; }
-  .shot .browser { position: absolute; left: 0; top: 10px; width: 820px; }
-</style>
-</head>
+  body { width: 1280px; height: 640px; }
+  .frame { width: 1280px; height: 640px; border-radius: 0; --hz: 76%; }
+  .copy { position: absolute; left: 80px; top: 92px; }
+  h1 { font: 700 150px/0.84 var(--cond); letter-spacing: -0.01em; }
+  .tag { margin-top: 30px; font: 500 42px/1.15 var(--sans); }
+  .tag em { font-style: normal; color: var(--text-2); }
+  .stage { position: absolute; left: 640px; width: 600px; bottom: calc(24% - 1px); }
+  .stage .screen { border-radius: 12px 12px 0 0; }
+  .what { position: absolute; left: 80px; bottom: 58px; font: 500 22px/1.3 var(--sans); color: var(--text-2); }
+  .what b { color: var(--text); font-weight: 600; }
+  .what span { color: var(--muted); margin: 0 10px; }
+</style></head>
 <body>
-<div class="card">
-  <div>
-    <h1><svg viewBox="0 0 32 32"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#56c8ff"/><stop offset="1" stop-color="#2a7fc4"/></linearGradient><clipPath id="c"><circle cx="16" cy="16" r="11"/></clipPath></defs><circle cx="16" cy="16" r="14.5" fill="#0d1117" stroke="#56c8ff" stroke-opacity=".5"/><g clip-path="url(#c)"><rect x="0" y="0" width="32" height="17.5" fill="url(#s)" transform="rotate(-12 16 16)"/><rect x="0" y="17.5" width="32" height="20" fill="#1a2330" transform="rotate(-12 16 16)"/></g><path d="M9.5 16.5h4.5l2 2 2-2h4.5" fill="none" stroke="#f4f7fb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Cockpit</h1>
-    <p>Your homelab,<br><em>at a glance.</em></p>
-    <small>health · backups · alerts<br>timers · drift · runbooks</small>
-  </div>
-  <div class="shot"><div class="browser"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url"><b>https</b>raspberrypi:8447</div></div><img src="shots/overview-calm.png"></div></div>
+<div class="frame"><div class="ground"></div>
+  <div class="copy"><h1>Cockpit</h1><p class="tag">Level flight.<br><em>Nothing needs you.</em></p></div>
+  <div class="stage"><div class="screen"><div class="crop" style="--x:274;--y:30;--w:1128;--h:620;--k:0.532"><img src="shots/overview-calm.png"></div></div></div>
+  <p class="what"><b>A read-only dashboard for your homelab</b><span>·</span>services, backups, alerts, timers, drift<span>·</span>one 8 MB binary</p>
 </div>
-</body>
-</html>
+</body></html>
