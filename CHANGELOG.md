@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **README in the Glass look.** The README images are now the real UI of `cockpit demo` as frosted-glass windows floating in a night sky, the same family as the author's GitHub profile, in a dark and a light version that follow GitHub's theme, each with a phone layout. Cockpit's screens stay dark in both, as the app has one theme. In the hero the horizon behind the glass banks amber for one caution and levels again. `scripts/readme-visuals.sh` captures the UI, typesets `cockpit check` and the end-to-end output, and renders the scenes with three.js in headless Chromium. See `docs/readme/IDENTITY.md`.
+
 ## 1.2.0
 
 - **Username and password.** The login is now a real form with a username and a password, so Bitwarden and other password managers save and fill one complete login. The fields are read when the form is sent, so a filled-in login works without any typing, and the button never waits for keystrokes. A UI test fills the fields the way a password manager does and signs in.
