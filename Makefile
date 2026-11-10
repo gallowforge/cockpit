@@ -1,11 +1,12 @@
 # make            build the UI, then the binary with the UI inside
 # make test       Go and UI tests
 # make release    static binaries for linux/amd64 and linux/arm64 in dist/
+# make pages      the live demo as a static site in pages/ (the generator as WebAssembly)
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 export CGO_ENABLED = 0
 
-.PHONY: all ui build test e2e release clean demo
+.PHONY: all ui build test e2e release clean demo pages
 
 all: build
 
@@ -26,6 +27,13 @@ e2e: build
 demo: build
 	bin/vesper demo
 
+# The UI on its own, with the generator behind `vesper demo` where the server
+# would be. wasm_exec.js is Go's loader and has to come from the Go that built it.
+pages:
+	cd web && npm ci --no-audit --no-fund && VERSION=$(VERSION) npm run build:pages
+	GOOS=js GOARCH=wasm go build -trimpath -ldflags '-s -w' -o pages/demo.wasm ./cmd/vesper-wasm
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" pages/wasm_exec.js
+
 release: ui
 	mkdir -p dist
 	GOOS=linux GOARCH=amd64 go build -trimpath -ldflags '$(LDFLAGS)' -o dist/vesper-linux-amd64 ./cmd/vesper
@@ -33,4 +41,4 @@ release: ui
 	cd dist && sha256sum vesper-linux-* > SHA256SUMS
 
 clean:
-	rm -rf bin dist internal/web/ui/dist/assets internal/web/ui/dist/index.html internal/web/ui/dist/favicon.svg
+	rm -rf bin dist pages internal/web/ui/dist/assets internal/web/ui/dist/index.html internal/web/ui/dist/favicon.svg

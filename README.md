@@ -2,9 +2,9 @@
 
 A well-run homelab already knows a lot about itself: the backup job records what it verified, a weekly drill restores the archives, a notifier remembers every alert, and a repo says what every config file should contain. Vesper reads all of it, adds live service health seen from the client's side, and answers one question on a phone or a desktop: does anything need you? If nothing does, it says so and shows what it checked. If something does, it names it, worst first, with the checklist that covers it. If it cannot see something, it says that too, instead of guessing. It only reads, and it is one binary with the UI inside.
 
-<p align="center"><a href="#quickstart"><b>Quickstart</b></a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="https://github.com/gallowforge/vesper/releases">Releases</a></p>
+<p align="center"><a href="https://gallowforge.github.io/vesper/"><b>Live demo</b></a> &nbsp;·&nbsp; <a href="#quickstart"><b>Quickstart</b></a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="https://github.com/gallowforge/vesper/releases">Releases</a></p>
 
-<a href="docs/configuration.md#gh-dark-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-dark-phone.webp 2.835x"><source srcset="docs/readme/numbers-dark.webp 2x"><img src="docs/readme/numbers-dark.webp" width="840" alt="7.4 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 167 tests, 34 of them under real systemd." loading="lazy"></picture></a><a href="docs/configuration.md#gh-light-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-light-phone.webp 2.835x"><source srcset="docs/readme/numbers-light.webp 2x"><img src="docs/readme/numbers-light.webp" width="840" alt="7.4 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 167 tests, 34 of them under real systemd." loading="lazy"></picture></a>
+<a href="docs/configuration.md#gh-dark-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-dark-phone.webp 2.835x"><source srcset="docs/readme/numbers-dark.webp 2x"><img src="docs/readme/numbers-dark.webp" width="840" alt="7.4 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 191 tests, 34 of them under real systemd." loading="lazy"></picture></a><a href="docs/configuration.md#gh-light-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-light-phone.webp 2.835x"><source srcset="docs/readme/numbers-light.webp 2x"><img src="docs/readme/numbers-light.webp" width="840" alt="7.4 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 191 tests, 34 of them under real systemd." loading="lazy"></picture></a>
 
 <sub>7.4 MB is the static arm64 binary on the releases page. RAM was measured on a Raspberry Pi 5 watching 22 services, 12 backup sets and 29 timers, at 0.8% of one CPU core. Every screen in these images is the real UI of <code>vesper demo</code> on synthetic data and a frozen clock.</sub>
 
@@ -40,7 +40,9 @@ If a source cannot be read, a service cannot be confirmed, or a check that is se
 
 ## Quickstart
 
-Try it on synthetic data, with nothing to set up:
+The quickest look is the [live demo](https://gallowforge.github.io/vesper/): the real interface in a browser tab, on a made-up server, in any of four situations.
+
+Or run it yourself on the same synthetic data, with nothing to set up:
 
 ```bash
 docker run --rm -p 8080:8080 ghcr.io/gallowforge/vesper       # then open http://localhost:8080
@@ -103,9 +105,10 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 
 | Check | What it covers |
 | --- | --- |
-| `go test -race` | 59 tests: config parsing, journal and notifier parsing, incidents, the status rollup and its blind spots, the day line, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits, the event stream and how the UI's files are cached |
-| `vitest` and `tsc` | 87 tests: the day line and uptime, the status and its facts, formatting, grouping, jobs, null-safe and older snapshots, the ribbon's arithmetic (whose thread is whose, and where it lies), the collector's log lines, the command bar's search, the theme choice and its first paint, Markdown escaping and link filtering, and a login form filled the way a password manager fills it |
+| `go test -race` | 60 tests: config parsing, journal and notifier parsing, incidents, the status rollup and its blind spots, the day line, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits, the event stream and how the UI's files are cached |
+| `vitest` and `tsc` | 97 tests: the day line and uptime, the status and its facts, formatting, grouping, jobs, null-safe and older snapshots, the ribbon's arithmetic (whose thread is whose, and where it lies), the collector's log lines, the command bar's search, the theme choice and its first paint, Markdown escaping and link filtering, a login form filled the way a password manager fills it, and the live demo's stand-in for the server |
 | [`scripts/e2e.sh`](scripts/e2e.sh) | 34 checks: the shipped units under real systemd with their sandbox, the day line written for every service, transient units writing real journal entries, real Docker containers, and Caddy in front for TLS, cookies and streaming |
+| [`scripts/wasm-parity.mjs`](scripts/wasm-parity.mjs) | The live demo's WebAssembly build returns exactly the snapshot `vesper demo` writes, in all four scenarios, and the UI inside the binary carries no demo code |
 | `systemd-analyze verify` and `security` | The unit files are valid; exposure 2.4 for the collector and 0.5 for the web process |
 | `gofmt`, `go vet`, `shellcheck` | Formatting and static checks |
 | gitleaks | The full history, on every push |
@@ -118,6 +121,12 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 <summary><b>Why is it called Vesper?</b></summary>
 <br />
 Vesper is the evening star, the first light that appears when night falls: the one you look up at when everything has gone quiet. Until version 2.0 it was called Cockpit; the new name also keeps it clear of the unrelated Cockpit Project, a server console that can change the system. A config file with the old <code>[cockpit]</code> section still works.
+</details>
+
+<details>
+<summary><b>How does the live demo run without a server?</b></summary>
+<br />
+The generator behind <code>vesper demo</code> is compiled to WebAssembly (<code>make pages</code>) and runs in your tab, so the page is the same interface on the same synthetic homelab, live, at your own time. Nothing is sent anywhere, and there is nothing to sign in to. The build puts the demo's code where the server's API would be; the UI inside the binary is built without it.
 </details>
 
 <details>

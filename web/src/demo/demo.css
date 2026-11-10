@@ -1,0 +1,49 @@
+/* The live demo's bar, and the few places where Vesper's layout measures the
+   screen and has to start under it. Only the pages build carries this file.
+   Every colour is one of the app's tokens, so the bar follows day and night. */
+:root { --demo-h: 41px; }
+
+#demo {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'tag text text' 'seg seg src';
+  align-items: center; gap: 8px 12px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) var(--gr) 8px var(--gl);
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  color: var(--t3); font-size: 12.5px; line-height: 1.45;
+}
+#demo .tag { grid-area: tag; color: var(--t2); white-space: nowrap; }
+#demo p { grid-area: text; margin: 0; min-width: 0; text-wrap: balance; }
+#demo .demo-more { display: none; }
+#demo .seg { grid-area: seg; justify-self: start; min-width: 0; }
+#demo .demo-src { grid-area: src; justify-self: end; display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; color: var(--t2); font-weight: 500; white-space: nowrap; transition: color 0.15s; }
+#demo .demo-src:hover { color: var(--t1); }
+#demo .demo-src:focus-visible { border-radius: var(--r-xs); }
+#demo .demo-src .icon { opacity: 0.8; }
+
+/* the narrowest phones: the four scenarios and the link still share one row */
+@media (max-width: 379px) {
+  #demo { column-gap: 8px; }
+  #demo .seg button { padding-inline: 7px; }
+}
+@media (max-width: 339px) {
+  #demo .seg button { padding-inline: 5px; font-size: 12px; }
+}
+
+.demo body::before { top: var(--demo-h); }
+.demo .shell, .demo .splash { min-height: calc(100vh - var(--demo-h)); min-height: calc(100dvh - var(--demo-h)); }
+
+@media (min-width: 760px) {
+  #demo { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: 'tag text seg src'; gap: 16px; padding-block: calc(5px + env(safe-area-inset-top, 0px)) 5px; }
+  #demo p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* On a desktop Vesper is one fixed frame, so the bar stays and the frame starts under it. */
+@media (min-width: 1100px) {
+  html.demo { scroll-padding-top: var(--demo-h); }
+  #demo { position: sticky; top: 0; z-index: 30; }
+  .demo .side { top: var(--demo-h); height: calc(100vh - var(--demo-h)); height: calc(100dvh - var(--demo-h)); }
+  .demo .ov { min-height: calc(100vh - var(--demo-h)); }
+  .demo .rb-nav { top: calc(24px + var(--demo-h)); }
+}
+@media (min-width: 1240px) {
+  #demo .demo-more { display: inline; }
+}

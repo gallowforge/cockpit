@@ -108,3 +108,15 @@ func TestDayLine(t *testing.T) {
 		t.Errorf("blind: a systemd unit is still seen, got %q", b[len(b)-5:])
 	}
 }
+
+func TestRunbookBody(t *testing.T) {
+	for _, rb := range Runbooks() {
+		body, ok := RunbookBody(rb.ID)
+		if !ok || len(body) != rb.Bytes {
+			t.Errorf("RunbookBody(%q) = %d bytes, %v; the snapshot lists %d", rb.ID, len(body), ok, rb.Bytes)
+		}
+	}
+	if _, ok := RunbookBody("no-such-runbook"); ok {
+		t.Error("RunbookBody found a runbook that does not exist")
+	}
+}

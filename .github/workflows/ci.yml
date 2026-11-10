@@ -40,6 +40,15 @@ jobs:
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o bin/vesper ./cmd/vesper
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o bin/vesper-arm64 ./cmd/vesper
           ls -la bin
+      - name: the live demo builds, says what vesper demo says, and stays out of the binary
+        run: |
+          make pages
+          node scripts/wasm-parity.mjs pages bin/vesper
+          if grep -rqE 'vesperDemo|demo\.wasm' internal/web/ui/dist; then
+            echo "the UI inside the binary carries demo code" >&2
+            exit 1
+          fi
+
       - name: systemd unit files are valid
         run: |
           sudo install -m 755 bin/vesper /usr/local/bin/vesper

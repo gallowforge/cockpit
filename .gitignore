@@ -1,5 +1,6 @@
 /bin/
 /dist/
+/pages/
 /web/node_modules/
 /internal/web/ui/dist/*
 !/internal/web/ui/dist/.gitkeep

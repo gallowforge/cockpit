@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node -e \"require('fs').writeFileSync('../internal/web/ui/dist/.gitkeep','')\"",
+    "build:pages": "tsc --noEmit && vite build --mode pages",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

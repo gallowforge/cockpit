@@ -115,6 +115,16 @@ func Runbooks() []snapshot.Runbook {
 	return out
 }
 
+// RunbookBody returns the Markdown of one demo runbook.
+func RunbookBody(id string) (string, bool) {
+	for _, rb := range runbooks {
+		if rb.id == id {
+			return rb.body, true
+		}
+	}
+	return "", false
+}
+
 // WriteRunbooks writes the demo runbooks into dir for the web server to serve.
 func WriteRunbooks(dir string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {

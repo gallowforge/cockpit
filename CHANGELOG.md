@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **A live demo.** [gallowforge.github.io/vesper](https://gallowforge.github.io/vesper/) is the real interface with no server behind it. The generator behind `vesper demo` is compiled to WebAssembly and runs in the visitor's tab, so the page shows the same synthetic homelab, live, at the visitor's own time, in any of the four scenarios. One line above the app says what the page is; everything under it is what the binary serves. `make pages` builds it.
+- The demo's code takes the place of the server's API while the page is built, so the UI inside the binary is built without it. CI checks that, and that the browser build returns exactly the snapshot `vesper demo` writes (`scripts/wasm-parity.mjs`).
+
 ## 2.2.0 "Daybreak"
 
 Vesper by day: a second theme, and a control to choose it.

@@ -48,3 +48,15 @@ jobs:
           tags: |
             ghcr.io/gallowforge/vesper:${{ github.ref_name }}
             ghcr.io/gallowforge/vesper:latest
+
+  # the live demo shows the version of the latest release, so it is built again once there is one
+  demo:
+    needs: binaries
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: rebuild the live demo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
