@@ -1,13 +1,15 @@
-# Cockpit: the README's look
+# Cockpit: the look
 
-**Night flight, in glass.** The README belongs to the same family as the author's GitHub profile: real screens as frosted-glass windows floating in light, with depth, refraction and one part of each screen lifted out toward the viewer. Cockpit's own idea stays at the centre: the house is an aircraft on a night crossing, and the dashboard is its artificial horizon, level and blue while nothing needs you, banked amber or red when something does.
+**An operations console, built to be trusted.** Cockpit answers one question, "does anything need me?", so the design is plain on purpose: one sentence first, the facts behind it, then the detail. It is measured against the tools people rely on every day (Linear, Vercel, Raycast), not against a poster.
 
-**Real screens.** Every window is the real UI of `cockpit demo` on synthetic data and a frozen clock, captured at 2x (desktop) and 3x (phone). The terminals are a fresh `cockpit check` and the end-to-end run in `docs/readme/src/demo/e2e.txt`; the diagram and the numbers are typeset from the README's own facts.
+**Colour only means state.** The field is graphite with hairlines instead of boxes. Green is up, amber needs you, red is down, and a hatched grey means Cockpit cannot see. A down mark that is over turns a quieter red, so only what is down now is loud. Nothing is coloured for decoration, and every state also has a shape and a word, never colour alone.
 
-**The horizon.** Behind the glass, one horizon line runs through a night-blue sky. In the hero it banks amber for a few seconds while the lifted horizon card and the phone turn from "All systems normal" to "1 caution", then everything levels again: the one motion in the README, and the product's whole idea.
+**Honest by construction.** The day line marks time Cockpit did not watch as unknown, uptime is counted only over what it saw, and a check it cannot make is a blind spot, never an all-clear. The design shows these states as plainly as the good ones.
 
-**Dark first.** Cockpit has one theme, night. The dark images dissolve into GitHub's `#0d1117`; the light images keep Cockpit's dark screens as dark windows on bright daylight glass, dissolving into `#ffffff`, while the terminals and the diagram switch to their light theme. Amber is spent only on a caution, red only on a warning, green only on checks that passed.
+**Type.** IBM Plex Sans for words and IBM Plex Mono for every figure, both vendored with their licences, so the console needs nothing from the internet. Numbers are tabular so columns line up.
 
-**Type.** The screens keep Barlow and Barlow Condensed, Cockpit's own. Everything typeset around them uses Geist and Geist Mono, the family's faces.
+**Layout.** On a desktop: a sidebar, the main column (status, the 24-hour strip, four figures, the services table) and a rail (since you last looked, backups, the next jobs, the host, what Cockpit can see). On a phone: one column and a tab bar with a More tab. Every page is checked at phone width for overflow.
 
-**Rebuild.** `scripts/readme-visuals.sh` (see its header). Sources: `docs/readme/src/textures.mjs` (captures and typeset windows), `docs/readme/src/layouts.js` (compositions), `docs/readme/src/glass/` (the renderer: three.js in headless Chromium). The detail for a careful viewer is still there: `kettle-descale.timer`, "Remind the humans to descale the kettle", among the real homelab timers on the Timers page.
+**The README.** The screens are the real UI of `cockpit demo` on synthetic data and a frozen clock, staged as glass windows in the same family as the author's GitHub profile, dark and light, each with a phone layout. In the hero the status lifted out of the Overview turns from "Nothing needs you" to "Home Assistant is down" and back: the one motion, and the product's whole idea.
+
+**Rebuild.** `scripts/readme-visuals.sh` (see its header). Sources: `docs/readme/src/textures.mjs` (captures and typeset windows), `docs/readme/src/layouts.js` (compositions), `docs/readme/src/glass/` (the renderer: three.js in headless Chromium). The detail for a careful viewer is in the demo data: among the real homelab jobs, "Remind the humans to descale the kettle", Saturdays at 09:00.

@@ -20,26 +20,25 @@ const AT = '2026-03-10T07:42:00Z';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // ---- screens from `cockpit demo` --------------------------------------------------------
-const SCEN = { calm: 8291, attention: 8292, incident: 8293 };
+const SCEN = { calm: 8291, attention: 8292, incident: 8293, blind: 8294 };
 const SHOTS = [
   // name, scenario, route, query, width, height, scale
   ['ov-calm', 'calm', '', 'since=9h', 1440, 1000, 2],
-  ['ov-att', 'attention', '', 'since=9h', 1440, 1000, 2],
-  ['ov-att-3h', 'attention', '', 'since=3h', 1440, 1240, 2],
-  ['palette', 'attention', '', 'palette=vau', 1440, 900, 2],
-  ['services', 'attention', 'services/homeassistant', '', 1440, 1300, 2],
-  ['backups', 'attention', 'backups', '', 1440, 1400, 2],
-  ['alerts', 'attention', 'alerts', '', 1440, 1300, 2],
+  ['ov-inc', 'incident', '', 'since=9h', 1440, 1000, 2],
+  ['palette', 'incident', '', 'palette=vau', 1440, 900, 2],
+  ['services', 'incident', 'services/homeassistant', '', 1440, 1300, 2],
+  ['backups', 'calm', 'backups', '', 1440, 1400, 2],
+  ['history', 'attention', 'history', '', 1440, 1300, 2],
   ['calm-services', 'calm', 'services', '', 1440, 1000, 2],
   ['calm-backups', 'calm', 'backups', '', 1440, 1000, 2],
-  ['calm-alerts', 'calm', 'alerts', '', 1440, 1000, 2],
+  ['calm-history', 'calm', 'history', '', 1440, 1000, 2],
   ['m-calm-runbook', 'calm', 'runbooks/dns', 'tick=0', 390, 844, 3],
   ['m-ov-calm', 'calm', '', 'since=9h', 390, 844, 3],
-  ['m-ov-att', 'attention', '', 'since=9h', 390, 844, 3],
-  ['m-ov-inc', 'incident', '', 'since=2h', 390, 844, 3],
+  ['m-ov-inc', 'incident', '', 'since=9h', 390, 844, 3],
+  ['m-ov-blind', 'blind', '', 'since=9h', 390, 844, 3],
   ['m-runbook', 'incident', 'runbooks/dns', 'tick=0', 390, 844, 3],
-  ['m-backups', 'attention', 'backups', '', 390, 844, 3],
-  ['m-timers', 'incident', 'timers', '', 390, 844, 3],
+  ['m-backups', 'calm', 'backups', '', 390, 844, 3],
+  ['m-jobs', 'calm', 'jobs', '', 390, 844, 3],
 ];
 
 // ---- themes for the typeset windows ------------------------------------------------------
@@ -92,7 +91,7 @@ function e2eLine(l) {
   let m;
   if ((m = l.match(/^== (.*)$/))) return `<div class="l" style="margin-top:7px"><span class="acc">== ${esc(m[1])}</span></div>`;
   if ((m = l.match(/^PASS (.*)$/))) return `<div class="l"><span class="ok">PASS</span> <span>${esc(m[1])}</span></div>`;
-  if ((m = l.match(/^(cockpit-\S+)(\s+)([\d.]+) (\w+)$/))) return `<div class="l" data-box="score"><span class="c">${m[1]}</span>${m[2]}<span class="ok">${m[3]} ${m[4]}</span></div>`;
+  if ((m = l.match(/^(cockpit-\S+)(\s+)([\d.]+) (\w+)(?:\s+\S+)?$/))) return `<div class="l" data-box="score"><span class="c">${m[1]}</span>${m[2]}<span class="ok">${m[3]} ${m[4]}</span></div>`;
   if ((m = l.match(/^RESULT: (.*)$/))) return `<div class="l" data-box="result"><span class="c">RESULT: </span><span class="ok">${esc(m[1])}</span></div>`;
   return `<div class="l">${esc(l)}</div>`;
 }
@@ -105,7 +104,7 @@ const TEX = {
 };
 
 function numbers(t, phone) {
-  const F = [['7.4 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], ['27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['113', 'tests, 33 of them', 'under real systemd']];
+  const F = [['7.9 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], [process.env.RAM_MB ? process.env.RAM_MB + ' MB' : '27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['137', 'tests, 34 of them', 'under real systemd']];
   const cell = ([v, a, b], i) => `<div style="padding:${phone ? '26px 24px 24px' : '30px 30px 28px'};${phone ? (i % 2 ? `border-left:1px solid ${t.rule};` : '') + (i > 1 ? `border-top:1px solid ${t.rule};` : '') : (i ? `border-left:1px solid ${t.rule};` : '')}">
     <div style="font:600 ${phone ? 44 : 50}px/1 Geist;letter-spacing:-.045em;color:${t.hi};margin-left:-3px">${v}</div>
     <div style="font:400 15px/1.4 Geist;color:${t.soft};margin-top:12px">${a}<br>${b}</div></div>`;
@@ -159,15 +158,16 @@ if (SHOTS.some(s => want(s[0]))) {
     await new Promise(r => setTimeout(r, 800));
     for (const [name, scen, route, q, w, h, scale] of SHOTS) {
       if (!want(name)) continue;
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: 'dark', isMobile: w < 500, hasTouch: w < 500 });
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: 'dark', timezoneId: 'Asia/Kuwait', isMobile: w < 500, hasTouch: w < 500 });
       const page = await ctx.newPage();
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(`http://127.0.0.1:${SCEN[scen]}/?shot${q ? '&' + q : ''}#/${route}`, { waitUntil: 'networkidle' });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(900);
       await page.screenshot({ path: join(OUT, `${name}.png`) });
       BOXES[name] = { size: [w * scale, h * scale] };
       // parts of the screen that the compositions lift out toward the viewer
-      for (const [k, sel] of [['hud', '.hud'], ['strip', '.strip'], ['since', '.since'], ['needs', '.needs'], ['hero', '.hero'], ['palette', '.palette'], ['drill', '.drill-mini'], ['open', '.svc-item.open'], ['stats', '.stats-row'], ['sets', '.set-table'], ['drills', '.drill-list'], ['checks', '.checks, .check-list, ol']]) {
+      for (const [k, sel] of [['status', '.status'], ['strip', '.daystrip'], ['figs', '.figs'], ['since', '.ov-rail .only-desk'], ['palette', '.palette'], ['day', '.sec .panel'], ['drill', '.drill-grid'], ['hist', '.hist'], ['checks', '.md > ol']]) {
         const r = await page.$eval(sel, e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; }).catch(() => null);
         if (r) BOXES[name][k] = r.map(v => Math.round(v * scale));
       }
