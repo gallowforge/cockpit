@@ -104,7 +104,7 @@ const TEX = {
 };
 
 function numbers(t, phone) {
-  const F = [['7.7 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], [process.env.RAM_MB ? process.env.RAM_MB + ' MB' : '27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['140', 'tests, 34 of them', 'under real systemd']];
+  const F = [['7.4 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], [process.env.RAM_MB ? process.env.RAM_MB + ' MB' : '27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['167', 'tests, 34 of them', 'under real systemd']];
   const cell = ([v, a, b], i) => `<div style="padding:${phone ? '26px 24px 24px' : '30px 30px 28px'};${phone ? (i % 2 ? `border-left:1px solid ${t.rule};` : '') + (i > 1 ? `border-top:1px solid ${t.rule};` : '') : (i ? `border-left:1px solid ${t.rule};` : '')}">
     <div style="font:600 ${phone ? 44 : 50}px/1 Geist;letter-spacing:-.045em;color:${t.hi};margin-left:-3px">${v}</div>
     <div style="font:400 15px/1.4 Geist;color:${t.soft};margin-top:12px">${a}<br>${b}</div></div>`;

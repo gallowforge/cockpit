@@ -22,6 +22,6 @@
 
 **The mark.** A V in fog white under the evening star, the first light of the night, glowing cyan like the living technology of the film. App icons are rendered from `docs/brand/app-icon.html`.
 
-**The README.** The screens are the real UI of `vesper demo` on synthetic data and a frozen clock, staged as glass windows in the same family as the author's GitHub profile, dark and light, each with a phone layout. In the hero the status lifted out of the Overview turns from "Nothing needs you" to "Home Assistant is down" and back: the one motion, and the product's whole idea. The README images still show the graphite look until they are captured again.
+**The README.** The screens are the real UI of `vesper demo` on synthetic data and a frozen clock, staged as glass windows in the same family as the author's GitHub profile, dark and light, each with a phone layout. In the hero the status lifted out of the Overview turns from "Nothing needs you" to "Home Assistant is down" and back: the one motion, and the product's whole idea.
 
 **Rebuild.** `scripts/readme-visuals.sh` (see its header). Sources: `docs/readme/src/textures.mjs` (captures and typeset windows), `docs/readme/src/layouts.js` (compositions), `docs/readme/src/glass/` (the renderer: three.js in headless Chromium). The detail for a careful viewer is in the demo data: among the real homelab jobs, "Remind the humans to descale the kettle", Saturdays at 09:00.
