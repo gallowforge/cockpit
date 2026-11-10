@@ -30,7 +30,7 @@ for t in node magick ffmpeg; do command -v "$t" >/dev/null || { echo "missing to
 [ -x "$BIN" ] || { echo "build first: make (or BIN=path/to/cockpit)" >&2; exit 2; }
 node -e "require('playwright'); require('three')" 2>/dev/null || { echo "set NODE_PATH to a node_modules with playwright and three (see the header)" >&2; exit 2; }
 
-STILLS=(numbers overview services backups alerts phones design proof)
+STILLS=(numbers overview services backups history phones design proof)
 pages=("$@")
 [ ${#pages[@]} -gt 0 ] || pages=(hero "${STILLS[@]}" social)
 

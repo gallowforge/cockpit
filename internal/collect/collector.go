@@ -242,6 +242,8 @@ func (c *Collector) Collect(ctx context.Context) *snapshot.Snapshot {
 	if h.Enabled {
 		s.Heartbeat = heartbeat(h.HeartbeatUnit, c.slow.runs[h.HeartbeatUnit], now)
 		s.Health = health(h, c.slow.runs[h.HealthUnit], c.slow.notify, c.slow.incidents)
+		s.Health.Unit = h.HealthUnit
+		s.Drill.Unit = h.DrillUnit
 	}
 	if s.Services == nil {
 		s.Services = []snapshot.Service{}

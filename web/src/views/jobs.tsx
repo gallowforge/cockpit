@@ -3,7 +3,7 @@
 import { useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { Snapshot, Timer } from '../types'
-import { notableTimers, sortTimers } from '../derive'
+import { isFrequent, notableTimers, sortTimers } from '../derive'
 import { ago, clock, inAbout, plural } from '../format'
 import { Empty, Figures, Glyph, PageHead, Section, Seg, useTip } from '../components/ui'
 
@@ -45,8 +45,7 @@ export function JobsView({ snap, now }: ViewProps) {
 }
 
 const name = (t: Timer) => t.description || t.activates.replace(/\.service$/, '')
-/** Runs more often than hourly: a probe or a keep-alive, never "the next job". */
-const frequent = (t: Timer) => !!t.next && !!t.last && Date.parse(t.next) - Date.parse(t.last) < 55 * 60e3
+const frequent = isFrequent
 
 function JobRow({ t, now }: { t: Timer; now: number }) {
   const lv = t.level === 'info' ? 'ok' : t.level
@@ -68,7 +67,7 @@ function JobRow({ t, now }: { t: Timer; now: number }) {
 function Lane({ snap, now }: { snap: Snapshot; now: number }) {
   const [tip, setTip] = useTip()
   const span = 24 * 3600e3
-  const soon = sortTimers(snap.timers, false).filter((t) => t.next && Date.parse(t.next) - now <= span)
+  const soon = sortTimers(snap.timers, false).filter((t) => { const d = t.next ? Date.parse(t.next) - now : NaN; return d >= 0 && d <= span })
   const jobs = soon.filter((t) => !frequent(t))
   const many = soon.length - jobs.length
   if (!jobs.length) return <Empty left>Nothing is scheduled in the next 24 hours.</Empty>
@@ -76,8 +75,8 @@ function Lane({ snap, now }: { snap: Snapshot; now: number }) {
     <div class="lane">
       <div class="lane-line">
         {jobs.map((t) => (
-          <i key={t.unit} class={`lane-job${t.highlight ? ' hl' : ''}${t.level === 'warn' ? ' warn' : ''}`} style={{ left: `${((Date.parse(t.next!) - now) / span) * 100}%` }}
-            onMouseMove={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as MouseEvent)} onMouseLeave={() => setTip(null)} />
+          <i key={t.unit} role="img" aria-label={`${clock(t.next)} ${name(t)}`} class={`lane-job${t.highlight ? ' hl' : ''}${t.level === 'warn' ? ' warn' : ''}`} style={{ left: `${((Date.parse(t.next!) - now) / span) * 100}%` }}
+            onMouseMove={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as MouseEvent)} onClick={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as MouseEvent)} onMouseLeave={() => setTip(null)} />
         ))}
       </div>
       <div class="axis">

@@ -4,10 +4,9 @@ import { Fragment } from 'preact'
 import { useEffect } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { Snapshot } from '../types'
-import { ago, bytes, dateTime, humanize, pct, plural, precise } from '../format'
+import { ago, bytes, dateTime, humanize, pct, plural, precise, sourceName } from '../format'
 import { Empty, Figures, Glyph, Meter, PageHead, Section, Spark, State } from '../components/ui'
 import { IconChevron } from '../components/icons'
-import { sourceName } from './overview'
 
 export function throttleWords(hex?: string): string | null {
   if (!hex) return null
@@ -80,9 +79,10 @@ export function SystemView({ snap, now, route }: ViewProps) {
             <Glyph level={snap.heartbeat.level === 'info' ? 'ok' : snap.heartbeat.level} size={14} />
             <span class="main-col">
               <span class="ttl"><span>Heartbeat to the dead-man switch</span></span>
-              <span class="sub wrap">{snap.heartbeat.level === 'off' ? 'Not set up.' : snap.heartbeat.ok
-                ? `${snap.heartbeat.pings_24h} of ${snap.heartbeat.runs_24h} pings in 24 hours, the last ${ago(snap.heartbeat.last, now)}.`
-                : `Withheld: ${snap.heartbeat.reason ?? 'no reason given'}.`}</span>
+              <span class="sub wrap">{snap.heartbeat.level === 'off' ? 'Not set up.'
+                : snap.heartbeat.level === 'unknown' && !snap.heartbeat.last ? 'No ping seen in the journal yet.'
+                  : snap.heartbeat.ok ? `${snap.heartbeat.pings_24h} of ${snap.heartbeat.runs_24h} pings in 24 hours, the last ${ago(snap.heartbeat.last, now)}.`
+                    : `Withheld: ${snap.heartbeat.reason ?? 'no reason given'}.`}</span>
             </span>
             <span />
           </div>
@@ -137,7 +137,7 @@ export function SystemView({ snap, now, route }: ViewProps) {
 
 function Drift({ snap, now }: { snap: Snapshot; now: number }) {
   const d = snap.drift
-  if (d.result === 'unknown') return <div class="panel"><State level="unknown">Can't be checked</State> <span class="muted">{d.error ?? 'The MANIFEST could not be read.'}</span></div>
+  if (d.result !== 'clean' && d.result !== 'drift') return <div class="panel"><State level="unknown">Can't be checked</State> <span class="muted">{d.error ?? 'The MANIFEST could not be read.'}</span></div>
   return (
     <div class="panel">
       <p>

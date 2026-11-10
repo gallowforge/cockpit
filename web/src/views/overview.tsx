@@ -1,10 +1,11 @@
 // Overview: is everything fine? If not, what, and what do I do? How has the
 // day been, and what happened since I last looked?
-import { useMemo, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { Attention, Level, Snapshot } from '../types'
-import { areaHref, awayEvents, bucket, dayUptime, daySeen, durationWords, fleetDay, fullDay, heroOf, notableTimers, prioLevel, servicesLevel, slotStart, worst, type Event, type Hero } from '../derive'
-import { ago, bytes, clock, dayLabel, inAbout, ms, pct, plural, precise } from '../format'
+import { areaHref, awayEvents, bucket, clearFacts, dayUptime, daySeen, durationWords, fleetDay, fullDay, heroOf, notableTimers, prioLevel, servicesLevel, slotStart, weekday, worst, type Event, type Hero } from '../derive'
+import { ago, bytes, clock, inAbout, ms, pct, plural, precise, sourceName } from '../format'
+import { safeHref } from '../markdown'
 import { Btn, Day, Empty, Figures, Glyph, Meter, type FigProps, useTip } from '../components/ui'
 import { IconAlert, IconBackups, IconCheck, IconChevron, IconClose, IconDrill, IconExternal, IconEyeOff, IconInfo, IconPulse, IconX } from '../components/icons'
 import { DayAxis, fmtPct, ServiceTable } from './services'
@@ -61,7 +62,7 @@ function StatusIcon({ level }: { level: Level }) {
 
 /** The answer, then the proof or the facts behind it, then what to do. */
 function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }) {
-  const err = hero.kind === 'blind' ? hero.blind[0]?.evidence : hero.attention.length === 1 && hero.attention[0].level === 'unknown' ? hero.attention[0].evidence : undefined
+  const err = hero.kind === 'blind' && hero.blind.length === 1 ? hero.blind[0].evidence : undefined
   return (
     <section class="status" aria-live="polite">
       <div class="status-row">
@@ -71,7 +72,7 @@ function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }
           {hero.kind === 'clear'
             ? <ul class="proof" aria-label="What was checked">{clearFacts(snap, now).map((f) => <li key={f.text}><a href={f.href}><IconCheck size={14} />{f.text}</a></li>)}</ul>
             : (hero.kind === 'down' || hero.kind === 'attn') && hero.detail.length === 1
-              ? <ul class="facts">{attnFacts(hero, snap, now).map((f) => <li key={f}>{f}</li>)}</ul>
+              ? <ul class="proof plain">{attnFacts(hero, snap, now).map((f) => <li key={f}>{f}</li>)}</ul>
               : <p class="detail">{hero.detail.map((p, i) => (p.href ? <a key={i} href={p.href}>{p.text}</a> : <span key={i}>{p.text}</span>))}</p>}
           {err && <p class="evidence"><b>Error</b>{err}</p>}
           {hero.actions.length > 0 && (
@@ -85,22 +86,6 @@ function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }
       </div>
     </section>
   )
-}
-
-/** The all-clear's proof: each part is something Cockpit actually checked. */
-function clearFacts(s: Snapshot, now: number): { text: string; href: string }[] {
-  const out: { text: string; href: string }[] = []
-  const svcs = s.services.filter((x) => x.state !== 'off')
-  if (svcs.length) out.push({ text: `${svcs.filter((x) => x.state === 'up').length} of ${svcs.length} services up`, href: '#/services' })
-  const verified = s.backups.sets.map((b) => ms(b.last_ok)).filter(isFinite)
-  if (s.backups.sets.length) {
-    const oldest = verified.length ? ago(new Date(Math.min(...verified)).toISOString(), now) : 'never'
-    out.push({ text: `${plural(s.backups.sets.length, 'backup')} verified, the oldest ${oldest}`, href: '#/backups' })
-  }
-  const d = s.drill.runs[0]
-  if (d) out.push({ text: d.failed ? `Restore drill: ${d.failed} failed` : `Restore drill passed ${weekday(d.end, now)}`, href: '#/backups' })
-  if (s.heartbeat.level === 'ok') out.push({ text: 'Heartbeat steady', href: '#/system' })
-  return out
 }
 
 /** The facts behind one problem. A service that is down is told in plain
@@ -124,16 +109,12 @@ function attnFacts(hero: Hero, s: Snapshot, now: number): string[] {
     .map((t) => (/^[a-z][a-z ]/.test(t) ? t.charAt(0).toUpperCase() + t.slice(1) : t))
 }
 
-function weekday(iso: string, now: number): string {
-  const l = dayLabel(iso, now)
-  return l === 'Today' ? 'today' : l === 'Yesterday' ? 'yesterday' : 'on ' + new Date(ms(iso)).toLocaleDateString([], { weekday: 'long' })
-}
-
 function Needs({ list, snap, label }: { list: Attention[]; snap: Snapshot; label: string }) {
   return (
     <section class="needs" aria-label={label}>
       {list.map((a, i) => {
         const svc = a.area === 'services' ? snap.services.find((x) => x.id === a.ref) : undefined
+        const app = svc?.url ? safeHref(svc.url) : null
         return (
           <div key={i} class="need">
             <Glyph level={a.level} size={16} />
@@ -144,7 +125,7 @@ function Needs({ list, snap, label }: { list: Attention[]; snap: Snapshot; label
             </a>
             <div class="need-acts">
               {a.runbook && <Btn href={`#/runbooks/${encodeURIComponent(a.runbook)}`}>Checklist</Btn>}
-              {svc?.url && <Btn href={svc.url} external label={`Open ${svc.title}`}><IconExternal size={13} /></Btn>}
+              {svc && app && <Btn href={app} external label={`Open ${svc.title}`}><IconExternal size={13} /></Btn>}
             </div>
           </div>
         )
@@ -199,7 +180,7 @@ function figures(s: Snapshot, now: number): FigProps[] {
   const sLevel = servicesLevel(s.services)
   const out: FigProps[] = [
     { label: 'Services up', value: up, unit: `/ ${svcs.length}`, caption: up === svcs.length ? 'every check answering' : sLevel === 'unknown' ? `${svcs.length - up} can't be confirmed` : svcs.filter((x) => x.state !== 'up').map((x) => x.title).slice(0, 2).join(', ') + (svcs.length - up > 2 ? ` and ${svcs.length - up - 2} more` : '') + ' not up', level: sLevel === 'info' ? undefined : sLevel },
-    { label: 'Availability', value: avail == null ? '—' : fmtPct(avail).replace('%', ''), unit: avail == null ? undefined : '%', caption: seen < 276 ? `over the ${Math.round(seen / 12)} h Cockpit watched` : 'last 24 hours, all services' },
+    { label: 'Availability', value: avail == null ? '—' : fmtPct(avail).replace('%', ''), unit: avail == null ? undefined : '%', caption: seen === 0 ? 'no history yet' : seen < 276 ? `over the ${Math.max(1, Math.round(seen / 12))} h Cockpit watched` : 'last 24 hours, all services' },
     { label: 'Backups verified', value: s.backups.sets.length - bad, unit: `/ ${s.backups.sets.length}`, caption: isFinite(newest) ? `last at ${clock(new Date(newest).toISOString())}` : 'none yet', level: s.backups.level === 'info' ? undefined : s.backups.level },
   ]
   const open = s.alerts.open.length
@@ -294,9 +275,6 @@ function HostMini({ snap }: { snap: Snapshot }) {
   )
 }
 
-const SOURCE: Record<string, string> = { services: 'Service states', timers: 'Scheduled jobs', journal: 'System journal', backups: 'Backup status', alerts: 'Alert history', drift: 'Config drift', host: 'Host health', runbooks: 'Checklists' }
-export const sourceName = (n: string) => SOURCE[n] ?? n
-
 function Coverage({ snap, now }: { snap: Snapshot; now: number }) {
   const ok = snap.sources.filter((s) => s.ok).length
   return (
@@ -316,6 +294,17 @@ function Coverage({ snap, now }: { snap: Snapshot; now: number }) {
 
 /** Every check behind the headline and its result, so the all-clear is earned. */
 function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose: () => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const back = document.activeElement as HTMLElement | null
+    box.current?.focus()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    addEventListener('keydown', onKey)
+    return () => {
+      removeEventListener('keydown', onKey)
+      back?.focus()
+    }
+  }, [])
   const svcs = snap.services.filter((x) => x.state !== 'off')
   const rows: { level: Level; name: string; text: string; href: string }[] = [
     { level: servicesLevel(snap.services), name: 'Services', text: `${svcs.filter((x) => x.state === 'up').length} of ${svcs.length} up; any down or degraded counts`, href: '#/services' },
@@ -331,7 +320,7 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
   ]
   return (
     <div class="backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="How Cockpit decides">
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="How Cockpit decides" tabIndex={-1} ref={box}>
         <div class="sheet-head">
           <h2>How Cockpit decides</h2>
           <button type="button" class="icon-btn" aria-label="Close" onClick={onClose}><IconClose size={16} /></button>

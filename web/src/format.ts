@@ -116,3 +116,8 @@ export function inAbout(iso: string | undefined, now: number): string {
   if (h < 24) return `in ${h} h${m % 60 ? ` ${m % 60} min` : ''}`
   return `in ${Math.floor(h / 24)} d ${h % 24} h`
 }
+
+const SOURCE: Record<string, string> = { services: 'Service states', timers: 'Scheduled jobs', journal: 'System journal', backups: 'Backup status', alerts: 'Alert history', drift: 'Config drift', host: 'Host health', runbooks: 'Checklists' }
+
+/** A collector source by what it tells you: "journal" is "System journal". */
+export const sourceName = (n: string) => SOURCE[n] ?? n

@@ -11,7 +11,8 @@ import (
 )
 
 // Schema is bumped on any incompatible change to the JSON below.
-const Schema = 1
+// 2: status.blind, services[].day, drill.unit and health.unit.
+const Schema = 2
 
 // Levels, from best to worst. "off" is a deliberate stop (maintenance, a
 // disabled unit) and never raises the overall status.
@@ -206,8 +207,11 @@ type Run struct {
 }
 
 type Drill struct {
-	Level string     `json:"level"`
-	Runs  []DrillRun `json:"runs"`
+	Level string `json:"level"`
+	// Unit is the drill's systemd unit; empty when no drill is set up, so a
+	// missing run is only a blind spot when one is expected.
+	Unit string     `json:"unit,omitempty"`
+	Runs []DrillRun `json:"runs"`
 }
 
 type DrillRun struct {
@@ -287,7 +291,9 @@ type Heartbeat struct {
 }
 
 type Health struct {
-	Level      string           `json:"level"`
+	Level string `json:"level"`
+	// Unit is the daily health check's systemd unit; empty when there is none.
+	Unit       string           `json:"unit,omitempty"`
 	Last       *time.Time       `json:"last,omitempty"`
 	Result     string           `json:"result,omitempty"`
 	Categories []HealthCategory `json:"categories"`

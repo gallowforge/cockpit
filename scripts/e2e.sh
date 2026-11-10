@@ -160,7 +160,7 @@ j() { jq -e "$1" "$S"; }
 
 echo "== collector"
 check "collector is running"                    "systemctl is-active --quiet cockpit-collect.service"
-check "state.json written, schema 1"            "j '.schema == 1 and .title == \"e2e\"'"
+check "state.json written, schema 2"            "j '.schema == 2 and .title == \"e2e\"'"
 check "collector holds only CAP_DAC_READ_SEARCH"  "[ \"\$(awk '/^CapEff/{print \$2}' /proc/\$(systemctl show -p MainPID --value cockpit-collect)/status)\" = 0000000000000004 ]"
 check "host CPU and memory measured"            "j '.host.cpu_pct >= 0 and .host.mem_total > 0'"
 check "every source read without error"         "j '[.sources[] | select(.ok | not) | .name] == []'"
@@ -205,7 +205,7 @@ check "login through Caddy"                     "[ $code = 204 ]"
 check "session cookie is Secure and HttpOnly"   "grep -q '#HttpOnly_localhost.*TRUE.*cockpit_session' $C"
 check "state through Caddy with the cookie"     "curl -sk -b $C --resolve localhost:18447:127.0.0.1 https://localhost:18447/api/state | jq -e '.title == \"e2e\"'"
 ev=$(timeout 6 curl -skN -b "$C" --resolve localhost:18447:127.0.0.1 https://localhost:18447/api/events 2>/dev/null | head -c 200000 | grep -m2 -E '^(event|data):' || true)
-if grep -q '^event: snapshot' <<<"$ev" && grep -q '"schema":1' <<<"$ev"; then ok "live stream delivers a snapshot event"; else bad "live stream delivers a snapshot event"; fi
+if grep -q '^event: snapshot' <<<"$ev" && grep -q '"schema":2' <<<"$ev"; then ok "live stream delivers a snapshot event"; else bad "live stream delivers a snapshot event"; fi
 check "UI served through Caddy"                 "curl -sk --resolve localhost:18447:127.0.0.1 https://localhost:18447/ | grep -q '<title>Cockpit</title>'"
 rm -f "$C"
 

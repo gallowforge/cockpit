@@ -21,12 +21,12 @@ func healthy() *Snapshot {
 		Services: []Service{{ID: "vault", Title: "Vaultwarden", State: "up"}, {ID: "old-job", Title: "old-job", State: "off"}},
 		Backups: Backups{Sets: []BackupSet{{Name: "vault", MaxAgeH: 48, LastOK: tp(now.Add(-3 * time.Hour)), Bytes: 10}},
 			Runs: []Run{{Result: "success"}}},
-		Drill:     Drill{Runs: []DrillRun{{End: now.Add(-48 * time.Hour), Passed: 9}}},
+		Drill:     Drill{Unit: "drill.service", Runs: []DrillRun{{End: now.Add(-48 * time.Hour), Passed: 9}}},
 		Alerts:    Alerts{Incidents: []Incident{{Key: "caretaker-morning", State: "info", Prio: "low"}}},
 		Timers:    []Timer{{Unit: "homelab-backup.timer", Activates: "homelab-backup.service", Result: "success", Enabled: "enabled", Highlight: true}},
 		Drift:     Drift{Result: "clean"},
 		Heartbeat: Heartbeat{Unit: "hb.service", Last: tp(now.Add(-2 * time.Minute)), OK: true},
-		Health:    Health{Last: tp(now.Add(-time.Hour)), Categories: []HealthCategory{{Name: "dns"}}},
+		Health:    Health{Unit: "health.service", Last: tp(now.Add(-time.Hour)), Categories: []HealthCategory{{Name: "dns"}}},
 		Runbooks:  []Runbook{{ID: "restore", Match: []string{"backups", "backup-*"}}, {ID: "dns", Match: []string{"vault"}}},
 	}
 }
@@ -150,6 +150,24 @@ func TestBlindSpotsAreNotAllClear(t *testing.T) {
 	Finalize(s, now)
 	if s.Status.Level != Crit || s.Status.Headline != "Vaultwarden is down." || len(s.Status.Blind) != 1 {
 		t.Fatalf("status %+v", s.Status)
+	}
+}
+
+// A drill or a health check that is not set up is nothing to wait for; one
+// that is set up but has never run is a blind spot, not an all-clear.
+func TestOnlyExpectWhatIsSetUp(t *testing.T) {
+	s := healthy()
+	s.Drill = Drill{}
+	s.Health = Health{}
+	Finalize(s, now)
+	if s.Status.Level != OK || len(s.Status.Blind) != 0 || s.Drill.Level != Off {
+		t.Fatalf("nothing set up: status %+v drill %s", s.Status, s.Drill.Level)
+	}
+	s = healthy()
+	s.Health.Last = nil
+	Finalize(s, now)
+	if s.Status.Level != Unknown || s.Health.Level != Unknown || len(s.Status.Blind) != 1 || s.Status.Blind[0].Area != "health" {
+		t.Fatalf("health never ran: status %+v health %s", s.Status, s.Health.Level)
 	}
 }
 

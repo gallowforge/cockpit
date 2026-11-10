@@ -120,6 +120,8 @@ func Finalize(s *Snapshot, now time.Time) {
 
 	// restore drill
 	switch {
+	case len(s.Drill.Runs) == 0 && s.Drill.Unit == "":
+		s.Drill.Level = Off // none is set up: nothing to expect
 	case len(s.Drill.Runs) == 0:
 		s.Drill.Level = Unknown
 	default:
@@ -222,6 +224,9 @@ func Finalize(s *Snapshot, now time.Time) {
 		if c.Open {
 			h.Level = Worst(h.Level, PrioLevel(c.Prio))
 		}
+	}
+	if h.Unit != "" && h.Last == nil {
+		h.Level = Unknown
 	}
 	if h.Last != nil && now.Sub(*h.Last) > 29*time.Hour {
 		h.Level = Worst(h.Level, Warn)
@@ -342,8 +347,11 @@ func blindSpots(s *Snapshot) []Attention {
 	if s.Heartbeat.Unit != "" && s.Heartbeat.Last == nil {
 		put("heartbeat", "none", "No heartbeat in the journal yet", "The dead-man switch has not pinged since the journal begins.", "", false)
 	}
-	if len(s.Drill.Runs) == 0 {
+	if s.Drill.Unit != "" && len(s.Drill.Runs) == 0 {
 		put("drill", "none", "No restore drill in the journal yet", "The drill runs weekly; until one has run, no backup has been proven restorable.", "", false)
+	}
+	if s.Health.Unit != "" && s.Health.Last == nil {
+		put("health", "none", "No daily health check in the journal yet", "The checks Uptime Kuma can't make have not run since the journal begins.", "", false)
 	}
 	return out
 }

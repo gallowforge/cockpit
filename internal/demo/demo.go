@@ -87,6 +87,7 @@ func (g *Generator) Snapshot(now time.Time) *snapshot.Snapshot {
 	s.Services = g.services(now, r)
 	s.Backups = g.backups(now, r)
 	s.Drill = g.drill(now)
+	s.Drill.Unit = "homelab-restore-test.service"
 	s.Alerts = g.alerts(now)
 	s.Timers = g.timers(now)
 	s.Drift = g.drift(now)
@@ -499,7 +500,7 @@ func (g *Generator) heartbeat(now time.Time) snapshot.Heartbeat {
 func (g *Generator) health(now time.Time) snapshot.Health {
 	last, _ := lastDaily(now, 7, 30)
 	last = last.Add(44 * time.Second)
-	h := snapshot.Health{Last: &last, Result: "all healthy - staying quiet"}
+	h := snapshot.Health{Unit: "homelab-health.service", Last: &last, Result: "all healthy - staying quiet"}
 	for _, n := range []string{"backups", "mirror", "containers", "memory", "storage", "units", "reboot", "tls",
 		"tailscale", "dns", "power", "homeassistant", "updates", "updates-watchtower", "reminders", "guards", "config-drift"} {
 		c := snapshot.HealthCategory{Name: n}

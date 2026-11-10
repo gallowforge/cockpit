@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSnap, alertHistogram, areaHref, awayEvents, byDay, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, proof, serverNow, sortTimers, uptimeOf, worst, fullDay, fleetDay, bucket, dayUptime, daySeen, dayRuns, slotStart, latencyStats, DAY_SLOTS, DAY_SLOT_MS } from './derive'
+import { normalizeSnap, alertHistogram, areaHref, awayEvents, clearFacts, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, serverNow, sortTimers, worst, fullDay, fleetDay, bucket, dayUptime, daySeen, dayRuns, slotStart, latencyStats, DAY_SLOTS, DAY_SLOT_MS } from './derive'
 import type { Incident, Service, Snapshot, Timer } from './types'
 
 const svc = (id: string, group?: string): Service =>
@@ -18,11 +18,6 @@ describe('derive', () => {
     expect(g.map((x) => x.name)).toEqual(['Network', 'Apps', 'Other'])
     expect(g[0].services.map((s) => s.id)).toEqual(['b', 'd'])
   })
-  it('groups incidents by local day', () => {
-    const now = new Date(2026, 2, 10, 12, 0).getTime()
-    const d = byDay([inc(new Date(2026, 2, 10, 9).toISOString()), inc(new Date(2026, 2, 10, 1).toISOString()), inc(new Date(2026, 2, 9, 23).toISOString())], now)
-    expect(d.map((x) => [x.label, x.items.length])).toEqual([['Today', 2], ['Yesterday', 1]])
-  })
   it('bins alerts per day by severity', () => {
     const now = new Date(2026, 2, 10, 12, 0).getTime()
     const bins = alertHistogram([inc(new Date(2026, 2, 10, 9).toISOString(), 'high'), inc(new Date(2026, 2, 8, 9).toISOString(), 'low'), inc(new Date(2026, 1, 1).toISOString())], now, 14)
@@ -35,17 +30,13 @@ describe('derive', () => {
     expect(prioLevel('urgent')).toBe('crit')
     expect(prioLevel('default')).toBe('warn')
     expect(prioLevel('low')).toBe('info')
+    expect([prioLevel('5'), prioLevel('4'), prioLevel('3'), prioLevel('2')]).toEqual(['crit', 'crit', 'warn', 'info'])
   })
   it('sorts timers by next run, homelab ones only when asked', () => {
     const t = (unit: string, next: string | undefined, highlight: boolean) => ({ unit, activates: unit, next, highlight, level: 'ok' }) as Timer
     const list = [t('b', '2026-03-10T09:00:00Z', true), t('a', '2026-03-10T08:00:00Z', false), t('c', undefined, true)]
     expect(sortTimers(list, true).map((x) => x.unit)).toEqual(['b', 'c'])
     expect(sortTimers(list, false).map((x) => x.unit)).toEqual(['a', 'b', 'c'])
-  })
-  it('computes uptime from beats, ignoring off and unknown', () => {
-    expect(uptimeOf('uuuux')).toBe(80)
-    expect(uptimeOf('uuoo??')).toBe(100)
-    expect(uptimeOf('oo')).toBeNull()
   })
   it('names only the jobs that run hourly or less often', () => {
     const t = (unit: string, last: string, next: string) => ({ unit, activates: unit, last, next, highlight: true, level: 'ok' }) as Timer
@@ -62,6 +53,7 @@ describe('derive', () => {
     expect(s.status.attention).toEqual([])
     expect(s.backups.sets[0].archives).toEqual([])
     expect(s.alerts.open).toEqual([])
+    expect(s.status.blind).toHaveLength(1)
   })
   it('links attention items to their page', () => {
     expect(areaHref('services', 'vault warden')).toBe('#/services/vault%20warden')
@@ -91,8 +83,9 @@ describe('the hero', () => {
   it('says nothing needs you, with its proof', () => {
     const h = heroOf(base(), NOW)
     expect([h.kind, h.light, h.title]).toEqual(['clear', 'calm', 'Nothing needs you.'])
-    const text = proof(base(), NOW).map((p) => p.text).join('')
-    expect(text).toMatch(/^2 services up, 1 backup verified, the oldest 2h ago and the drill restored 9 of 9 on /)
+    const facts = clearFacts(base(), NOW).map((p) => p.text)
+    expect(facts.slice(0, 2)).toEqual(['2 of 2 services up', '1 backup verified, the oldest 2h ago'])
+    expect(facts[2]).toMatch(/^Restore drill passed /)
   })
   it('names a single problem and offers its checklist first', () => {
     const s = base()

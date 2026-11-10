@@ -300,6 +300,8 @@ button.row { width: 100%; text-align: left; }
 .proof a { display: flex; align-items: center; gap: 8px; color: var(--t2); }
 .proof a:hover { color: var(--t1); }
 .proof .icon { color: var(--ok); }
+.proof.plain li { display: flex; align-items: baseline; gap: 9px; color: var(--t2); }
+.proof.plain li::before { content: ''; flex: none; width: 5px; height: 5px; margin: 0 4px 0 4px; border-radius: 50%; background: var(--t4); transform: translateY(-2px); }
 .only-desk { display: none; }
 .strip-h .opt { display: none; }
 .facts { display: flex; flex-wrap: wrap; gap: 4px 0; margin-top: 8px; font-size: 13.5px; color: var(--t2); }

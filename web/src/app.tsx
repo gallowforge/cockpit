@@ -4,7 +4,7 @@ import type { Level, Session, Snapshot } from './types'
 import { follow, getSession, logout, readCachedSnap, type StreamState } from './api'
 import { levelRank, normalizeSnap, serverNow, servicesLevel, worst } from './derive'
 import { ago, precise } from './format'
-import { IconBackups, IconChecklist, IconHistory, IconJobs, IconLogout, IconOverview, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
+import { IconBackups, IconChecklist, IconHistory, IconJobs, IconLogout, IconMore, IconOverview, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
 import { Dot, Glyph } from './components/ui'
 import { Login } from './views/login'
 import { Palette, PAGES } from './components/palette'
@@ -16,6 +16,7 @@ import { HistoryView } from './views/history'
 import { JobsView } from './views/jobs'
 import { SystemView } from './views/system'
 import { RunbooksView } from './views/runbooks'
+import { More } from './views/more'
 
 export interface ViewProps {
   snap: Snapshot
@@ -25,7 +26,7 @@ export interface ViewProps {
   online?: boolean
 }
 
-type NavId = '' | 'services' | 'backups' | 'history' | 'jobs' | 'system' | 'runbooks'
+type NavId = '' | 'services' | 'backups' | 'history' | 'jobs' | 'system' | 'runbooks' | 'more'
 const NAV: { id: NavId; label: string; icon: (p: { size?: number }) => preact.JSX.Element; tab?: boolean }[] = [
   { id: '', label: 'Overview', icon: IconOverview, tab: true },
   { id: 'services', label: 'Services', icon: IconServices, tab: true },
@@ -36,8 +37,12 @@ const NAV: { id: NavId; label: string; icon: (p: { size?: number }) => preact.JS
   { id: 'runbooks', label: 'Checklists', icon: IconChecklist },
 ]
 
-// Addresses from earlier layouts still land in the right place.
-const MOVED: Record<string, string> = { alerts: 'history', timers: 'jobs', drift: 'system' }
+// Addresses from earlier layouts still land in the right place, keeping what they pointed at.
+const MOVED: Record<string, (rest: string[]) => string> = {
+  alerts: (r) => (r[0] ? `history/alert/${encodeURIComponent(r[0])}` : 'history'),
+  timers: () => 'jobs',
+  drift: () => 'system/drift',
+}
 
 function useRoute(): string[] {
   const parse = () => location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
@@ -60,18 +65,20 @@ function areas(s: Snapshot): Record<NavId, { level: Level; count?: string }> {
   const lv = (l: Level, a: string[]) => (l === 'ok' && has(a) ? 'unknown' : l)
   const svcBad = s.services.filter((x) => levelRank[x.level] >= levelRank.unknown)
   const svcLevel = lv(servicesLevel(s.services), ['services'])
+  const svcWord = svcLevel === 'unknown' ? 'unseen' : svcBad.some((x) => x.state === 'down') ? 'down' : 'need you'
   const setBad = s.backups.sets.filter((b) => b.level !== 'ok').length
   const jobs = s.timers.filter((t) => t.highlight)
   const jobsBad = jobs.filter((t) => t.level === 'warn' || t.level === 'crit').length
   const open = s.alerts.open.length
   return {
     '': { level: s.status.level },
-    services: { level: svcLevel, count: svcBad.length ? `${svcBad.length} ${svcLevel === 'unknown' ? 'unseen' : 'down'}` : String(s.services.length) },
+    services: { level: svcLevel, count: svcBad.length ? `${svcBad.length} ${svcWord}` : String(s.services.length) },
     backups: { level: lv(worst([s.backups.level, s.drill.level === 'unknown' ? 'ok' : s.drill.level]), ['backups', 'drill']), count: setBad ? `${setBad} late` : String(s.backups.sets.length) },
-    history: { level: s.alerts.level === 'info' ? 'ok' : s.alerts.level, count: open ? `${open} open` : undefined },
+    history: { level: lv(s.alerts.level === 'info' ? 'ok' : s.alerts.level, ['alerts']), count: open ? `${open} open` : undefined },
     jobs: { level: lv(worst(jobs.map((t) => t.level)), ['timers']), count: jobsBad ? `${jobsBad} failed` : String(jobs.length) },
     system: { level: lv(worst([s.host.level, s.drift.level === 'info' ? 'ok' : s.drift.level, s.heartbeat.level === 'off' ? 'ok' : s.heartbeat.level, s.health.level]), ['drift', 'heartbeat', 'host', 'health']) },
-    runbooks: { level: 'ok', count: s.runbooks.length ? String(s.runbooks.length) : undefined },
+    runbooks: { level: lv('ok', ['runbooks']), count: s.runbooks.length ? String(s.runbooks.length) : undefined },
+    more: { level: 'ok' },
   }
 }
 
@@ -233,7 +240,7 @@ export function App() {
 
   const page0 = route[0] ?? ''
   useEffect(() => {
-    if (MOVED[page0]) location.replace('#/' + MOVED[page0])
+    if (MOVED[page0]) location.replace('#/' + MOVED[page0](route.slice(1)))
   }, [page0])
 
   if (sessionErr && !snap) {
@@ -259,12 +266,12 @@ export function App() {
   }
 
   const state = areas(snap)
-  const page = (MOVED[page0] ?? page0) as NavId
+  const page = (MOVED[page0] ? MOVED[page0](route.slice(1)).split('/')[0] : page0) as NavId
   const props: ViewProps = { snap, now, route, since, online }
   const age = now - Date.parse(snap.generated)
   const live = stream === 'live' && age <= 90_000 && online
   const liveText = !online ? 'Offline' : live ? 'Live' : stream === 'reconnecting' ? 'Reconnecting' : age > 90_000 ? 'Lost sight' : 'Connecting'
-  const known = NAV.some((n) => n.id === page)
+  const known = NAV.some((n) => n.id === page) || page === 'more'
   const hostLevel = snap.status.level === 'info' ? 'ok' : snap.status.level
 
   return (
@@ -324,24 +331,36 @@ export function App() {
             {page === 'jobs' && <div class="page"><JobsView {...props} /></div>}
             {page === 'system' && <div class="page"><SystemView {...props} /></div>}
             {page === 'runbooks' && <div class="page"><RunbooksView {...props} /></div>}
+            {page === 'more' && <div class="page"><More snap={snap} levels={state} onSearch={() => setPalette(true)} /></div>}
             {!known && <div class="page empty">Nothing here. <a class="linklike" href="#/">Back to the overview</a></div>}
           </div>
         </Guard>
       </main>
 
       <nav class="tabbar" aria-label="Sections">
-        {NAV.filter((n) => n.tab).map((n) => {
+        {NAV.filter((n) => n.tab && n.id !== 'system').map((n) => {
           const Icon = n.icon
           const a = state[n.id]
           const bad = a.level === 'crit' || a.level === 'warn' || a.level === 'unknown'
           return (
-            <a key={n.id} href={`#/${n.id}`} class="tab" aria-current={page === n.id || (n.id === 'system' && page === 'jobs') ? 'page' : undefined}>
+            <a key={n.id} href={`#/${n.id}`} class="tab" aria-current={page === n.id ? 'page' : undefined}>
               <Icon size={20} />
               {bad && <span class="badge"><Glyph level={a.level} size={11} /></span>}
               <span>{n.label}</span>
             </a>
           )
         })}
+        {(() => {
+          const lv = worst([state.jobs.level, state.system.level, state.runbooks.level])
+          const bad = lv === 'crit' || lv === 'warn' || lv === 'unknown'
+          return (
+            <a href="#/more" class="tab" aria-current={page === 'more' || page === 'jobs' || page === 'system' || page === 'runbooks' ? 'page' : undefined}>
+              <IconMore size={20} />
+              {bad && <span class="badge"><Glyph level={lv} size={11} /></span>}
+              <span>More</span>
+            </a>
+          )
+        })()}
       </nav>
       {palette && <Palette snap={snap} initial={shotPalette ?? ''} onClose={() => setPalette(false)} />}
     </div>

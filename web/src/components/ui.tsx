@@ -105,6 +105,7 @@ export function Day({ day, n, size, label, onCell }: { day: string; n: number; s
   return (
     <span class={`day${size ? ' ' + size : ''}`} role="img" aria-label={label}
       onMouseMove={onCell && ((e) => { const i = (e.target as HTMLElement).dataset?.i; onCell(i == null ? null : Number(i), e as unknown as MouseEvent) })}
+      onClick={onCell && ((e) => { const i = (e.target as HTMLElement).dataset?.i; onCell(i == null ? null : Number(i), e as unknown as MouseEvent) })}
       onMouseLeave={onCell && (() => onCell(null))}>
       {cells.split('').map((c, i) => <i key={i} data-i={i} class={c === 'x' && i < last ? 'w' : CELL[c] ?? 'q'} />)}
     </span>
@@ -189,7 +190,7 @@ export function Runs({ items, selected, onPick, label }: { items: { level: Level
         const cls = it.level === 'crit' ? 'crit' : it.level === 'ok' ? '' : 'info'
         return onPick
           ? <button type="button" key={i} class={cls} aria-label={it.label} aria-pressed={selected === i} onClick={() => onPick(i)} />
-          : <i key={i} class={cls} aria-label={it.label} />
+          : <i key={i} class={cls} role="img" aria-label={it.label} />
       })}
     </span>
   )

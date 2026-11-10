@@ -33,6 +33,7 @@ export const IconClock = ({ size }: P) => <I size={size}><circle cx="8" cy="8" r
 export const IconCheck = ({ size }: P) => <I size={size}><path d="m3.5 8.5 2.9 2.9 6.1-6.65" /></I>
 export const IconX = ({ size }: P) => <I size={size}><path d="m4.5 4.5 7 7M11.5 4.5l-7 7" /></I>
 export const IconShield = ({ size }: P) => <I size={size}><path d="M8 2 3.25 3.9v3.6c0 2.9 2 5 4.75 6 2.75-1 4.75-3.1 4.75-6V3.9z" /><path d="m5.9 8 1.45 1.45L10.2 6.6" /></I>
+export const IconMore = ({ size }: P) => <I size={size}><circle cx="3.75" cy="8" r=".9" /><circle cx="8" cy="8" r=".9" /><circle cx="12.25" cy="8" r=".9" /></I>
 export const IconDrill = ({ size }: P) => <I size={size}><path d="M2.75 8a5.25 5.25 0 0 1 9.1-3.6" /><path d="M13.25 8a5.25 5.25 0 0 1-9.1 3.6" /><path d="M12.25 2v2.75H9.5M3.75 14v-2.75H6.5" /></I>
 
 /** The mark: an attitude instrument. A ring, the horizon line through it and

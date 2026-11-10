@@ -63,7 +63,7 @@ function ServiceRow({ s, now }: { s: Service; now: number }) {
         {s.probe?.latencies && !failing && <Spark values={s.probe.latencies} w={56} h={18} />}
         {s.probe ? (failing ? (s.probe.error || 'failing') : fmtMs(lat.p50)) : <span class="muted">no check</span>}
       </span>
-      <span class="upt">{fmtPct(dayUptime(day))}</span>
+      <span class="upt">{daySeen(day) >= 12 ? fmtPct(dayUptime(day)) : '—'}</span>
       <span class="chev"><IconChevron size={14} /></span>
     </a>
   )
@@ -90,7 +90,7 @@ export function Services(p: ViewProps) {
         aside={<Seg label="Show" value={filter} onChange={setFilter} options={[['all', 'All'], ['needs', `Needs you${bad.length ? ` (${bad.length})` : ''}`], ['containers', 'Containers'], ['units', 'Units']]} />} />
       <Figures items={[
         { label: 'Up now', value: up, unit: `/ ${counted.length}`, caption: bad.length ? `${plural(bad.length, 'needs', 'need')} you` : 'every check answering', level: bad.some((s) => s.level === 'crit') ? 'crit' : bad.length ? 'unknown' : undefined },
-        { label: 'Availability, 24 h', value: fmtPct(ups.length ? ups.reduce((a, b) => a + b, 0) / ups.length : null).replace('%', ''), unit: '%', caption: seen < 276 ? `over the ${Math.round(seen / 12)} h Cockpit watched` : 'average across services' },
+        { label: 'Availability, 24 h', value: fmtPct(ups.length ? ups.reduce((a, b) => a + b, 0) / ups.length : null).replace('%', ''), unit: '%', caption: seen === 0 ? 'no history yet' : seen < 276 ? `over the ${Math.max(1, Math.round(seen / 12))} h Cockpit watched` : 'average across services' },
         { label: 'Probed', value: probed.length, unit: `/ ${snap.services.length}`, caption: 'answer HTTP, TCP or DNS checks' },
         { label: 'Slowest answer', value: slowest ? fmtMs(slowest.p).replace(' ms', '') : '—', unit: slowest ? 'ms' : undefined, caption: slowest ? `${slowest.s.title}, median` : 'no probes' },
       ]} />

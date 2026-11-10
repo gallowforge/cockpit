@@ -39,7 +39,7 @@ export function HistoryView(p: ViewProps) {
         { label: 'Open now', value: open || 'None', caption: open ? snap.alerts.open[0].title : 'nothing waiting', level: open ? (snap.alerts.level === 'info' ? undefined : snap.alerts.level) : undefined },
         { label: 'Pushes, 24 h', value: snap.alerts.sent_24h, caption: 'sent to your phone' },
         { label: 'Pushes, 7 days', value: snap.alerts.sent_7d, caption: `${plural(real.length, 'alert')} in 30 days` },
-        { label: 'Time to all-clear', value: isFinite(median) ? durationWords(median).replace(/ minutes?| hours?| days?/, '') : '—', unit: isFinite(median) ? durationWords(median).replace(/^[\d—]+ /, '') : undefined, caption: 'median, cleared alerts' },
+        { label: 'Time to all-clear', ...clearTime(median), caption: 'median, cleared alerts' },
       ]} />
       <Section title="Alerts per day" aside={<span>the last 30 days</span>}>
         <div class="panel">
@@ -72,6 +72,16 @@ export function HistoryView(p: ViewProps) {
       {hidden > 0 && <p class="note-line">{plural(hidden, 'older nightly backup')} went fine and {hidden === 1 ? 'is' : 'are'} not listed here. <button type="button" class="linklike" onClick={() => setF('backups')}>Show them</button></p>}
     </div>
   )
+}
+
+/** A median duration as a figure: the number and its unit apart. */
+function clearTime(d: number): { value: string | number; unit?: string } {
+  if (!isFinite(d)) return { value: '—' }
+  const m = Math.round(d / 60000)
+  if (m < 1) return { value: '<1', unit: 'min' }
+  if (m < 60) return { value: m, unit: 'min' }
+  const h = Math.round(m / 60)
+  return h < 48 ? { value: h, unit: h === 1 ? 'hour' : 'hours' } : { value: Math.round(h / 24), unit: 'days' }
 }
 
 function IncidentDetail({ snap, now, k }: ViewProps & { k: string }) {

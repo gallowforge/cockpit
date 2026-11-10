@@ -1,6 +1,7 @@
 // Derived views of a snapshot that more than one page needs. Pure, tested.
 import type { Attention, Incident, Level, Service, Snapshot, Timer } from './types'
 import { ago, clock, dayLabel, ms, plural } from './format'
+import { safeHref } from './markdown'
 
 export const levelRank: Record<Level, number> = { ok: 0, off: 0, info: 1, unknown: 2, warn: 3, crit: 4 }
 
@@ -34,23 +35,6 @@ export function groupServices(list: Service[]): ServiceGroup[] {
   return order.map((name) => ({ name, services: map.get(name)! }))
 }
 
-export interface DayGroup<T> {
-  label: string
-  items: T[]
-}
-
-/** Incidents grouped by local day, newest first (input is newest first). */
-export function byDay(list: Incident[], now: number): DayGroup<Incident>[] {
-  const out: DayGroup<Incident>[] = []
-  for (const i of list) {
-    const label = dayLabel(i.opened, now)
-    const last = out[out.length - 1]
-    if (last && last.label === label) last.items.push(i)
-    else out.push({ label, items: [i] })
-  }
-  return out
-}
-
 /** Sends per day for the last n days, split by severity, oldest first. */
 export function alertHistogram(list: Incident[], now: number, days = 14) {
   const start = new Date(now)
@@ -69,9 +53,10 @@ export function alertHistogram(list: Incident[], now: number, days = 14) {
   return bins
 }
 
+/** ntfy priorities as levels; the same mapping as the collector's PrioLevel. */
 export function prioLevel(p: string): Level {
-  if (p === 'urgent' || p === 'high' || p === 'max') return 'crit'
-  if (p === 'default' || p === '') return 'warn'
+  if (p === 'urgent' || p === 'high' || p === 'max' || p === '5' || p === '4') return 'crit'
+  if (p === 'default' || p === '3' || p === '') return 'warn'
   return 'info'
 }
 
@@ -80,14 +65,6 @@ export function sortTimers(list: Timer[], homelabOnly: boolean): Timer[] {
   const t = homelabOnly ? list.filter((x) => x.highlight) : list.slice()
   const next = (x: Timer) => (x.next ? ms(x.next) : Infinity)
   return t.sort((a, b) => next(a) - next(b))
-}
-
-/** Beats string to counts, for the uptime figure. */
-export function uptimeOf(beats: string): number | null {
-  const counted = beats.replace(/[o?]/g, '')
-  if (!counted.length) return null
-  const up = (counted.match(/u/g) || []).length
-  return (up / counted.length) * 100
 }
 
 /** The server's clock, carried forward by the browser's monotonic clock. */
@@ -162,7 +139,7 @@ export function heroOf(s: Snapshot, now: number, opts: { online?: boolean; strea
       detail: [{ text: `Watchdogs paused since ${clock(s.maintenance.since)}. ${att.length ? `${plural(att.length, 'thing')} would need you.` : 'Nothing would need you.'}` }] }
   }
   if (att.length === 0 && blind.length === 0) {
-    return { ...base, kind: 'clear', light: 'calm', title: 'Nothing needs you.', detail: proof(s, now) }
+    return { ...base, kind: 'clear', light: 'calm', title: 'Nothing needs you.', detail: [] }
   }
   if (att.length === 0) {
     const b = blind[0]
@@ -175,11 +152,12 @@ export function heroOf(s: Snapshot, now: number, opts: { online?: boolean; strea
     const actions: HeroAction[] = []
     if (a.runbook) actions.push({ label: 'Open the checklist', href: `#/runbooks/${encodeURIComponent(a.runbook)}`, primary: true })
     const svc = a.area === 'services' ? s.services.find((x) => x.id === a.ref) : undefined
-    if (svc?.url) actions.push({ label: `Open ${svc.title}`, href: svc.url, external: true, primary: !actions.length })
+    const app = svc?.url ? safeHref(svc.url) : null
+    if (svc && app) actions.push({ label: `Open ${svc.title}`, href: app, external: true, primary: !actions.length })
     actions.push({ label: 'Details', href: areaHref(a.area, a.ref), primary: !actions.length })
-    const detail = [a.detail, a.evidence ? `Also: ${a.evidence}.` : ''].filter(Boolean).join('. ').replace(/\.\./g, '.')
+    const detail = [a.detail, a.evidence ? `Also: ${a.evidence}` : ''].filter((x): x is string => !!x).map(sentence).join(' ')
     return { ...base, kind: a.level === 'crit' ? 'down' : 'attn', light: a.level === 'crit' ? 'down' : 'attn',
-      title: sentence(a.title), detail: [{ text: sentence(detail) }], actions }
+      title: sentence(a.title), detail: [{ text: detail }], actions }
   }
   const worstOne = att[0]
   return { ...base, kind: 'several', light: worstOne.level === 'crit' ? 'down' : 'attn', title: `${att.length} things need you.`,
@@ -196,35 +174,32 @@ function sentence(t: string): string {
 /** Jobs worth naming: the highlighted ones that run hourly or less often (a
  *  probe every minute is never the "next job"). Soonest first. */
 export function notableTimers(list: Timer[]): Timer[] {
-  return sortTimers(list, true).filter((t) => {
-    if (!t.next) return false
-    if (!t.last) return true
-    return ms(t.next) - ms(t.last) >= 55 * 60e3
-  })
+  return sortTimers(list, true).filter((t) => !!t.next && !isFrequent(t))
 }
 
-/** The all-clear's proof: what was actually checked, each part a link. */
-export function proof(s: Snapshot, now: number): { text: string; href?: string }[] {
-  const parts: { text: string; href?: string }[] = []
+/** A job that runs more often than hourly: a probe or a keep-alive. */
+export function isFrequent(t: Timer): boolean {
+  return !!t.next && !!t.last && ms(t.next) - ms(t.last) < 55 * 60e3
+}
+
+/** The all-clear's proof: each part is something Cockpit actually checked. */
+export function clearFacts(s: Snapshot, now: number): { text: string; href: string }[] {
+  const out: { text: string; href: string }[] = []
   const svcs = s.services.filter((x) => x.state !== 'off')
-  if (svcs.length) parts.push({ text: `${svcs.filter((x) => x.state === 'up').length} services up`, href: '#/services' })
+  if (svcs.length) out.push({ text: `${svcs.filter((x) => x.state === 'up').length} of ${svcs.length} services up`, href: '#/services' })
   const verified = s.backups.sets.map((b) => ms(b.last_ok)).filter(isFinite)
-  if (verified.length) {
-    const oldest = Math.min(...verified)
-    parts.push({ text: `${plural(s.backups.sets.length, 'backup')} verified, the oldest ${ago(new Date(oldest).toISOString(), now)}`, href: '#/backups' })
+  if (s.backups.sets.length) {
+    const oldest = verified.length ? ago(new Date(Math.min(...verified)).toISOString(), now) : 'never'
+    out.push({ text: `${plural(s.backups.sets.length, 'backup')} verified, the oldest ${oldest}`, href: '#/backups' })
   }
   const d = s.drill.runs[0]
-  if (d) parts.push({ text: `the drill restored ${d.passed} of ${d.passed + d.failed} ${weekdayOf(d.end, now)}`, href: '#/backups' })
-  const out: { text: string; href?: string }[] = []
-  parts.forEach((p, i) => {
-    out.push(p)
-    out.push({ text: i === parts.length - 1 ? '.' : i === parts.length - 2 ? ' and ' : ', ' })
-  })
-  if (out.length) out[0] = { ...out[0], text: out[0].text.charAt(0).toUpperCase() + out[0].text.slice(1) }
+  if (d) out.push({ text: d.failed ? `Restore drill: ${d.failed} failed` : `Restore drill passed ${weekday(d.end, now)}`, href: '#/backups' })
+  if (s.heartbeat.level === 'ok') out.push({ text: 'Heartbeat steady', href: '#/system' })
   return out
 }
 
-function weekdayOf(iso: string, now: number): string {
+/** "today", "yesterday" or "on Sunday". */
+export function weekday(iso: string, now: number): string {
   const l = dayLabel(iso, now)
   if (l === 'Today') return 'today'
   if (l === 'Yesterday') return 'yesterday'
@@ -237,6 +212,8 @@ export type EventKind = 'alert' | 'backup' | 'drill' | 'timer'
 
 export interface Event {
   id: string
+  /** for alerts: the notifier's key, so repeats can be folded */
+  key?: string
   kind: EventKind
   t: number
   /** for alerts: when it cleared */
@@ -255,7 +232,7 @@ export function events(s: Snapshot): Event[] {
   for (const i of s.alerts.incidents) {
     if (i.state === 'info') continue
     const lv: Level = i.state === 'open' ? prioLevel(i.prio) : i.state === 'sent' ? 'info' : 'off'
-    out.push({ id: `a:${i.key}:${i.opened}`, kind: 'alert', t: ms(i.opened), end: i.resolved ? ms(i.resolved) : undefined, level: lv,
+    out.push({ id: `a:${i.key}:${i.opened}`, key: i.key, kind: 'alert', t: ms(i.opened), end: i.resolved ? ms(i.resolved) : undefined, level: lv,
       title: i.title, sub: i.state === 'open' ? 'still open' : i.resolved ? `cleared after ${durationWords(ms(i.resolved) - ms(i.opened))}` : i.state,
       href: `#/history/alert/${encodeURIComponent(i.key)}` })
   }
@@ -286,7 +263,7 @@ export function foldRepeats(list: Event[], now: number): Event[] {
       out.push(e)
       continue
     }
-    const key = e.id.split(':')[1] + '|' + dayLabel(new Date(e.t).toISOString(), now)
+    const key = (e.key ?? e.id) + '|' + dayLabel(new Date(e.t).toISOString(), now)
     const first = seen.get(key)
     if (first && first.level !== 'crit' && first.level !== 'warn') {
       first.count = (first.count ?? 1) + 1
@@ -319,6 +296,12 @@ export function durationWords(d: number): string {
 export function normalizeSnap(s: Snapshot): Snapshot {
   const a = <T,>(v: T[] | null | undefined): T[] => v ?? []
   s.status.attention = a(s.status.attention)
+  if ((s.schema ?? 1) < 2 && !Array.isArray(s.status.blind)) {
+    // a collector older than this page cannot report what it can't see, so its all-clear is not proof
+    s.status.blind = [{ level: 'unknown', area: 'services', title: 'The collector is an older version',
+      detail: 'Restart cockpit-collect so it writes the new state. Until then Cockpit cannot tell what it cannot see.' }]
+    if (s.status.level === 'ok' || s.status.level === 'info') s.status.level = 'unknown'
+  }
   s.status.blind = a(s.status.blind)
   s.services = a(s.services)
   s.host.disks = a(s.host.disks)
