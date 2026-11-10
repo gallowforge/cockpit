@@ -636,7 +636,8 @@ a.ev:hover b { text-decoration: underline; text-decoration-color: var(--cyan-lin
   /* the sidebar is painted on the shell, so its glass runs the full height of any page */
   .shell {
     display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr);
-    background: linear-gradient(90deg, rgba(8, 18, 14, 0.82) 0 var(--side-w), var(--line) var(--side-w) calc(var(--side-w) + 1px), transparent calc(var(--side-w) + 1px));
+    /* the moss tint fades toward the hairline, so the haze passes the sidebar's edge as a gradient, never a cut */
+    background: linear-gradient(90deg, rgba(8, 18, 14, 0.66) 0, rgba(8, 18, 14, 0.4) calc(var(--side-w) * 0.6), rgba(8, 18, 14, 0.08) calc(var(--side-w) - 1px), var(--line) calc(var(--side-w) - 1px) var(--side-w), transparent var(--side-w));
   }
   .mtop, .tabbar { display: none; }
   .side { position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding: 16px 12px 12px; overflow-y: auto; scrollbar-width: thin; }
@@ -649,7 +650,7 @@ a.ev:hover b { text-decoration: underline; text-decoration-color: var(--cyan-lin
   .only-desk { display: block; }
   .ov { display: grid; grid-template-columns: minmax(0, 1fr) var(--rail-w); min-height: 100vh; }
   .ov-main { --bleed-l: 36px; --bleed-r: 36px; min-width: 0; padding: 0 36px 48px; }
-  .ov-rail { padding: 0 24px 40px; border-left: 1px solid var(--line); background: linear-gradient(180deg, rgba(10, 22, 16, 0.5), rgba(8, 18, 14, 0.3)); }
+  .ov-rail { padding: 0 24px 40px; border-left: 1px solid var(--line); background: linear-gradient(90deg, rgba(8, 18, 14, 0.06) 0, rgba(8, 18, 14, 0.3) 45%, rgba(8, 18, 14, 0.38) 100%); }
   .ov-rail .only-desk .rail-sec { margin-top: 28px; }
   .status h2 { font-size: 28px; }
   .svc-head, .svc {

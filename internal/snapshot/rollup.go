@@ -253,7 +253,7 @@ func Finalize(s *Snapshot, now time.Time) {
 	}
 }
 
-// headline says the state of the house in one plain sentence.
+// headline says the state of the server in one plain sentence.
 func headline(att, blind []Attention) string {
 	switch n := len(att); {
 	case n == 0 && len(blind) == 0:

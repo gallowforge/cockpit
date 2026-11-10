@@ -131,7 +131,7 @@ export function heroOf(s: Snapshot, now: number, opts: { online?: boolean; strea
       detail: [{ text: `Showing the state from ${clock(s.generated)}, ${ago(s.generated, now)}. Vesper reconnects by itself.` }] }
   }
   if (age > STALE_MS) {
-    return { ...base, kind: 'stale', light: 'none', title: 'Vesper lost sight of the house.',
+    return { ...base, kind: 'stale', light: 'none', title: 'Vesper lost sight of the server.',
       detail: [{ text: `Last snapshot ${clock(s.generated)}, ${ago(s.generated, now)}. Below is the last known state.` }] }
   }
   if (s.maintenance) {

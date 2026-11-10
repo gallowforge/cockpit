@@ -31,7 +31,7 @@ username = pilot
 [homelab]
 repo = /home/alex/docker
 alert_window = 3d
-info_keys = caretaker-* hotline-*
+info_keys = operator-* report-*
 
 [service:vault]
 title = Vaultwarden

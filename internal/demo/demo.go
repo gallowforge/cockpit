@@ -42,7 +42,7 @@ type svcDef struct {
 }
 
 var services = []svcDef{
-	{"adguard", "AdGuard Home", "DNS for the house", "Network", "container", "adguard/adguardhome:v0.107", "", "dns 127.0.0.1:53", 53, 1.4},
+	{"adguard", "AdGuard Home", "DNS for every device", "Network", "container", "adguard/adguardhome:v0.107", "", "dns 127.0.0.1:53", 53, 1.4},
 	{"caddy", "Caddy", "the TLS front door", "Network", "container", "caddy:2", "", "https://127.0.0.1:8443", 8443, 6.8},
 	{"tailscale", "Tailscale", "access from away", "Network", "unit", "", "tailscaled.service", "", 0, 0},
 	{"vaultwarden", "Vaultwarden", "passwords", "Apps", "container", "vaultwarden/server:1.34", "", "https://127.0.0.1:8452", 8452, 9.2},
@@ -53,7 +53,7 @@ var services = []svcDef{
 	{"dockge", "Dockge", "compose stacks", "Operations", "container", "louislam/dockge:1", "", "", 0, 0},
 	{"watchtower", "Watchtower", "tiered updates", "Operations", "container", "containrrr/watchtower:1.7", "", "", 0, 0},
 	{"docker", "Docker Engine", "container runtime", "Host", "unit", "", "docker.service", "", 0, 0},
-	{"operator", "AI operator", "on-call agent session", "Host", "unit", "", "claude-session.service", "", 0, 0},
+	{"operator", "AI operator", "on-call agent session", "Host", "unit", "", "operator.service", "", 0, 0},
 }
 
 type setDef struct {
@@ -257,9 +257,8 @@ func (g *Generator) dayLine(now time.Time, d svcDef) string {
 // at returns today's (or an earlier day's) wall-clock time in the demo's
 // zone, so the nightly jobs land at believable hours.
 func at(now time.Time, daysAgo, hh, mm, ss int) time.Time {
-	loc := time.FixedZone("UTC+3", 3*3600)
-	l := now.In(loc)
-	return time.Date(l.Year(), l.Month(), l.Day()-daysAgo, hh, mm, ss, 0, loc).UTC()
+	l := now.UTC() // demo schedules are wall-clock times in UTC
+	return time.Date(l.Year(), l.Month(), l.Day()-daysAgo, hh, mm, ss, 0, time.UTC)
 }
 
 func lastDaily(now time.Time, hh, mm int) (time.Time, int) {
@@ -319,9 +318,7 @@ var drillDetails = [][2]string{
 }
 
 func (g *Generator) drill(now time.Time) snapshot.Drill {
-	loc := time.FixedZone("UTC+3", 3*3600)
-	l := now.In(loc)
-	back := int(l.Weekday()) // days since Sunday
+	back := int(now.UTC().Weekday()) // days since Sunday
 	first := at(now, back, 5, 45, 0)
 	if first.After(now) {
 		first = at(now, back+7, 5, 45, 0)
@@ -342,7 +339,7 @@ func (g *Generator) drill(now time.Time) snapshot.Drill {
 func (g *Generator) alerts(now time.Time) snapshot.Alerts {
 	res := func(t time.Time) *time.Time { return &t }
 	in := []snapshot.Incident{
-		{Key: "caretaker-morning", Title: "Caretaker: what I did", Prio: "low", Opened: at(now, 0, 8, 14, 0), Sends: 1, State: "info"},
+		{Key: "operator-report", Title: "Operator: the morning report", Prio: "low", Opened: at(now, 0, 8, 14, 0), Sends: 1, State: "info"},
 		{Key: "health-storage", Title: "Homelab: storage needs attention", Prio: "default", Opened: at(now, 3, 7, 30, 41),
 			Resolved: res(at(now, 2, 7, 30, 38)), Sends: 1, State: "resolved"},
 		{Key: "kuma-down", Title: "Uptime Kuma: Home Assistant is DOWN", Prio: "high", Opened: now.Add(-63 * time.Minute),
@@ -360,7 +357,7 @@ func (g *Generator) alerts(now time.Time) snapshot.Alerts {
 	}
 	for d := 1; d < 14; d++ {
 		if d%3 == 0 {
-			in = append(in, snapshot.Incident{Key: "caretaker-morning", Title: "Caretaker: what I did", Prio: "low",
+			in = append(in, snapshot.Incident{Key: "operator-report", Title: "Operator: the morning report", Prio: "low",
 				Opened: at(now, d, 8, 12, 0), Resolved: res(at(now, d, 8, 12, 0)), Sends: 1, State: "info"})
 		}
 	}
@@ -408,12 +405,12 @@ var timers = []timerDef{
 	{"homelab-netprobe.timer", "Network probe: loss and latency to near and far targets", time.Minute, 0, 0, -1, true},
 	{"kuma-wake.timer", "Wake the operator when Uptime Kuma marks a monitor down", time.Minute, 0, 0, -1, true},
 	{"homelab-heartbeat.timer", "Dead-man switch ping, gated on Kuma and the health check", 5 * time.Minute, 0, 0, -1, true},
-	{"claude-session-keepalive.timer", "Keep the operator session alive", 10 * time.Minute, 0, 0, -1, true},
+	{"operator-keepalive.timer", "Keep the operator session alive", 10 * time.Minute, 0, 0, -1, true},
 	{"homelab-backup-push.timer", "Push the newest archives to the laptop when it is awake", 20 * time.Minute, 0, 0, -1, true},
 	{"adguard-pin.timer", "Re-pin AdGuard's rewrite to the LAN address", time.Hour, 0, 0, -1, true},
 	{"homelab-backup.timer", "Nightly homelab backups (the sets in backups.conf)", 0, 5, 0, -1, true},
 	{"homelab-health.timer", "Daily health check for what Kuma cannot see", 0, 7, 30, -1, true},
-	{"caretaker-tick.timer", "The operator's daily round", 0, 8, 10, -1, true},
+	{"operator-round.timer", "The operator's daily round", 0, 8, 10, -1, true},
 	{"homelab-restore-test.timer", "Weekly restore drill: unpack every set into RAM and compare with live", 0, 5, 45, 0, true},
 	{"tailscale-cert-renew.timer", "Renew the tailnet TLS certificate", 0, 4, 0, 1, true},
 	{"apt-daily.timer", "Daily apt download activities", 0, 6, 12, -1, false},
@@ -441,8 +438,7 @@ func (g *Generator) timers(now time.Time) []snapshot.Timer {
 			days := 0
 			for {
 				c := at(now, days, d.hh, d.mm, 0)
-				loc := time.FixedZone("UTC+3", 3*3600)
-				if !c.After(now) && (d.weekday < 0 || int(c.In(loc).Weekday()) == d.weekday) {
+				if !c.After(now) && (d.weekday < 0 || int(c.UTC().Weekday()) == d.weekday) {
 					last = c
 					break
 				}

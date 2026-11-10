@@ -47,7 +47,7 @@ docker compose up -d && docker compose ps
 `},
 	{"dns", "When DNS stops", []string{"adguard", "health-dns"}, `# When DNS stops
 
-AdGuard Home is the only resolver for the house, on purpose: a fallback resolver broke every local name on phones that race their resolvers. So when it stops, everything looks like "the internet is down".
+AdGuard Home is the only resolver on the network, on purpose: a fallback resolver broke every local name on phones that race their resolvers. So when it stops, everything looks like "the internet is down".
 
 ## First aid (two minutes)
 

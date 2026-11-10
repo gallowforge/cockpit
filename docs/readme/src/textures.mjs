@@ -16,7 +16,7 @@ const { chromium } = createRequire(import.meta.url)('playwright');   // resolved
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, 'shots');
 const BIN = resolve(process.env.BIN || join(HERE, '../../../bin/vesper'));
-const AT = '2026-03-10T07:42:00Z';
+const AT = '2026-03-10T10:42:00Z';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // ---- screens from `vesper demo` --------------------------------------------------------
@@ -104,7 +104,7 @@ const TEX = {
 };
 
 function numbers(t, phone) {
-  const F = [['7.9 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], [process.env.RAM_MB ? process.env.RAM_MB + ' MB' : '27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['137', 'tests, 34 of them', 'under real systemd']];
+  const F = [['7.7 MB', 'one binary for the Pi,', 'the UI inside'], ['0', 'Go dependencies,', 'standard library only'], [process.env.RAM_MB ? process.env.RAM_MB + ' MB' : '27 MB', 'of RAM on a', 'Raspberry Pi 5'], ['140', 'tests, 34 of them', 'under real systemd']];
   const cell = ([v, a, b], i) => `<div style="padding:${phone ? '26px 24px 24px' : '30px 30px 28px'};${phone ? (i % 2 ? `border-left:1px solid ${t.rule};` : '') + (i > 1 ? `border-top:1px solid ${t.rule};` : '') : (i ? `border-left:1px solid ${t.rule};` : '')}">
     <div style="font:600 ${phone ? 44 : 50}px/1 Geist;letter-spacing:-.045em;color:${t.hi};margin-left:-3px">${v}</div>
     <div style="font:400 15px/1.4 Geist;color:${t.soft};margin-top:12px">${a}<br>${b}</div></div>`;
@@ -158,7 +158,7 @@ if (SHOTS.some(s => want(s[0]))) {
     await new Promise(r => setTimeout(r, 800));
     for (const [name, scen, route, q, w, h, scale] of SHOTS) {
       if (!want(name)) continue;
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: 'dark', timezoneId: 'Asia/Kuwait', isMobile: w < 500, hasTouch: w < 500 });
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: 'dark', timezoneId: 'UTC', isMobile: w < 500, hasTouch: w < 500 });
       const page = await ctx.newPage();
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(`http://127.0.0.1:${SCEN[scen]}/?shot${q ? '&' + q : ''}#/${route}`, { waitUntil: 'networkidle' });

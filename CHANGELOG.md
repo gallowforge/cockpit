@@ -1,8 +1,22 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 "Haze"
 
+A new look after the film Vesper, and a pass over every page.
+
+- **The look.** A green-black forest ground, moss surfaces and hairlines, fog-coloured text, an ochre haze and a cyan glow, built in CSS behind the data: two fixed layers with a fine grain, and fog banks that drift only on a desktop without reduced motion. Haze bands sit behind the key figures, the Overview status, the sidebar, the rail and the dialogs. State colours stay the only colours on marks; cyan means live or pressable; the ochre is never a mark. Every text keeps 4.5:1 and every mark 3:1 against the ground, the surfaces and the brightest haze. New mark, favicon, app icons and theme colour.
+- **Status never by colour alone.** Day lines also show an outage by height, and a failed backup run carries the same bar cut as the down mark.
+- **Fixed, page by page** (every page checked at 1440x900 and 390x844 in all four demo scenarios):
+  - titles, lines and captions wrap on a phone instead of being cut off (History, Jobs, Backups, search results);
+  - a tap on a day line on a phone now keeps its tooltip open, taps between the thin cells land, and a tooltip no longer stays pinned when the page scrolls;
+  - backup age bars line up; restore drill check marks keep their size;
+  - the search sheet on a phone has a Cancel button, no keyboard hints, a full placeholder and two-line results;
+  - a checklist no longer repeats its title, History no longer repeats each duration, and the outage list under a service lines up;
+  - a missing service, set, alert or page gets a proper page with a way back;
+  - the daily health check shows a note mark, not a green tick, beside "1 problem found";
+  - section headers with a toggle keep their title on one line; the sidebar background reaches the end of long pages.
 - A config with both `[vesper]` and its old name `[cockpit]` is refused with a clear error, instead of quietly ignoring `[cockpit]`.
+- The demo runs on UTC and its operator jobs have generic names.
 - **Haze**, a new look after the film *Vesper*: a green-black forest ground, moss surfaces, an ochre haze and cyan for what is live or can be pressed, built in CSS behind the data (the fog drifts only on a desktop without reduced motion). State colours stay the only colours on marks, every text keeps 4.5:1 and every mark 3:1, and day lines now show an outage by height as well as colour. New mark and app icons.
 - UI fixes: titles and lines on phones wrap instead of being cut off (History, Jobs, Backups, figure captions, search results); a tap on a day line on a phone shows its tooltip instead of closing it at once, and a tooltip no longer stays behind when the page scrolls; backup age bars line up; check marks in the restore drill keep their size; the search sheet on a phone has a Cancel button and no keyboard hints; a checklist no longer repeats its title; a missing service, set, alert or page gets a real page with the way back; the daily health check shows a note instead of a tick when it left a category open; "1 problem(s)" reads "1 problem".
 

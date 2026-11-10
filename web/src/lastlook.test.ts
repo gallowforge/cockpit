@@ -7,7 +7,7 @@ const base = (): Snapshot => ({
   drill: { level: 'ok', runs: [] },
   alerts: { level: 'ok', open: [], sent_24h: 0, sent_7d: 0, incidents: [
     { key: 'kuma-down', title: 'Home Assistant is DOWN', prio: 'high', opened: '2026-03-10T06:39:00Z', resolved: '2026-03-10T06:43:00Z', sends: 1, suppressed: 0, failed: 0, state: 'resolved' },
-    { key: 'caretaker-morning', title: 'note', prio: 'low', opened: '2026-03-10T05:00:00Z', sends: 1, suppressed: 0, failed: 0, state: 'info' },
+    { key: 'operator-report', title: 'note', prio: 'low', opened: '2026-03-10T05:00:00Z', sends: 1, suppressed: 0, failed: 0, state: 'info' },
   ] },
   timers: [],
 } as unknown as Snapshot)

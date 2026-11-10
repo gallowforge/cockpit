@@ -5,7 +5,7 @@
 # author's GitHub profile; docs/readme/IDENTITY.md). Three steps, all from docs/readme/src/:
 #   1. textures.mjs starts `vesper demo` four times (calm, attention, incident, blind) on a
 #      frozen clock and captures the real UI into shots/ (desktop 1440 px at 2x, phone 390 px
-#      at 3x, Kuwait time). It also runs `vesper check` on a demo snapshot and typesets it,
+#      at 3x, in UTC). It also runs `vesper check` on a demo snapshot and typesets it,
 #      the end-to-end output in demo/e2e.txt, the design diagram and the numbers band, each
 #      dark and light (RAM_MB sets the measured RAM figure in the band).
 #   2. glass/render.cjs renders each composition in layouts.js with three.js in headless

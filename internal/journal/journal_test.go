@@ -124,7 +124,7 @@ func TestIncidents(t *testing.T) {
 		notify(t0.Add(time.Hour), `sent prio=default key=health-storage title="Homelab: storage needs attention" http=200 attempts=1`),
 		notify(t0.Add(2*time.Hour), `suppressed key=health-storage title="Homelab: storage needs attention" (already sent 60 min ago; repeat every 20h)`),
 		notify(t0.Add(3*time.Hour), `sent prio=low title="Caretaker: what I did" http=200 attempts=1`),
-		notify(t0.Add(4*time.Hour), `FAILED prio=low key=caretaker-morning title="Caretaker: what I did" http=000 attempts=3`),
+		notify(t0.Add(4*time.Hour), `FAILED prio=low key=operator-report title="Operator: the morning report" http=000 attempts=3`),
 		notify(t0.Add(5*time.Hour), `something unrelated`),
 	)
 	ev := ParseNotify(es)
@@ -134,10 +134,10 @@ func TestIncidents(t *testing.T) {
 	now := t0.Add(6 * time.Hour)
 	states := []NotifyState{
 		{Key: "health-storage", Opened: t0.Add(time.Hour), LastOK: t0.Add(time.Hour)},
-		{Key: "caretaker-morning", Opened: t0.Add(4 * time.Hour), LastTry: t0.Add(4 * time.Hour)},
+		{Key: "operator-report", Opened: t0.Add(4 * time.Hour), LastTry: t0.Add(4 * time.Hour)},
 		{Key: "health-reboot", Opened: t0.Add(-30 * 24 * time.Hour), LastOK: t0.Add(-30 * 24 * time.Hour)},
 	}
-	inc := Incidents(ev, states, []string{"caretaker-*"}, 8*24*time.Hour, now)
+	inc := Incidents(ev, states, []string{"operator-*"}, 8*24*time.Hour, now)
 	by := map[string]string{}
 	for _, i := range inc {
 		by[i.Key+"|"+i.Title] = i.State
@@ -145,9 +145,9 @@ func TestIncidents(t *testing.T) {
 	want := map[string]string{
 		"unit-failed-homelab-backup.service|homelab-backup.service failed on raspberrypi": "resolved",
 		"health-storage|Homelab: storage needs attention":                                 "open",
-		"|Caretaker: what I did":                  "sent",
-		"caretaker-morning|Caretaker: what I did": "info",
-		"health-reboot|Health: reboot":            "stale",
+		"|Caretaker: what I did":                       "sent",
+		"operator-report|Operator: the morning report": "info",
+		"health-reboot|Health: reboot":                 "stale",
 	}
 	for k, v := range want {
 		if by[k] != v {

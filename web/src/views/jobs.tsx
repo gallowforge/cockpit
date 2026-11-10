@@ -1,4 +1,4 @@
-// Jobs: what the house does by itself, when it runs next, and whether the
+// Jobs: what the server does by itself, when it runs next, and whether the
 // last run went well.
 import { useState } from 'preact/hooks'
 import type { ViewProps } from '../app'

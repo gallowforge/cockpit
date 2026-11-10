@@ -4,11 +4,11 @@ A well-run homelab already knows a lot about itself: the backup job records what
 
 <p align="center"><a href="#quickstart"><b>Quickstart</b></a> &nbsp;·&nbsp; <a href="#how-it-works">How it works</a> &nbsp;·&nbsp; <a href="https://github.com/gallowforge/vesper/releases">Releases</a></p>
 
-<a href="docs/configuration.md#gh-dark-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-dark-phone.webp 2.835x"><source srcset="docs/readme/numbers-dark.webp 2x"><img src="docs/readme/numbers-dark.webp" width="840" alt="7.9 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 137 tests, 34 of them under real systemd." loading="lazy"></picture></a><a href="docs/configuration.md#gh-light-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-light-phone.webp 2.835x"><source srcset="docs/readme/numbers-light.webp 2x"><img src="docs/readme/numbers-light.webp" width="840" alt="7.9 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 137 tests, 34 of them under real systemd." loading="lazy"></picture></a>
+<a href="docs/configuration.md#gh-dark-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-dark-phone.webp 2.835x"><source srcset="docs/readme/numbers-dark.webp 2x"><img src="docs/readme/numbers-dark.webp" width="840" alt="7.7 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 140 tests, 34 of them under real systemd." loading="lazy"></picture></a><a href="docs/configuration.md#gh-light-mode-only"><picture><source media="(max-width: 767px)" srcset="docs/readme/numbers-light-phone.webp 2.835x"><source srcset="docs/readme/numbers-light.webp 2x"><img src="docs/readme/numbers-light.webp" width="840" alt="7.7 MB: one binary for the Pi, with the UI inside. 0 Go dependencies: the standard library only. 27 MB of RAM on a Raspberry Pi 5. 140 tests, 34 of them under real systemd." loading="lazy"></picture></a>
 
-<sub>7.9 MB is the static arm64 binary on the releases page. RAM was measured on a Raspberry Pi 5 watching 22 services, 12 backup sets and 29 timers, at 0.8% of one CPU core. Every screen in these images is the real UI of <code>vesper demo</code> on synthetic data and a frozen clock.</sub>
+<sub>7.7 MB is the static arm64 binary on the releases page. RAM was measured on a Raspberry Pi 5 watching 22 services, 12 backup sets and 29 timers, at 0.8% of one CPU core. Every screen in these images is the real UI of <code>vesper demo</code> on synthetic data and a frozen clock.</sub>
 
-## Know in one glance if the house is fine
+## Know in one glance if the server is fine
 
 One sentence first: "Nothing needs you", with the checks behind it, or the problem by name, with the button that opens the service and the checklist that covers it. Under it, the last 24 hours of every service in quarter hours, four key figures, every service with its day and its answer time, and what happened since you last looked. New snapshots arrive over Server-Sent Events, so the page is live without a refresh.
 
@@ -103,8 +103,8 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 
 | Check | What it covers |
 | --- | --- |
-| `go test -race` | 56 tests: config parsing, journal and notifier parsing, incidents, the status rollup and its blind spots, the day line, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits and the event stream |
-| `vitest` and `tsc` | 47 tests: the day line and uptime, the status and its facts, formatting, grouping, jobs, null-safe and older snapshots, the command bar's search, Markdown escaping and link filtering, and a login form filled the way a password manager fills it |
+| `go test -race` | 58 tests: config parsing, journal and notifier parsing, incidents, the status rollup and its blind spots, the day line, the redactor, the collector on a synthetic homelab with stubbed `systemctl` and `journalctl`, login, sessions, parallel login bursts, rate limits and the event stream |
+| `vitest` and `tsc` | 48 tests: the day line and uptime, the status and its facts, formatting, grouping, jobs, null-safe and older snapshots, the command bar's search, Markdown escaping and link filtering, and a login form filled the way a password manager fills it |
 | [`scripts/e2e.sh`](scripts/e2e.sh) | 34 checks: the shipped units under real systemd with their sandbox, the day line written for every service, transient units writing real journal entries, real Docker containers, and Caddy in front for TLS, cookies and streaming |
 | `systemd-analyze verify` and `security` | The unit files are valid; exposure 2.4 for the collector and 0.5 for the web process |
 | `gofmt`, `go vet`, `shellcheck` | Formatting and static checks |
@@ -117,13 +117,13 @@ Every push runs [`ci.yml`](.github/workflows/ci.yml), and each step also runs on
 <details>
 <summary><b>Why is it called Vesper?</b></summary>
 <br />
-Vesper is the evening star, the first light that appears when night falls: the one you look up at when the house has gone quiet. Until version 2.0 it was called Cockpit; the new name also keeps it clear of the unrelated Cockpit Project, a server console that can change the system. A config file with the old <code>[cockpit]</code> section still works.
+Vesper is the evening star, the first light that appears when night falls: the one you look up at when everything has gone quiet. Until version 2.0 it was called Cockpit; the new name also keeps it clear of the unrelated Cockpit Project, a server console that can change the system. A config file with the old <code>[cockpit]</code> section still works.
 </details>
 
 <details>
 <summary><b>Can it restart a service or run a backup?</b></summary>
 <br />
-No, on purpose. The web process has no network, no capabilities and no write access, and the collector only reads. A dashboard you open on your phone on the sofa should not be able to break the house; the checklists tell you what to run.
+No, on purpose. The web process has no network, no capabilities and no write access, and the collector only reads. A dashboard you open on your phone should not be able to break the server; the checklists tell you what to run.
 </details>
 
 <details>

@@ -38,18 +38,18 @@ PASS rollup is crit with attention items
         [homeassistant] no new backup - nothing pruned
         runbook: Restore a backup
   warn  Homelab: storage needs attention
-        Open since 5s ago
+        Open since 2h ago
   warn  Config drift: 1 file differs from the repo
         /etc/hosts (differs)
 
   ● services   5/7 up · 2 probes ok, slowest 0 ms
   ● backups    2/3 verified · newest 3h ago · 96.7 MB
   ● drill      2 passed, 0 failed · 5s ago
-  ● alerts     1 open · 2 sent in 24 h, 2 in 7 days
-  ● timers     8 timers, 0 failed · next snapper-cleanup in 36m
+  ● alerts     1 open · 4 sent in 24 h, 4 in 7 days
+  ● timers     8 timers, 0 failed · next snapper-cleanup in 31m
   ● drift      1 file differs · 2 files tracked
-  ● heartbeat  3/3 pings in 24 h · last 5s ago
-  ● host       cpu 2% · mem 49% · / 33% · up 16h
+  ● heartbeat  6/6 pings in 24 h · last 5s ago
+  ● host       cpu 2% · mem 52% · / 33% · up 18h
 == web on the unix socket
 PASS socket activation starts the web unit
 PASS web runs as a dynamic user, not root

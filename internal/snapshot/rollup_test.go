@@ -23,7 +23,7 @@ func healthy() *Snapshot {
 		Backups: Backups{Sets: []BackupSet{{Name: "vault", MaxAgeH: 48, LastOK: tp(now.Add(-3 * time.Hour)), Bytes: 10}},
 			Runs: []Run{{Result: "success"}}},
 		Drill:     Drill{Unit: "drill.service", Runs: []DrillRun{{End: now.Add(-48 * time.Hour), Passed: 9}}},
-		Alerts:    Alerts{Incidents: []Incident{{Key: "caretaker-morning", State: "info", Prio: "low"}}},
+		Alerts:    Alerts{Incidents: []Incident{{Key: "operator-report", State: "info", Prio: "low"}}},
 		Timers:    []Timer{{Unit: "homelab-backup.timer", Activates: "homelab-backup.service", Result: "success", Enabled: "enabled", Highlight: true}},
 		Drift:     Drift{Result: "clean"},
 		Heartbeat: Heartbeat{Unit: "hb.service", Last: tp(now.Add(-2 * time.Minute)), OK: true},

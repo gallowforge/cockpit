@@ -27,16 +27,16 @@ socket = /var/run/docker.sock
 repo = /home/pi/docker
 backup_conf = /etc/homelab/backups.conf
 notify_tag = homelab-notify
-info_keys = caretaker-*   # periodic notes, never "open"
+info_keys = operator-*    # periodic notes, never "open"
 
 [timers]
-highlight = homelab-* tailscale-cert-renew.timer caretaker-tick.timer kuma-wake.timer adguard-pin.timer
+highlight = homelab-* tailscale-cert-renew.timer operator-round.timer kuma-wake.timer adguard-pin.timer
 
 # One block per row on the Services page. A row can join a container, a unit
 # and a probe; containers you do not list still show, under their own name.
 [service:adguard]
 title = AdGuard Home
-note = DNS for the house
+note = DNS for every device
 group = Network
 container = adguard
 probe = dns://127.0.0.1:53/example.com
