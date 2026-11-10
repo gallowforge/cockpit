@@ -1,9 +1,9 @@
-// Cockpit README: every composition in the Glass language (glass/scene.js renders them).
+// Vesper README: every composition in the Glass language (glass/scene.js renders them).
 // Positions are the apparent centre in CSS px (y down); w or h is the apparent content size;
 // z is depth (+ toward the viewer; 1 unit = 1 px at z = 0); rot is in degrees.
 // A window with `parent` is a part of that window's screen lifted out toward the viewer
 // (`src` is the part, in texture pixels, from shots/boxes.js).
-// Cockpit has one theme, night: in the light images its screens stay dark, on daylight glass.
+// Vesper has one theme, night: in the light images its screens stay dark, on daylight glass.
 import { BOXES } from './shots/boxes.js';
 
 // a quiet night: dark glass in cool light, no horizon
@@ -88,7 +88,7 @@ export const LAYOUTS = {
       { x: 652, y: 404, h: 240, z: 170, rot: [0, -14, 0] },
     ]),
     type: [
-      T('name', 'Cockpit', 420, 34, { fontSize: '60px' }, 'center'),
+      T('name', 'Vesper', 420, 34, { fontSize: '60px' }, 'center'),
       T('line', HERO_LINE, 420, 110, { fontSize: '16.5px' }, 'center'),
     ],
   },
@@ -104,7 +104,7 @@ export const LAYOUTS = {
       { x: 300, y: 456, h: 200, z: 170, rot: [0, -14, 0] },
     ]),
     type: [
-      T('name', 'Cockpit', 190.5, 34, { fontSize: '50px' }, 'center'),
+      T('name', 'Vesper', 190.5, 34, { fontSize: '50px' }, 'center'),
       T('line', 'A read-only operations dashboard<br>for a home server.', 190.5, 98, { fontSize: '15px', textAlign: 'center' }, 'center'),
     ],
   },
@@ -177,7 +177,7 @@ export const LAYOUTS = {
     D('design-phone', n, { x: 190.5, y: 380, w: 300, z: -20, rot: [5, 0, 0], breathe: [6, 0.0], bezel: 8, glow: 0.5 }),
   ]),
 
-  // ---------- quality: the end-to-end run and `cockpit check` ----------
+  // ---------- quality: the end-to-end run and `vesper check` ----------
   proof: PANEL(460, (n) => [
     D('e2e', n, { crop: [0, 2269, 1200, 1100], x: 300, y: 226, w: 380, z: -40, rot: [2, 16, 0], breathe: [8, 0.0], bezel: 10 }),
     D('check', n, { x: 620, y: 200, w: 340, z: 70, rot: [0, -14, 0], breathe: [8, 0.45] }),
@@ -199,7 +199,7 @@ export const LAYOUTS = {
     ],
     type: [
       T('kick', 'Self-hosted · Go', 40, 104, { fontSize: '10px' }),
-      T('name', 'Cockpit', 38, 122, { fontSize: '46px' }),
+      T('name', 'Vesper', 38, 122, { fontSize: '46px' }),
       T('line', HERO_LINE, 40, 182, { fontSize: '15.5px', whiteSpace: 'normal', width: '236px' }),
     ],
   },

@@ -15,9 +15,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/config"
-	"github.com/gallowforge/cockpit/internal/journal"
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/config"
+	"github.com/gallowforge/vesper/internal/journal"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // backupSetConf is one [set] of the homelab's backups.conf.

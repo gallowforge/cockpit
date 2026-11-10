@@ -1,6 +1,6 @@
 {
-  "name": "Cockpit",
-  "short_name": "Cockpit",
+  "name": "Vesper",
+  "short_name": "Vesper",
   "description": "A calm, read-only view of your homelab: what needs you, backups that prove themselves, and what happened while you were away.",
   "start_url": "/",
   "scope": "/",

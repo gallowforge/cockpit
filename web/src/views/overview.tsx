@@ -20,7 +20,7 @@ export function Overview({ snap, now, since, online }: ViewProps) {
       <div class="ov-main">
         <header class="page-head">
           <div><h1>Overview</h1></div>
-          <div class="aside"><button type="button" class="btn" onClick={() => setHow(true)}><IconInfo size={14} />How Cockpit decides</button></div>
+          <div class="aside"><button type="button" class="btn" onClick={() => setHow(true)}><IconInfo size={14} />How Vesper decides</button></div>
         </header>
         <Status hero={hero} snap={snap} now={now} />
         {att.length > 1 && <Needs list={att} snap={snap} label="Needs you" />}
@@ -151,7 +151,7 @@ function DayStrip({ snap }: { snap: Snapshot }) {
     const down = names('x')
     const unk = names('?')
     const deg = names('d')
-    const what = cells[i] === '?' && unk.length === lines.length ? "Cockpit wasn't watching"
+    const what = cells[i] === '?' && unk.length === lines.length ? "Vesper wasn't watching"
       : down.length ? `${down.join(', ')} down`
         : deg.length ? `${deg.join(', ')} degraded`
           : unk.length ? `${plural(unk.length, 'service')} not seen`
@@ -180,7 +180,7 @@ function figures(s: Snapshot, now: number): FigProps[] {
   const sLevel = servicesLevel(s.services)
   const out: FigProps[] = [
     { label: 'Services up', value: up, unit: `/ ${svcs.length}`, caption: up === svcs.length ? 'every check answering' : sLevel === 'unknown' ? `${svcs.length - up} can't be confirmed` : svcs.filter((x) => x.state !== 'up').map((x) => x.title).slice(0, 2).join(', ') + (svcs.length - up > 2 ? ` and ${svcs.length - up - 2} more` : '') + ' not up', level: sLevel === 'info' ? undefined : sLevel },
-    { label: 'Availability', value: avail == null ? '—' : fmtPct(avail).replace('%', ''), unit: avail == null ? undefined : '%', caption: seen === 0 ? 'no history yet' : seen < 276 ? `over the ${Math.max(1, Math.round(seen / 12))} h Cockpit watched` : 'last 24 hours, all services' },
+    { label: 'Availability', value: avail == null ? '—' : fmtPct(avail).replace('%', ''), unit: avail == null ? undefined : '%', caption: seen === 0 ? 'no history yet' : seen < 276 ? `over the ${Math.max(1, Math.round(seen / 12))} h Vesper watched` : 'last 24 hours, all services' },
     { label: 'Backups verified', value: s.backups.sets.length - bad, unit: `/ ${s.backups.sets.length}`, caption: isFinite(newest) ? `last at ${clock(new Date(newest).toISOString())}` : 'none yet', level: s.backups.level === 'info' ? undefined : s.backups.level },
   ]
   const open = s.alerts.open.length
@@ -278,8 +278,8 @@ function HostMini({ snap }: { snap: Snapshot }) {
 function Coverage({ snap, now }: { snap: Snapshot; now: number }) {
   const ok = snap.sources.filter((s) => s.ok).length
   return (
-    <section class="rail-sec" aria-label="What Cockpit can see">
-      <div class="sec-h"><h2>What Cockpit can see</h2><span class="aside">{ok} of {snap.sources.length} sources</span></div>
+    <section class="rail-sec" aria-label="What Vesper can see">
+      <div class="sec-h"><h2>What Vesper can see</h2><span class="aside">{ok} of {snap.sources.length} sources</span></div>
       {snap.sources.map((s) => (
         <div key={s.name} class={`src${s.ok ? '' : ' bad'}`}>
           {s.ok ? <IconCheck size={14} /> : <IconEyeOff size={14} />}
@@ -316,16 +316,16 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
     { level: snap.heartbeat.level, name: 'Heartbeat', text: 'the dead-man switch pinged in the last 30 minutes', href: '#/system' },
     { level: snap.health.level, name: 'Daily health check', text: snap.health.level === 'off' ? 'none is set up, so none is expected' : 'ran in the last 29 hours with no open category', href: '#/system' },
     { level: snap.host.level, name: 'Host', text: 'temperature, power, memory and disks inside their limits', href: '#/system' },
-    { level: snap.sources.every((s) => s.ok) ? 'ok' : 'unknown', name: 'What Cockpit reads', text: `${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources read on the last pass`, href: '#/system' },
+    { level: snap.sources.every((s) => s.ok) ? 'ok' : 'unknown', name: 'What Vesper reads', text: `${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources read on the last pass`, href: '#/system' },
   ]
   return (
     <div class="backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="How Cockpit decides" tabIndex={-1} ref={box}>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="How Vesper decides" tabIndex={-1} ref={box}>
         <div class="sheet-head">
-          <h2>How Cockpit decides</h2>
+          <h2>How Vesper decides</h2>
           <button type="button" class="icon-btn" aria-label="Close" onClick={onClose}><IconClose size={16} /></button>
         </div>
-        <p class="sub">"Nothing needs you" only when every check below is fine. A check Cockpit cannot make is never counted as fine.</p>
+        <p class="sub">"Nothing needs you" only when every check below is fine. A check Vesper cannot make is never counted as fine.</p>
         <ul class="how">
           {rows.map((r) => (
             <li key={r.name}>

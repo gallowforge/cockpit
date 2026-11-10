@@ -1,5 +1,5 @@
 // System: is the machine itself healthy, is it still what the repo says, and
-// can Cockpit see everything it needs to?
+// can Vesper see everything it needs to?
 import { Fragment } from 'preact'
 import { useEffect } from 'preact/hooks'
 import type { ViewProps } from '../app'
@@ -116,7 +116,7 @@ export function SystemView({ snap, now, route }: ViewProps) {
         <Drift snap={snap} now={now} />
       </Section>
 
-      <Section title="What Cockpit can see" id="sys-sources" aside={`${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources`}>
+      <Section title="What Vesper can see" id="sys-sources" aside={`${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources`}>
         <div class="rows">
           {snap.sources.map((s) => (
             <div key={s.name} class="row" style={{ gridTemplateColumns: '16px minmax(0,1fr) auto' }}>
@@ -129,7 +129,7 @@ export function SystemView({ snap, now, route }: ViewProps) {
             </div>
           ))}
         </div>
-        <p class="sec-note">If a source cannot be read, Cockpit says so instead of showing an all-clear.</p>
+        <p class="sec-note">If a source cannot be read, Vesper says so instead of showing an all-clear.</p>
       </Section>
     </div>
   )

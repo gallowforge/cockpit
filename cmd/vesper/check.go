@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/collect"
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/collect"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // runCheck prints the snapshot as a short terminal report. Exit status: 0 all

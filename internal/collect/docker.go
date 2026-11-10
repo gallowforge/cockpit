@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// container is what Cockpit needs from Docker's API.
+// container is what Vesper needs from Docker's API.
 type container struct {
 	ID        string
 	Name      string
@@ -107,8 +107,8 @@ func (d *dockerClient) list(ctx context.Context) ([]container, error) {
 	return out, nil
 }
 
-// containerState maps Docker's view to Cockpit's up/degraded/down/off and a
-// one-line detail. configured says the owner listed it in cockpit.conf, so a
+// containerState maps Docker's view to Vesper's up/degraded/down/off and a
+// one-line detail. configured says the owner listed it in vesper.conf, so a
 // stopped container is a problem rather than a finished one-off job.
 func containerState(c container, configured bool, now time.Time) (state, detail string) {
 	ago := func(t time.Time) string {

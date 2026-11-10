@@ -4,7 +4,7 @@ import type { Level, Snapshot } from './types'
 import { clock, ms, plural, short } from './format'
 import { prioLevel } from './derive'
 
-const KEY = 'cockpit-last-look'
+const KEY = 'vesper-last-look'
 
 /** ?since=9h (or an ISO time) overrides the stored value, for screenshots. */
 export function readLastLook(now: number): number | null {

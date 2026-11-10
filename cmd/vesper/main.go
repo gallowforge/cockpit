@@ -1,10 +1,10 @@
-// Command cockpit is a self-hosted operations dashboard for a homelab.
+// Command vesper is a self-hosted operations dashboard for a homelab.
 //
-//	cockpit collect        gather state into state.json (privileged, no network listener)
-//	cockpit serve          serve the dashboard (unprivileged, reads state.json)
-//	cockpit check          print the status in a terminal; exit 0 ok, 1 warn, 2 crit
-//	cockpit demo           serve synthetic data, no setup needed
-//	cockpit hash-password  hash a password for [web] password_hash_file
+//	vesper collect        gather state into state.json (privileged, no network listener)
+//	vesper serve          serve the dashboard (unprivileged, reads state.json)
+//	vesper check          print the status in a terminal; exit 0 ok, 1 warn, 2 crit
+//	vesper demo           serve synthetic data, no setup needed
+//	vesper hash-password  hash a password for [web] password_hash_file
 package main
 
 import (
@@ -25,17 +25,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/collect"
-	"github.com/gallowforge/cockpit/internal/config"
-	"github.com/gallowforge/cockpit/internal/demo"
-	"github.com/gallowforge/cockpit/internal/snapshot"
-	"github.com/gallowforge/cockpit/internal/web"
-	"github.com/gallowforge/cockpit/internal/web/ui"
+	"github.com/gallowforge/vesper/internal/collect"
+	"github.com/gallowforge/vesper/internal/config"
+	"github.com/gallowforge/vesper/internal/demo"
+	"github.com/gallowforge/vesper/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/web"
+	"github.com/gallowforge/vesper/internal/web/ui"
 )
 
 var version = "dev"
 
-const defaultConfig = "/etc/cockpit/cockpit.conf"
+const defaultConfig = "/etc/vesper/vesper.conf"
 
 func main() {
 	log.SetFlags(0)
@@ -58,40 +58,40 @@ func main() {
 	case "hash-password":
 		err = runHash(args)
 	case "version", "--version", "-v":
-		fmt.Println("cockpit", version)
+		fmt.Println("vesper", version)
 	case "help", "--help", "-h":
 		usage(os.Stdout)
 	default:
-		fmt.Fprintf(os.Stderr, "cockpit: unknown command %q\n\n", cmd)
+		fmt.Fprintf(os.Stderr, "vesper: unknown command %q\n\n", cmd)
 		usage(os.Stderr)
 		os.Exit(2)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "cockpit:", err)
+		fmt.Fprintln(os.Stderr, "vesper:", err)
 		os.Exit(3)
 	}
 	os.Exit(code)
 }
 
 func usage(w io.Writer) {
-	fmt.Fprint(w, `Cockpit: a self-hosted operations dashboard for a homelab.
+	fmt.Fprint(w, `Vesper: a self-hosted operations dashboard for a homelab.
 
 Usage:
-  cockpit collect [-config FILE] [-once]   gather state into state.json (run as root, no listener)
-  cockpit serve   [-config FILE]           serve the dashboard (run unprivileged)
-  cockpit check   [-config FILE | -state FILE] [-json]
+  vesper collect [-config FILE] [-once]   gather state into state.json (run as root, no listener)
+  vesper serve   [-config FILE]           serve the dashboard (run unprivileged)
+  vesper check   [-config FILE | -state FILE] [-json]
                                            print the status; exit 0 ok, 1 warn, 2 crit
-  cockpit demo    [-listen ADDR] [-scenario calm|attention|incident|blind] [-at TIME]
+  vesper demo    [-listen ADDR] [-scenario calm|attention|incident|blind] [-at TIME]
                                            serve synthetic data, nothing to set up
-  cockpit hash-password                    read a password on stdin, print its hash
-  cockpit version
+  vesper hash-password                    read a password on stdin, print its hash
+  vesper version
 `)
 }
 
 func loadConfig(p string) (*config.Config, error) {
 	c, err := config.Load(p)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("%s not found (start from deploy/cockpit.conf.example)", p)
+		return nil, fmt.Errorf("%s not found (start from deploy/vesper.conf.example)", p)
 	}
 	return c, err
 }
@@ -118,7 +118,7 @@ func runCollect(args []string) error {
 		enc.SetIndent("", "  ")
 		return enc.Encode(snap)
 	}
-	log.Printf("cockpit %s collecting every %s (slow sources every %s) into %s", version, cfg.Interval, cfg.SlowInterval, cfg.StatePath)
+	log.Printf("vesper %s collecting every %s (slow sources every %s) into %s", version, cfg.Interval, cfg.SlowInterval, cfg.StatePath)
 	return c.Run(ctx)
 }
 
@@ -181,7 +181,7 @@ func serveHTTP(ctx context.Context, listen string, h http.Handler) error {
 		defer cancel()
 		hs.Shutdown(sctx)
 	}()
-	log.Printf("cockpit %s serving on %s", version, l.Addr())
+	log.Printf("vesper %s serving on %s", version, l.Addr())
 	if err := hs.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -213,7 +213,7 @@ func runDemo(args []string) error {
 	if *write != "" {
 		return snapshot.Write(*write, gen.Snapshot(clock()))
 	}
-	dir, err := os.MkdirTemp("", "cockpit-demo-")
+	dir, err := os.MkdirTemp("", "vesper-demo-")
 	if err != nil {
 		return err
 	}

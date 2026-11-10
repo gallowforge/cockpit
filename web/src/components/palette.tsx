@@ -26,7 +26,7 @@ export const PAGES: { id: string; title: string; key: string }[] = [
   { id: 'runbooks', title: 'Checklists', key: 'C' },
 ]
 
-/** Everything Cockpit knows about, as places to jump to. */
+/** Everything Vesper knows about, as places to jump to. */
 export function paletteItems(s: Snapshot): PaletteItem[] {
   const out: PaletteItem[] = PAGES.map((p) => ({ id: 'page:' + p.id, group: 'Go to', title: p.title, href: `#/${p.id}`, keys: `G ${p.key}` }))
   for (const sv of s.services) {

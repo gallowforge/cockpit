@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-const cookieName = "cockpit_session"
+const cookieName = "vesper_session"
 
 // The web process runs as a DynamicUser with no /etc/mime.types to fall back
 // on, so the app manifest's type is registered here.
@@ -79,7 +79,7 @@ func New(store *Store, opt Options) (*Server, error) {
 	case "none":
 	case "password":
 		if !strings.HasPrefix(opt.PasswordHash, hashPrefix+"$") {
-			return nil, errors.New("auth = password, but no valid password hash was found (create one with: cockpit hash-password)")
+			return nil, errors.New("auth = password, but no valid password hash was found (create one with: vesper hash-password)")
 		}
 		if opt.Username == "" {
 			return nil, errors.New("auth = password needs a username")
@@ -364,7 +364,7 @@ func (s *Server) runbook(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ui(w http.ResponseWriter, r *http.Request) {
 	if s.static == nil {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintln(w, "Cockpit's UI is not built into this binary. Run `make` (it builds web/ first).")
+		fmt.Fprintln(w, "Vesper's UI is not built into this binary. Run `make` (it builds web/ first).")
 		return
 	}
 	p := path.Clean(r.URL.Path)

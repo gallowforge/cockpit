@@ -1,18 +1,18 @@
-# /etc/cockpit/cockpit.conf - Cockpit's configuration (no secrets in here).
+# /etc/vesper/vesper.conf - Vesper's configuration (no secrets in here).
 # Paths match the layout of github.com/gallowforge/homelab; change what differs.
 
-[cockpit]
+[vesper]
 title = raspberrypi
-state = /run/cockpit/state.json
-runbook_dir = /run/cockpit/runbooks
+state = /run/vesper/state.json
+runbook_dir = /run/vesper/runbooks
 interval = 20s            # containers, units, probes, host
 slow_interval = 5m        # journal, backups, alerts, drift
 
 [web]
-listen = systemd          # socket activation (cockpit-web.socket); or 127.0.0.1:8080
+listen = systemd          # socket activation (vesper-web.socket); or 127.0.0.1:8080
 auth = password           # password, or none when the proxy does auth
 username = owner          # the one account's name, as your password manager will store it
-password_hash_file = /etc/cockpit/password.hash
+password_hash_file = /etc/vesper/password.hash
 session_days = 365
 
 [host]

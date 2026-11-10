@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 var clockAt = time.Date(2026, 3, 10, 7, 42, 0, 0, time.UTC)

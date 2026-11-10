@@ -1,15 +1,15 @@
-# Cockpit collector: reads the homelab's state and writes /run/cockpit/state.json.
+# Vesper collector: reads the homelab's state and writes /run/vesper/state.json.
 # It runs as root because the journal, the Docker socket and the backup status
 # files are root's, but it keeps only the one capability it needs to read
-# them, cannot write outside /run/cockpit, and can reach only localhost.
+# them, cannot write outside /run/vesper, and can reach only localhost.
 [Unit]
-Description=Cockpit collector (read-only state for the dashboard)
-Documentation=https://github.com/gallowforge/cockpit
+Description=Vesper collector (read-only state for the dashboard)
+Documentation=https://github.com/gallowforge/vesper
 After=docker.service network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cockpit collect -config /etc/cockpit/cockpit.conf
+ExecStart=/usr/local/bin/vesper collect -config /etc/vesper/vesper.conf
 Restart=on-failure
 RestartSec=15s
 Nice=10
@@ -23,7 +23,7 @@ AmbientCapabilities=
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/run/cockpit
+ReadWritePaths=/run/vesper
 PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes

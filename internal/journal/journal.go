@@ -1,5 +1,5 @@
 // Package journal reads systemd's journal through `journalctl -o json` and
-// turns it into the facts Cockpit shows: runs of a service, restore-drill
+// turns it into the facts Vesper shows: runs of a service, restore-drill
 // results and alert events. It never writes to the journal.
 package journal
 
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// Entry is one journal record, reduced to the fields Cockpit uses.
+// Entry is one journal record, reduced to the fields Vesper uses.
 type Entry struct {
 	Time       time.Time
 	Message    string

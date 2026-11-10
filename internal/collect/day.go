@@ -3,12 +3,12 @@ package collect
 import (
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // The day line: one character per five minutes for the last 24 hours, so the
 // UI can draw a real day of history and work out uptime from it. A slot keeps
-// the worst state sampled in it, and a slot in which Cockpit took no sample at
+// the worst state sampled in it, and a slot in which Vesper took no sample at
 // all (it was stopped, or the Pi was off) stays "?": unknown, never "up".
 
 // dayRank orders the beat letters by how bad they are. Up and off are equal:

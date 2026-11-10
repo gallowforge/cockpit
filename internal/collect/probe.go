@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/config"
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/config"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // probe checks one endpoint the way a client would. Results never include
@@ -67,7 +67,7 @@ func httpProbe(ctx context.Context, sv config.Service, p *snapshot.Probe, now ti
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "cockpit-probe")
+	req.Header.Set("User-Agent", "vesper-probe")
 	if sv.SNI != "" {
 		req.Host = sv.SNI
 	}

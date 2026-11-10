@@ -6,7 +6,7 @@ import { plural } from '../format'
 
 export function More({ snap, levels, onSearch }: { snap: Snapshot; levels: Record<string, { level: Level; count?: string }>; onSearch: () => void }) {
   const rows = [
-    { href: '#/system', icon: IconSystem, title: 'System', sub: 'Host health, checks, config drift and what Cockpit can see', level: levels.system.level },
+    { href: '#/system', icon: IconSystem, title: 'System', sub: 'Host health, checks, config drift and what Vesper can see', level: levels.system.level },
     { href: '#/jobs', icon: IconJobs, title: 'Jobs', sub: `${plural(snap.timers.filter((t) => t.highlight).length, 'homelab job')} and when they run next`, level: levels.jobs.level },
     { href: '#/runbooks', icon: IconChecklist, title: 'Checklists', sub: snap.runbooks.length ? `${plural(snap.runbooks.length, 'checklist')} to follow step by step` : 'None configured', level: levels.runbooks.level },
   ]

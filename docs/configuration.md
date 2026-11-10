@@ -1,20 +1,20 @@
 # Configuration
 
-Cockpit reads one INI file, `/etc/cockpit/cockpit.conf` by default (`-config`
+Vesper reads one INI file, `/etc/vesper/vesper.conf` by default (`-config`
 changes it). Sections are `[name]` or `[name:id]`, values are `key = value`, and
 `#` or `;` start a comment. Unknown sections and keys are errors, with the line
 number, so a typo never passes silently. Start from
-[`deploy/cockpit.conf.example`](../deploy/cockpit.conf.example).
+[`deploy/vesper.conf.example`](../deploy/vesper.conf.example).
 
 Durations are Go durations (`20s`, `5m`) or days (`8d`). Lists are separated by spaces.
 
-## `[cockpit]`
+## `[vesper]`
 
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `title` | the hostname | shown in the UI and the browser tab |
-| `state` | `/run/cockpit/state.json` | where the collector writes and the web reads |
-| `runbook_dir` | `/run/cockpit/runbooks` | where local runbooks are copied for the web process |
+| `state` | `/run/vesper/state.json` | where the collector writes and the web reads |
+| `runbook_dir` | `/run/vesper/runbooks` | where local runbooks are copied for the web process |
 | `interval` | `20s` | containers, units, probes, host (at least `2s`) |
 | `slow_interval` | `5m` | journal, backups, alerts, drift, runbooks |
 | `history` | `90` | samples kept for heartbeat bars and sparklines |
@@ -26,7 +26,7 @@ Durations are Go durations (`20s`, `5m`) or days (`8d`). Lists are separated by 
 | `listen` | `127.0.0.1:8080` | `systemd` (socket activation), `unix:/path`, or `host:port` |
 | `auth` | `password` | or `none` when the proxy authenticates |
 | `username` | `owner` | the one account's username, 1 to 64 characters with no spaces; renaming it signs every device out |
-| `password_hash_file` | `/etc/cockpit/password.hash` | from `cockpit hash-password`; a systemd credential named `password.hash` wins |
+| `password_hash_file` | `/etc/vesper/password.hash` | from `vesper hash-password`; a systemd credential named `password.hash` wins |
 | `session_days` | `365` | how long a sign-in lasts |
 | `cookie_secure` | `auto` | `auto` (when TLS or `X-Forwarded-Proto: https`), `always`, `never` |
 | `trust_proxy` | `false` | trust `X-Forwarded-*`; always on for `systemd` and `unix:` listeners |
@@ -43,7 +43,7 @@ Durations are Go durations (`20s`, `5m`) or days (`8d`). Lists are separated by 
 ## `[docker]`
 
 `enabled` (default `true`) and `socket` (default `/var/run/docker.sock`).
-Cockpit only sends `GET` requests: the container list and one inspect per container.
+Vesper only sends `GET` requests: the container list and one inspect per container.
 
 ## `[homelab]`
 
@@ -98,5 +98,5 @@ A probe that fails marks the row down; a certificate with less than 14 days left
 | Key | Meaning |
 | --- | --- |
 | `title` | shown in the list and on links |
-| `file` or `url` | a local Markdown file (rendered in Cockpit) or a link |
+| `file` or `url` | a local Markdown file (rendered in Vesper) or a link |
 | `match` | glob patterns matched against alert keys, service ids, unit names and areas (`backups`, `drill`, `alerts`, `timers`, `drift`, `heartbeat`, `health`, `host`, `services`); the first runbook that matches wins |

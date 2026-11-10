@@ -1,16 +1,16 @@
-# Cockpit dashboard: serves the UI and the snapshot. It runs as a throwaway
+# Vesper dashboard: serves the UI and the snapshot. It runs as a throwaway
 # user with no network of its own (only the socket systemd hands it), reads
 # state.json and the runbooks, and gets the password hash as a credential.
 [Unit]
-Description=Cockpit dashboard (read-only web UI)
-Documentation=https://github.com/gallowforge/cockpit
-Requires=cockpit-web.socket
-After=cockpit-web.socket cockpit-collect.service
+Description=Vesper dashboard (read-only web UI)
+Documentation=https://github.com/gallowforge/vesper
+Requires=vesper-web.socket
+After=vesper-web.socket vesper-collect.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cockpit serve -config /etc/cockpit/cockpit.conf
-LoadCredential=password.hash:/etc/cockpit/password.hash
+ExecStart=/usr/local/bin/vesper serve -config /etc/vesper/vesper.conf
+LoadCredential=password.hash:/etc/vesper/password.hash
 Restart=on-failure
 RestartSec=5s
 TasksMax=64

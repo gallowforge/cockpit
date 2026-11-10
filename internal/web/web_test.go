@@ -95,7 +95,7 @@ func newServer(t *testing.T, auth string) (*Server, *Store, string) {
 	os.WriteFile(filepath.Join(filepath.Dir(dir), "secret.md"), []byte("nope"), 0o644)
 	st := NewStore()
 	st.Set([]byte(`{"schema":1,"title":"pi"}`), time.Now())
-	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Cockpit</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}}
+	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Vesper</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}}
 	s, err := New(st, Options{Title: "pi", Version: "test", AuthMode: auth, Username: "owner", PasswordHash: testHash, MachineID: "m",
 		RunbookDir: dir, UI: ui, TrustProxy: true})
 	if err != nil {
@@ -173,7 +173,7 @@ func TestLoginRateLimit(t *testing.T) {
 func TestHeadersAndStatic(t *testing.T) {
 	s, _, _ := newServer(t, "none")
 	r := do(s, "GET", "/", "", nil)
-	if r.Code != 200 || !strings.Contains(r.Body.String(), "<title>Cockpit</title>") {
+	if r.Code != 200 || !strings.Contains(r.Body.String(), "<title>Vesper</title>") {
 		t.Fatalf("index: %d", r.Code)
 	}
 	for _, h := range []string{"Content-Security-Policy", "X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy"} {

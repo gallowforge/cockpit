@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Config is everything cockpit.conf can set. Zero values are filled with the
+// Config is everything vesper.conf can set. Zero values are filled with the
 // defaults in Default(), which match the homelab layout this tool was built for.
 type Config struct {
 	Title        string
@@ -30,7 +30,7 @@ type Config struct {
 }
 
 type Web struct {
-	Listen           string // "127.0.0.1:8080", "unix:/run/cockpit/web.sock" or "systemd"
+	Listen           string // "127.0.0.1:8080", "unix:/run/vesper/web.sock" or "systemd"
 	Auth             string // "password" or "none"
 	Username         string // the one owner account's name; the password hash is in PasswordHashFile
 	PasswordHashFile string
@@ -107,8 +107,8 @@ type Runbook struct {
 func Default() *Config {
 	return &Config{
 		Title:        hostname(),
-		StatePath:    "/run/cockpit/state.json",
-		RunbookDir:   "/run/cockpit/runbooks",
+		StatePath:    "/run/vesper/state.json",
+		RunbookDir:   "/run/vesper/runbooks",
 		Interval:     20 * time.Second,
 		SlowInterval: 5 * time.Minute,
 		History:      90,
@@ -116,7 +116,7 @@ func Default() *Config {
 			Listen:           "127.0.0.1:8080",
 			Auth:             "password",
 			Username:         "owner",
-			PasswordHashFile: "/etc/cockpit/password.hash",
+			PasswordHashFile: "/etc/vesper/password.hash",
 			CookieSecure:     "auto",
 			SessionDays:      365,
 		},
@@ -176,6 +176,8 @@ func FromINI(f *File) (*Config, error) {
 		errs = append(errs, fmt.Sprintf("line %d [%s]: %s", s.Line, s.Kind, fmt.Sprintf(format, a...)))
 	}
 	known := map[string]map[string]bool{
+		"vesper": set("title state runbook_dir interval slow_interval history"),
+		// the section's name before the rename; read the same way
 		"cockpit": set("title state runbook_dir interval slow_interval history"),
 		"web":     set("listen auth username password_hash_file cookie_secure session_days trust_proxy"),
 		"host":    set("mounts temp_file throttle_cmd write_device"),
@@ -206,7 +208,11 @@ func FromINI(f *File) (*Config, error) {
 		}
 	}
 
-	if s := f.Find("cockpit"); s != nil {
+	main := f.Find("vesper")
+	if main == nil {
+		main = f.Find("cockpit") // a config written before the rename
+	}
+	if s := main; s != nil {
 		c.Title = s.Get("title", c.Title)
 		c.StatePath = s.Get("state", c.StatePath)
 		c.RunbookDir = s.Get("runbook_dir", c.RunbookDir)
@@ -317,16 +323,16 @@ func FromINI(f *File) (*Config, error) {
 		errs = append(errs, fmt.Sprintf("[web] cookie_secure must be auto, always or never, not %q", c.Web.CookieSecure))
 	}
 	if c.Interval < 2*time.Second {
-		errs = append(errs, "[cockpit] interval must be at least 2s")
+		errs = append(errs, "[vesper] interval must be at least 2s")
 	}
 	if c.SlowInterval < c.Interval {
-		errs = append(errs, "[cockpit] slow_interval must not be shorter than interval")
+		errs = append(errs, "[vesper] slow_interval must not be shorter than interval")
 	}
 	if c.History < 10 || c.History > 1000 {
-		errs = append(errs, "[cockpit] history must be between 10 and 1000 samples")
+		errs = append(errs, "[vesper] history must be between 10 and 1000 samples")
 	}
 	if !filepath.IsAbs(c.StatePath) {
-		errs = append(errs, "[cockpit] state must be an absolute path")
+		errs = append(errs, "[vesper] state must be an absolute path")
 	}
 	if len(errs) > 0 {
 		head := "1 problem"
@@ -471,7 +477,7 @@ func nonEmpty(v ...string) []string {
 func hostname() string {
 	h, err := os.Hostname()
 	if err != nil || h == "" {
-		return "cockpit"
+		return "vesper"
 	}
 	return h
 }

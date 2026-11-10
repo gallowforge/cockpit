@@ -9,7 +9,7 @@ import { bucket } from '../derive'
 export const WORD: Record<Level, string> = { ok: 'Fine', info: 'Note', warn: 'Needs you', crit: 'Down', unknown: "Can't see", off: 'Off' }
 
 /** The status shape: a check when fine, a ring with a mark when it needs you,
- *  a disc with a bar when down, a dashed ring when Cockpit can't see, a faint
+ *  a disc with a bar when down, a dashed ring when Vesper can't see, a faint
  *  ring when off. */
 export function Glyph({ level, size = 14, title }: { level: Level; size?: number; title?: string }) {
   const c = size / 2

@@ -36,16 +36,14 @@ export const IconShield = ({ size }: P) => <I size={size}><path d="M8 2 3.25 3.9
 export const IconMore = ({ size }: P) => <I size={size}><circle cx="3.75" cy="8" r=".9" /><circle cx="8" cy="8" r=".9" /><circle cx="12.25" cy="8" r=".9" /></I>
 export const IconDrill = ({ size }: P) => <I size={size}><path d="M2.75 8a5.25 5.25 0 0 1 9.1-3.6" /><path d="M13.25 8a5.25 5.25 0 0 1-9.1 3.6" /><path d="M12.25 2v2.75H9.5M3.75 14v-2.75H6.5" /></I>
 
-/** The mark: an attitude instrument. A ring, the horizon line through it and
- *  the aircraft dot at the centre. It stays neutral; state is shown by status
- *  marks, never by the logo. */
+/** The mark: a V with the evening star above it, the first light of the
+ *  night. It stays neutral; state is shown by status marks, never by the logo. */
 export function Mark({ size = 24 }: { size?: number }) {
   return (
     <svg class="mark" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <rect x=".75" y=".75" width="22.5" height="22.5" rx="6.5" fill="#16181c" stroke="#2c2f36" stroke-width="1.5" />
-      <circle cx="12" cy="12" r="6.1" fill="none" stroke="#eceef2" stroke-width="1.6" />
-      <path d="M4.2 12h3.9M15.9 12h3.9" stroke="#eceef2" stroke-width="1.6" stroke-linecap="round" />
-      <circle cx="12" cy="12" r="1.55" fill="#eceef2" />
+      <path d="M6.7 9.6 12 17.2l5.3-7.6" fill="none" stroke="#eceef2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="12" cy="6.6" r="1.65" fill="#eceef2" />
     </svg>
   )
 }

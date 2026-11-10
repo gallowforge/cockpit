@@ -3,14 +3,14 @@
 #
 # The images show the real UI as frosted-glass windows in light (the "Glass" look of the
 # author's GitHub profile; docs/readme/IDENTITY.md). Three steps, all from docs/readme/src/:
-#   1. textures.mjs starts `cockpit demo` four times (calm, attention, incident, blind) on a
+#   1. textures.mjs starts `vesper demo` four times (calm, attention, incident, blind) on a
 #      frozen clock and captures the real UI into shots/ (desktop 1440 px at 2x, phone 390 px
-#      at 3x, Kuwait time). It also runs `cockpit check` on a demo snapshot and typesets it,
+#      at 3x, Kuwait time). It also runs `vesper check` on a demo snapshot and typesets it,
 #      the end-to-end output in demo/e2e.txt, the design diagram and the numbers band, each
 #      dark and light (RAM_MB sets the measured RAM figure in the band).
 #   2. glass/render.cjs renders each composition in layouts.js with three.js in headless
 #      Chromium: desktop 840 CSS px wide at 2x, phone 381 px at 1080/381, dark and light.
-#      Cockpit has one theme, night, so the light images keep its dark screens on bright glass.
+#      Vesper has one theme, night, so the light images keep its dark screens on bright glass.
 #   3. The hero is an 8-second loop (animated WebP): the glass holds still while the light
 #      moves, and the lifted status turns from "Nothing needs you" to "Home Assistant is
 #      down" and back. Every other image is a still WebP; social.png is the 1280x640 preview
@@ -19,7 +19,7 @@
 #   scripts/readme-visuals.sh                  # every image
 #   scripts/readme-visuals.sh backups history  # only these (reuses the captures in shots/)
 #
-# Needs bin/cockpit (make), Node 22+, ImageMagick 7, ffmpeg with libwebp, and the
+# Needs bin/vesper (make), Node 22+, ImageMagick 7, ffmpeg with libwebp, and the
 # `playwright` and `three` packages on NODE_PATH with Playwright's Chromium, for example:
 #   npm i --prefix ~/.cache/glass playwright three && npx --prefix ~/.cache/glass playwright install chromium
 #   NODE_PATH=~/.cache/glass/node_modules scripts/readme-visuals.sh
@@ -27,9 +27,9 @@ set -euo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 SRC=$REPO/docs/readme/src
 OUT=$REPO/docs/readme
-export BIN=${BIN:-$REPO/bin/cockpit}
+export BIN=${BIN:-$REPO/bin/vesper}
 for t in node magick ffmpeg; do command -v "$t" >/dev/null || { echo "missing tool: $t" >&2; exit 2; }; done
-[ -x "$BIN" ] || { echo "build first: make (or BIN=path/to/cockpit)" >&2; exit 2; }
+[ -x "$BIN" ] || { echo "build first: make (or BIN=path/to/vesper)" >&2; exit 2; }
 node -e "require('playwright'); require('three')" 2>/dev/null || { echo "set NODE_PATH to a node_modules with playwright and three (see the header)" >&2; exit 2; }
 
 STILLS=(numbers overview services backups history phones design proof)

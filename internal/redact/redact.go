@@ -1,5 +1,5 @@
 // Package redact removes things that look like credentials from text that
-// came out of logs before it is shown in the browser. Cockpit only shows alert
+// came out of logs before it is shown in the browser. Vesper only shows alert
 // titles and one-line summaries, which the homelab scripts already keep free of
 // secrets; this is the second fence, not the first.
 package redact

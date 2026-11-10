@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 type runbook struct {
@@ -22,7 +22,7 @@ Every set in ` + "`backups.conf`" + ` is written at 05:00, verified, and only th
 
 1. Pause the watchdogs: ` + "`sudo touch /run/homelab/maintenance`" + `
 2. Take a fresh backup of the set, so the restore itself can be undone: ` + "`sudo homelab-backup --only <set>`" + `
-3. Check the drill's last result for the set in Cockpit (Backups → Restore drill).
+3. Check the drill's last result for the set in Vesper (Backups → Restore drill).
 
 ## Restore one set
 
@@ -52,7 +52,7 @@ AdGuard Home is the only resolver for the house, on purpose: a fallback resolver
 ## First aid (two minutes)
 
 1. Is it the Pi or the ISP? ` + "`homelab-netprobe report`" + ` separates DNS failures from packet loss.
-2. Is the container up? Cockpit → Services → AdGuard Home. If it is restarting, read ` + "`docker logs --tail 50 adguard`" + `.
+2. Is the container up? Vesper → Services → AdGuard Home. If it is restarting, read ` + "`docker logs --tail 50 adguard`" + `.
 3. Still down after a restart? Point the router's DHCP DNS at a public resolver **for now**, and say so in the journal.
 
 ## Never
@@ -75,7 +75,7 @@ sudo ~/docker/_host/install.sh          # ends with RESULT: no drift, or the dif
 - **The live file is right** (a hand fix during an incident): copy it into ` + "`_host/`" + `, commit with the reason.
 - **The repo is right** (someone edited the live file): ` + "`sudo _host/install.sh --apply`" + ` installs the repo's version and keeps the old file next to it.
 
-Either way, finish with ` + "`RESULT: no drift`" + `. Cockpit re-checks every five minutes.
+Either way, finish with ` + "`RESULT: no drift`" + `. Vesper re-checks every five minutes.
 `},
 	{"alerts", "Alerts and the notifier", []string{"alerts", "health-*", "unit-failed-*", "kuma-*"}, `# Alerts and the notifier
 
@@ -89,7 +89,7 @@ Every alert goes through one notifier, which sends **at most one push per key pe
 
 ## An alert you did not expect
 
-1. Open it in Cockpit → Alerts: when it opened, how often it was sent, whether it resolved.
+1. Open it in Vesper → Alerts: when it opened, how often it was sent, whether it resolved.
 2. Read the unit's own log: ` + "`journalctl -u <unit> -n 50`" + `
 3. Fix the cause, then ask why the machinery did not prevent it, and write that down.
 `},

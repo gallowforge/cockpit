@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# e2e.sh BINARY - run Cockpit end to end on a real systemd host, the way it runs
+# e2e.sh BINARY - run Vesper end to end on a real systemd host, the way it runs
 # in production: the shipped units with all their sandboxing, a synthetic
 # homelab on disk, real journal entries from transient units, real Docker
 # containers, and Caddy in front on the unix socket.
@@ -9,9 +9,9 @@
 # is removed on exit. CI runs it on every push.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "run as root (sudo $0 $*)" >&2; exit 2; }
-BIN=$(realpath "${1:?usage: e2e.sh path/to/cockpit}")
+BIN=$(realpath "${1:?usage: e2e.sh path/to/vesper}")
 HERE=$(cd "$(dirname "$0")/.." && pwd)
-W=/opt/cockpit-e2e              # PrivateTmp hides /tmp and /var/tmp from the units
+W=/opt/vesper-e2e              # PrivateTmp hides /tmp and /var/tmp from the units
 U=/run/systemd/system
 PW='e2e correct horse battery staple'
 pass=0 fail=0
@@ -20,18 +20,18 @@ bad() { echo "FAIL $1"; fail=$((fail + 1)); }
 check() { if eval "$2" >/dev/null 2>&1; then ok "$1"; else bad "$1"; fi; }
 
 cleanup() {
-  systemctl stop cockpit-web.service cockpit-web.socket cockpit-collect.service 2>/dev/null || true
-  rm -f "$U"/cockpit-web.service "$U"/cockpit-web.socket "$U"/cockpit-collect.service
+  systemctl stop vesper-web.service vesper-web.socket vesper-collect.service 2>/dev/null || true
+  rm -f "$U"/vesper-web.service "$U"/vesper-web.socket "$U"/vesper-collect.service
   systemctl daemon-reload
-  docker rm -f cockpit-e2e-caddy cockpit-e2e-crashy >/dev/null 2>&1 || true
-  rm -rf "$W" /run/cockpit
+  docker rm -f vesper-e2e-caddy vesper-e2e-crashy >/dev/null 2>&1 || true
+  rm -rf "$W" /run/vesper
 }
 trap cleanup EXIT
 cleanup
 
 # ---- a synthetic homelab -----------------------------------------------------
 mkdir -p "$W"/{bin,etc/homelab,var/lib/homelab/backup-status,var/lib/homelab/notify,backups/{vaultwarden,kuma,homeassistant},repo/_host/etc}
-install -m 755 "$BIN" "$W/bin/cockpit"
+install -m 755 "$BIN" "$W/bin/vesper"
 now=$(date +%s)
 cat > "$W/etc/homelab/backups.conf" <<EOF
 [defaults]
@@ -61,11 +61,11 @@ printf 'etc/hostname 0644 root root -\netc/hosts 0644 root root -\n' > "$W/repo/
 printf '# Restore a backup\n\n## Steps\n\n1. Pause the watchdogs.\n' > "$W/repo/RESTORE.md"
 git -C "$W/repo" init -q && git -C "$W/repo" add -A && git -C "$W/repo" -c user.name=e2e -c user.email=e2e@example.com commit -qm init
 echo "scratch" > "$W/repo/uncommitted.txt"
-"$W/bin/cockpit" hash-password <<<"$PW" > "$W/password.hash"
+"$W/bin/vesper" hash-password <<<"$PW" > "$W/password.hash"
 chmod 600 "$W/password.hash"
 
-cat > "$W/cockpit.conf" <<EOF
-[cockpit]
+cat > "$W/vesper.conf" <<EOF
+[vesper]
 title = e2e
 interval = 3s
 slow_interval = 3s
@@ -81,20 +81,20 @@ backup_conf = $W/etc/homelab/backups.conf
 backup_status = $W/var/lib/homelab/backup-status
 notify_state = $W/var/lib/homelab/notify
 maintenance_flag = $W/maintenance
-backup_unit = cockpit-e2e-backup.service
-drill_unit = cockpit-e2e-drill.service
-health_unit = cockpit-e2e-health.service
-heartbeat_unit = cockpit-e2e-heartbeat.service
-notify_tag = cockpit-e2e-notify
+backup_unit = vesper-e2e-backup.service
+drill_unit = vesper-e2e-drill.service
+health_unit = vesper-e2e-health.service
+heartbeat_unit = vesper-e2e-heartbeat.service
+notify_tag = vesper-e2e-notify
 health_categories = backups storage dns
 [timers]
 highlight = systemd-tmpfiles-clean.timer
 [service:caddy]
 title = Caddy
-container = cockpit-e2e-caddy
+container = vesper-e2e-caddy
 probe = http://127.0.0.1:18080/
 [service:crashy]
-container = cockpit-e2e-crashy
+container = vesper-e2e-crashy
 [service:journald]
 unit = systemd-journald.service
 [service:dns]
@@ -109,48 +109,48 @@ EOF
 
 # ---- real journal entries from transient units ------------------------------
 run() { systemd-run --quiet --collect --wait --unit="$1" /bin/sh -c "$2" || true; }
-run cockpit-e2e-backup 'echo "[vaultwarden] written, verified"; echo "2 of 2 sets written, verified and pruned"'
-run cockpit-e2e-backup 'echo "[homeassistant] no new backup - nothing pruned"; exit 1'
-run cockpit-e2e-drill 'echo "PASS vaultwarden: integrity_check ok, ciphers=412 (live now 412)"; echo "PASS kuma: integrity_check ok, monitor=13"; echo "restore test: 2 passed, 0 failed"'
-run cockpit-e2e-health 'echo "1 problem(s) found"'
-for _ in 1 2 3; do run cockpit-e2e-heartbeat 'true'; done
-logger -t cockpit-e2e-notify 'sent prio=high key=kuma-down title="Uptime Kuma: Home Assistant is DOWN" http=200 attempts=1'
-logger -t cockpit-e2e-notify 'resolved key=kuma-down prio=default title="Uptime Kuma: Home Assistant is UP" http=200 attempts=1'
-logger -t cockpit-e2e-notify 'sent prio=default key=health-storage title="Homelab: storage needs attention" http=200 attempts=1'
+run vesper-e2e-backup 'echo "[vaultwarden] written, verified"; echo "2 of 2 sets written, verified and pruned"'
+run vesper-e2e-backup 'echo "[homeassistant] no new backup - nothing pruned"; exit 1'
+run vesper-e2e-drill 'echo "PASS vaultwarden: integrity_check ok, ciphers=412 (live now 412)"; echo "PASS kuma: integrity_check ok, monitor=13"; echo "restore test: 2 passed, 0 failed"'
+run vesper-e2e-health 'echo "1 problem(s) found"'
+for _ in 1 2 3; do run vesper-e2e-heartbeat 'true'; done
+logger -t vesper-e2e-notify 'sent prio=high key=kuma-down title="Uptime Kuma: Home Assistant is DOWN" http=200 attempts=1'
+logger -t vesper-e2e-notify 'resolved key=kuma-down prio=default title="Uptime Kuma: Home Assistant is UP" http=200 attempts=1'
+logger -t vesper-e2e-notify 'sent prio=default key=health-storage title="Homelab: storage needs attention" http=200 attempts=1'
 journalctl --sync 2>/dev/null || true
 
 # ---- real containers, Caddy in front -----------------------------------------
-mkdir -p /run/cockpit
+mkdir -p /run/vesper
 cat > "$W/Caddyfile" <<'EOF'
 {
 	admin 127.0.0.1:2019
 }
 https://localhost:8447 {
 	tls internal
-	reverse_proxy unix//run/cockpit/web.sock
+	reverse_proxy unix//run/vesper/web.sock
 }
 :8080 {
 	respond "ok"
 }
 EOF
-docker run -d --name cockpit-e2e-caddy -p 127.0.0.1:18447:8447 -p 127.0.0.1:18080:8080 \
-  -v "$W/Caddyfile:/etc/caddy/Caddyfile:ro" -v /run/cockpit:/run/cockpit:ro \
+docker run -d --name vesper-e2e-caddy -p 127.0.0.1:18447:8447 -p 127.0.0.1:18080:8080 \
+  -v "$W/Caddyfile:/etc/caddy/Caddyfile:ro" -v /run/vesper:/run/vesper:ro \
   --health-cmd 'wget -qO /dev/null http://127.0.0.1:2019/config/' --health-interval 2s caddy:2 >/dev/null
-docker run --name cockpit-e2e-crashy busybox:stable sh -c 'exit 3' >/dev/null 2>&1 || true
+docker run --name vesper-e2e-crashy busybox:stable sh -c 'exit 3' >/dev/null 2>&1 || true
 
 # ---- the shipped units, pointed at the fixture --------------------------------
-for f in cockpit-collect.service cockpit-web.socket cockpit-web.service; do
-  sed -e "s|/usr/local/bin/cockpit|$W/bin/cockpit|" -e "s|/etc/cockpit/cockpit.conf|$W/cockpit.conf|" \
-      -e "s|/etc/cockpit/password.hash|$W/password.hash|" "$HERE/deploy/systemd/$f" > "$U/$f"
+for f in vesper-collect.service vesper-web.socket vesper-web.service; do
+  sed -e "s|/usr/local/bin/vesper|$W/bin/vesper|" -e "s|/etc/vesper/vesper.conf|$W/vesper.conf|" \
+      -e "s|/etc/vesper/password.hash|$W/password.hash|" "$HERE/deploy/systemd/$f" > "$U/$f"
 done
-systemd-tmpfiles --create "$HERE/deploy/tmpfiles.d/cockpit.conf"
+systemd-tmpfiles --create "$HERE/deploy/tmpfiles.d/vesper.conf"
 systemctl daemon-reload
-systemctl start cockpit-collect.service cockpit-web.socket
+systemctl start vesper-collect.service vesper-web.socket
 for _ in $(seq 1 40); do
-  docker inspect -f '{{.State.Health.Status}}' cockpit-e2e-caddy 2>/dev/null | grep -q healthy && [ -s /run/cockpit/state.json ] && break
+  docker inspect -f '{{.State.Health.Status}}' vesper-e2e-caddy 2>/dev/null | grep -q healthy && [ -s /run/vesper/state.json ] && break
   sleep 0.5
 done
-S=/run/cockpit/state.json
+S=/run/vesper/state.json
 # wait until the collector has done at least two ticks with Caddy healthy
 for _ in $(seq 1 60); do
   jq -e '.host.cpu_pct != null and ([.services[] | select(.id == "caddy") | .probe.ok] == [true])' "$S" >/dev/null 2>&1 && break
@@ -159,9 +159,9 @@ done
 j() { jq -e "$1" "$S"; }
 
 echo "== collector"
-check "collector is running"                    "systemctl is-active --quiet cockpit-collect.service"
+check "collector is running"                    "systemctl is-active --quiet vesper-collect.service"
 check "state.json written, schema 2"            "j '.schema == 2 and .title == \"e2e\"'"
-check "collector holds only CAP_DAC_READ_SEARCH"  "[ \"\$(awk '/^CapEff/{print \$2}' /proc/\$(systemctl show -p MainPID --value cockpit-collect)/status)\" = 0000000000000004 ]"
+check "collector holds only CAP_DAC_READ_SEARCH"  "[ \"\$(awk '/^CapEff/{print \$2}' /proc/\$(systemctl show -p MainPID --value vesper-collect)/status)\" = 0000000000000004 ]"
 check "host CPU and memory measured"            "j '.host.cpu_pct >= 0 and .host.mem_total > 0'"
 check "every source read without error"         "j '[.sources[] | select(.ok | not) | .name] == []'"
 echo "== services"
@@ -184,15 +184,15 @@ check "drift found in /etc/hosts only"          "j '.drift.result == \"drift\" a
 check "uncommitted change counted"              "j '.drift.uncommitted == 1'"
 check "heartbeat runs counted"                  "j '.heartbeat.ok and .heartbeat.pings_24h >= 3'"
 check "health check result and open category"   "j '.health.result == \"1 problem(s) found\" and ([.health.categories[] | select(.open) | .name] == [\"storage\"])'"
-check "runbook copied for the web process"      "grep -q 'Restore a backup' /run/cockpit/runbooks/restore.md"
+check "runbook copied for the web process"      "grep -q 'Restore a backup' /run/vesper/runbooks/restore.md"
 check "rollup is crit with attention items"     "j '.status.level == \"crit\" and (.status.attention | length) >= 4'"
-"$W/bin/cockpit" check -state "$S" -color never || true
+"$W/bin/vesper" check -state "$S" -color never || true
 
 echo "== web on the unix socket"
-sock() { curl -s --unix-socket /run/cockpit/web.sock "$@"; }
+sock() { curl -s --unix-socket /run/vesper/web.sock "$@"; }
 check "socket activation starts the web unit"   "sock http://x/healthz | grep -q '^ok'"
-check "web runs as a dynamic user, not root"    "[ \"\$(ps -o user= -p \$(systemctl show -p MainPID --value cockpit-web))\" != root ]"
-check "web has no network of its own"           "[ \"\$(systemctl show -p PrivateNetwork --value cockpit-web)\" = yes ]"
+check "web runs as a dynamic user, not root"    "[ \"\$(ps -o user= -p \$(systemctl show -p MainPID --value vesper-web))\" != root ]"
+check "web has no network of its own"           "[ \"\$(systemctl show -p PrivateNetwork --value vesper-web)\" = yes ]"
 check "state refused without a session"         "[ \"\$(sock -o /dev/null -w '%{http_code}' http://x/api/state)\" = 401 ]"
 bad_pw=$(sock -w ' %{http_code}' -H 'Content-Type: application/json' -d '{"username":"e2e-owner","password":"nope nope nope"}' http://x/api/login)
 bad_user=$(sock -w ' %{http_code}' -H 'Content-Type: application/json' -d "{\"username\":\"admin\",\"password\":\"$PW\"}" http://x/api/login)
@@ -202,15 +202,15 @@ echo "== through Caddy (TLS, X-Forwarded-*, streaming)"
 C=$(mktemp)
 code=$(curl -sk -c "$C" -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d "{\"username\":\"e2e-owner\",\"password\":\"$PW\"}" https://localhost:18447/api/login --resolve localhost:18447:127.0.0.1)
 check "login through Caddy"                     "[ $code = 204 ]"
-check "session cookie is Secure and HttpOnly"   "grep -q '#HttpOnly_localhost.*TRUE.*cockpit_session' $C"
+check "session cookie is Secure and HttpOnly"   "grep -q '#HttpOnly_localhost.*TRUE.*vesper_session' $C"
 check "state through Caddy with the cookie"     "curl -sk -b $C --resolve localhost:18447:127.0.0.1 https://localhost:18447/api/state | jq -e '.title == \"e2e\"'"
 ev=$(timeout 6 curl -skN -b "$C" --resolve localhost:18447:127.0.0.1 https://localhost:18447/api/events 2>/dev/null | head -c 200000 | grep -m2 -E '^(event|data):' || true)
 if grep -q '^event: snapshot' <<<"$ev" && grep -q '"schema":2' <<<"$ev"; then ok "live stream delivers a snapshot event"; else bad "live stream delivers a snapshot event"; fi
-check "UI served through Caddy"                 "curl -sk --resolve localhost:18447:127.0.0.1 https://localhost:18447/ | grep -q '<title>Cockpit</title>'"
+check "UI served through Caddy"                 "curl -sk --resolve localhost:18447:127.0.0.1 https://localhost:18447/ | grep -q '<title>Vesper</title>'"
 rm -f "$C"
 
 echo "== hardening (systemd-analyze security, lower is safer)"
-for u in cockpit-collect.service cockpit-web.service; do
+for u in vesper-collect.service vesper-web.service; do
   printf '%-26s %s\n' "$u" "$(systemd-analyze security "$u" 2>/dev/null | tail -1 | sed 's/.*exposure level for [^:]*: //')"
 done
 

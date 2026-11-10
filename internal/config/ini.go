@@ -1,4 +1,4 @@
-// Package config reads cockpit.conf, a small INI file in the same spirit as the
+// Package config reads vesper.conf, a small INI file in the same spirit as the
 // homelab's backups.conf: [sections], "key = value" lines, # or ; comments.
 // A section can carry a name after a colon ([service:vaultwarden]) and may then
 // appear once per name.

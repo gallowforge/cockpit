@@ -93,7 +93,7 @@ class Guard extends Component<{ page: string; children: ComponentChildren }, { e
   }
   render() {
     if (this.state.err) {
-      return <div class="empty">This page hit an error and could not be drawn. The rest of Cockpit still works.<code>{this.state.err}</code></div>
+      return <div class="empty">This page hit an error and could not be drawn. The rest of Vesper still works.<code>{this.state.err}</code></div>
     }
     return this.props.children
   }
@@ -235,7 +235,7 @@ export function App() {
     if (!snap) return
     const lv = snap.status.level
     const mark = lv === 'crit' ? '■ ' : lv === 'warn' ? '▲ ' : lv === 'unknown' ? '◌ ' : ''
-    document.title = `${mark}${snap.title} · Cockpit`
+    document.title = `${mark}${snap.title} · Vesper`
   }, [snap?.status.level, snap?.title])
 
   const page0 = route[0] ?? ''
@@ -247,7 +247,7 @@ export function App() {
     return (
       <div class="splash">
         <Mark size={44} />
-        <p class="strong">Cockpit can't reach its server.</p>
+        <p class="strong">Vesper can't reach its server.</p>
         <p class="muted">{sessionErr}</p>
         <button type="button" class="btn" onClick={load}>Try again</button>
       </div>
@@ -276,8 +276,8 @@ export function App() {
 
   return (
     <div class="shell">
-      <aside class="side" aria-label="Cockpit">
-        <a class="brand" href="#/"><Mark size={22} />Cockpit</a>
+      <aside class="side" aria-label="Vesper">
+        <a class="brand" href="#/"><Mark size={22} />Vesper</a>
         <div class="hostbox">
           <Dot level={hostLevel} live={hostLevel === 'crit'} />
           <b>{snap.title}</b>
@@ -308,7 +308,7 @@ export function App() {
             <span class={`live${live ? ' on' : age > 90_000 ? ' lost' : ''}`}><i />{liveText} · {ago(snap.generated, now)}</span>
             {session && <span class="num">{/^\d/.test(session.version) ? 'v' : ''}{session.version}</span>}
           </div>
-          <span>Read-only. Cockpit never changes the server.</span>
+          <span>Read-only. Vesper never changes the server.</span>
           {session?.auth === 'password' && (
             <button type="button" class="linklike" style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => logout().then(load)}><IconLogout size={14} />Sign out</button>
           )}

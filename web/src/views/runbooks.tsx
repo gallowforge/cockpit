@@ -22,7 +22,7 @@ function loadTicks(id: string, sig: string): Set<number> {
   const q = new URLSearchParams(location.search)
   if (q.has('shot') && q.has('tick')) return new Set(q.get('tick')!.split(',').filter(Boolean).map(Number))
   try {
-    const raw = localStorage.getItem(`cockpit-checklist:${id}`)
+    const raw = localStorage.getItem(`vesper-checklist:${id}`)
     if (!raw) return new Set()
     const v = JSON.parse(raw) as { at: number; sig?: string; done: number[] }
     if (Date.now() - v.at > KEEP_MS || v.sig !== sig || !Array.isArray(v.done)) return new Set()
@@ -34,8 +34,8 @@ function loadTicks(id: string, sig: string): Set<number> {
 
 function saveTicks(id: string, sig: string, done: Set<number>) {
   try {
-    if (done.size === 0) localStorage.removeItem(`cockpit-checklist:${id}`)
-    else localStorage.setItem(`cockpit-checklist:${id}`, JSON.stringify({ at: Date.now(), sig, done: [...done] }))
+    if (done.size === 0) localStorage.removeItem(`vesper-checklist:${id}`)
+    else localStorage.setItem(`vesper-checklist:${id}`, JSON.stringify({ at: Date.now(), sig, done: [...done] }))
   } catch {
     /* private mode: ticks just do not persist */
   }
@@ -117,7 +117,7 @@ export function RunbooksView({ snap, route }: ViewProps) {
     <div>
       <PageHead title={current?.title ?? 'Checklists'} sub="Tap each step as you do it. Ticks stay on this device for 12 hours." />
       {list.length === 0 ? (
-        <Empty>No checklists configured. Add [runbook:name] blocks to cockpit.conf.</Empty>
+        <Empty>No checklists configured. Add [runbook:name] blocks to vesper.conf.</Empty>
       ) : (
         <div class="rb">
           <nav class="rb-nav" aria-label="Checklists">

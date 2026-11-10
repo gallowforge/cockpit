@@ -104,10 +104,10 @@ describe('the hero', () => {
   })
   it('never calls a blind spot all clear', () => {
     const s = base()
-    s.status.headline = "Cockpit can't read Docker."
-    s.status.blind = [{ level: 'unknown', area: 'services', ref: 'source-services', title: "Cockpit can't read Docker", detail: '14 services can\'t be confirmed.' }]
+    s.status.headline = "Vesper can't read Docker."
+    s.status.blind = [{ level: 'unknown', area: 'services', ref: 'source-services', title: "Vesper can't read Docker", detail: '14 services can\'t be confirmed.' }]
     const h = heroOf(s, NOW)
-    expect([h.kind, h.light, h.title]).toEqual(['blind', 'blind', "Cockpit can't read Docker."])
+    expect([h.kind, h.light, h.title]).toEqual(['blind', 'blind', "Vesper can't read Docker."])
     expect(h.detail[0].text).toBe("14 services can't be confirmed. Everything it can see is fine.")
   })
   it('turns stale, offline and maintenance into their own states', () => {

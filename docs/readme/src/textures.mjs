@@ -1,10 +1,10 @@
 // Builds the content of every glass window as a PNG in shots/.
-//  - Screens: the real UI, served by `cockpit demo` on a frozen clock and captured at 2x (desktop)
-//    and 3x (phone). Cockpit has one theme, night, so the light images use the same captures.
-//  - Terminals: `cockpit check` run fresh on a demo snapshot (its ANSI colours kept), and the
-//    end-to-end run in demo/e2e.txt (written by `sudo scripts/e2e.sh bin/cockpit`), dark and light.
+//  - Screens: the real UI, served by `vesper demo` on a frozen clock and captured at 2x (desktop)
+//    and 3x (phone). Vesper has one theme, night, so the light images use the same captures.
+//  - Terminals: `vesper check` run fresh on a demo snapshot (its ANSI colours kept), and the
+//    end-to-end run in demo/e2e.txt (written by `sudo scripts/e2e.sh bin/vesper`), dark and light.
 //  - The design diagram and the numbers band, typeset from the README's own facts, dark and light.
-//   BIN=bin/cockpit node textures.mjs [name ...]
+//   BIN=bin/vesper node textures.mjs [name ...]
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
@@ -15,11 +15,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const { chromium } = createRequire(import.meta.url)('playwright');   // resolved through NODE_PATH
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, 'shots');
-const BIN = resolve(process.env.BIN || join(HERE, '../../../bin/cockpit'));
+const BIN = resolve(process.env.BIN || join(HERE, '../../../bin/vesper'));
 const AT = '2026-03-10T07:42:00Z';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// ---- screens from `cockpit demo` --------------------------------------------------------
+// ---- screens from `vesper demo` --------------------------------------------------------
 const SCEN = { calm: 8291, attention: 8292, incident: 8293, blind: 8294 };
 const SHOTS = [
   // name, scenario, route, query, width, height, scale
@@ -59,7 +59,7 @@ body{-webkit-font-smoothing:antialiased;color:${t.fg};font-family:"Geist",sans-s
 `;
 const PROMPT = (cmd, cursor) => `<div class="l"><span class="p">pi@raspberrypi:~$</span> <span class="c">${esc(cmd)}</span>${cursor ? '<span class="cur"></span>' : ''}</div>`;
 
-// ANSI SGR to spans (the codes `cockpit check -color always` uses: 0 1 32 33 90)
+// ANSI SGR to spans (the codes `vesper check -color always` uses: 0 1 32 33 90)
 function ansi(line) {
   const cls = { 1: 'b', 32: 'ok', 33: 'warn', 31: 'bad', 90: 'd' };
   let out = '', open = 0;
@@ -74,7 +74,7 @@ function ansi(line) {
 }
 
 function checkOutput() {
-  const dir = mkdtempSync(join(tmpdir(), 'cockpit-check-'));
+  const dir = mkdtempSync(join(tmpdir(), 'vesper-check-'));
   try {
     // a snapshot taken now, so `check` does not add its "snapshot is old" note
     const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
@@ -91,14 +91,14 @@ function e2eLine(l) {
   let m;
   if ((m = l.match(/^== (.*)$/))) return `<div class="l" style="margin-top:7px"><span class="acc">== ${esc(m[1])}</span></div>`;
   if ((m = l.match(/^PASS (.*)$/))) return `<div class="l"><span class="ok">PASS</span> <span>${esc(m[1])}</span></div>`;
-  if ((m = l.match(/^(cockpit-\S+)(\s+)([\d.]+) (\w+)(?:\s+\S+)?$/))) return `<div class="l" data-box="score"><span class="c">${m[1]}</span>${m[2]}<span class="ok">${m[3]} ${m[4]}</span></div>`;
+  if ((m = l.match(/^(vesper-\S+)(\s+)([\d.]+) (\w+)(?:\s+\S+)?$/))) return `<div class="l" data-box="score"><span class="c">${m[1]}</span>${m[2]}<span class="ok">${m[3]} ${m[4]}</span></div>`;
   if ((m = l.match(/^RESULT: (.*)$/))) return `<div class="l" data-box="result"><span class="c">RESULT: </span><span class="ok">${esc(m[1])}</span></div>`;
   return `<div class="l">${esc(l)}</div>`;
 }
 
 const TEX = {
-  check: () => ({ w: 640, body: `<div class="term" style="width:640px">${PROMPT('cockpit check -config /etc/cockpit/cockpit.conf')}${checkOutput().map(l => `<div class="l">${ansi(l)}</div>`).join('')}${PROMPT('', true)}</div>` }),
-  e2e: () => ({ w: 600, body: `<div class="term" style="width:600px">${PROMPT('sudo scripts/e2e.sh bin/cockpit')}${e2e.map(e2eLine).join('')}</div>` }),
+  check: () => ({ w: 640, body: `<div class="term" style="width:640px">${PROMPT('vesper check -config /etc/vesper/vesper.conf')}${checkOutput().map(l => `<div class="l">${ansi(l)}</div>`).join('')}${PROMPT('', true)}</div>` }),
+  e2e: () => ({ w: 600, body: `<div class="term" style="width:600px">${PROMPT('sudo scripts/e2e.sh bin/vesper')}${e2e.map(e2eLine).join('')}</div>` }),
   design: (t) => design(t, false), 'design-phone': (t) => design(t, true),
   numbers: (t) => numbers(t, false), 'numbers-phone': (t) => numbers(t, true),
 };
@@ -122,11 +122,11 @@ function design(t, phone) {
     ? `<div style="display:flex;align-items:center;gap:12px;height:34px;padding-left:24px"><svg width="14" height="34" viewBox="0 0 14 34"><path d="M7,3 L7,30 M2,25 L7,30 L12,25" fill="none" stroke="${t.dim}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font:500 11.5px/1 'Geist Mono';color:${t.dim}">${label}</span></div>`
     : `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px"><span style="font:500 11px/1 'Geist Mono';color:${t.dim}">${label}</span><svg width="34" height="12" viewBox="0 0 34 12"><path d="M2,6 L31,6 M26,1.5 L31,6 L26,10.5" fill="none" stroke="${t.dim}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
   const src = node('the homelab', 'what it reads', ['systemd journal', 'systemctl show', 'Docker API, GET only', 'backup status files', 'notifier state', 'MANIFEST and git', 'HTTPS, TCP and DNS probes'].map(s => li(s)).join(''));
-  const col = node('cockpit collect', 'root, boxed in', [['only CAP_DAC_READ_SEARCH', 1], ['writes only /run/cockpit', 1], ['no internet, no listener', 1], ['every 20 s; journal every 5 min', 0]].map(([s, g]) => li(s, g)).join(''), { score: ['2.4', 'OK,'], line: t.warn + '66', roleCol: t.warn, id: 'collect' });
+  const col = node('vesper collect', 'root, boxed in', [['only CAP_DAC_READ_SEARCH', 1], ['writes only /run/vesper', 1], ['no internet, no listener', 1], ['every 20 s; journal every 5 min', 0]].map(([s, g]) => li(s, g)).join(''), { score: ['2.4', 'OK,'], line: t.warn + '66', roleCol: t.warn, id: 'collect' });
   const ram = `<div style="border:1px solid ${t.acc}55;border-radius:14px;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
     <div style="font:600 15px/1.2 'Geist Mono';color:${t.hi}">state.json</div><div style="font:600 34px/1 Geist;letter-spacing:-.03em;color:${t.acc};margin-top:10px">RAM</div>
     <div style="font:500 12.5px/1.3 Geist;color:${t.soft};margin-top:8px">0 disk writes</div></div>`;
-  const srv = node('cockpit serve', 'a throwaway user', [['no capabilities', 1], ['no network at all', 1], ['socket from systemd', 1], ['live updates over SSE', 0]].map(([s, g]) => li(s, g)).join(''), { score: ['0.5', 'SAFE,'], line: t.ok + '66', roleCol: t.ok, id: 'serve' });
+  const srv = node('vesper serve', 'a throwaway user', [['no capabilities', 1], ['no network at all', 1], ['socket from systemd', 1], ['live updates over SSE', 0]].map(([s, g]) => li(s, g)).join(''), { score: ['0.5', 'SAFE,'], line: t.ok + '66', roleCol: t.ok, id: 'serve' });
   const edge = node('Caddy', 'TLS in front', li('one sign-in, then a', 0) + li('year-long signed cookie', 0), {});
   const phoneN = node('your phone', 'or any browser', li('read-only: no button', 1) + li('changes anything', 1));
   if (phone) return { w: 460, body: `<div style="width:460px;box-sizing:border-box;padding:16px;display:flex;flex-direction:column">${src}${arrow('reads')}${col}${arrow('writes')}${ram}${arrow('reads')}${srv}${arrow('socket')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${edge}${phoneN}</div></div>` };

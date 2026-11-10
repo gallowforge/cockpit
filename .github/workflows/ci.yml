@@ -37,18 +37,18 @@ jobs:
         run: shellcheck -S warning scripts/*.sh
       - name: build both architectures
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o bin/cockpit ./cmd/cockpit
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o bin/cockpit-arm64 ./cmd/cockpit
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o bin/vesper ./cmd/vesper
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o bin/vesper-arm64 ./cmd/vesper
           ls -la bin
       - name: systemd unit files are valid
         run: |
-          sudo install -m 755 bin/cockpit /usr/local/bin/cockpit
+          sudo install -m 755 bin/vesper /usr/local/bin/vesper
           systemd-analyze verify deploy/systemd/*.service deploy/systemd/*.socket
       - name: end to end under systemd, with Docker and Caddy
-        run: sudo scripts/e2e.sh bin/cockpit
+        run: sudo scripts/e2e.sh bin/vesper
       - uses: actions/upload-artifact@v7
         with:
-          name: cockpit-linux
+          name: vesper-linux
           path: bin/
 
   gitleaks:

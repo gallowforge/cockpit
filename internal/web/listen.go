@@ -46,7 +46,7 @@ func Listen(spec string) (net.Listener, error) {
 func systemdListener() (net.Listener, error) {
 	pid, err := strconv.Atoi(os.Getenv("LISTEN_PID"))
 	if err != nil || pid != os.Getpid() {
-		return nil, errors.New("listen = systemd, but no socket was passed (start it through cockpit-web.socket)")
+		return nil, errors.New("listen = systemd, but no socket was passed (start it through vesper-web.socket)")
 	}
 	n, err := strconv.Atoi(os.Getenv("LISTEN_FDS"))
 	if err != nil || n < 1 {

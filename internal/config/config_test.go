@@ -18,7 +18,7 @@ func parse(t *testing.T, s string) (*Config, error) {
 func TestDefaultsAndOverrides(t *testing.T) {
 	c, err := parse(t, `
 # comment
-[cockpit]
+[vesper]
 title = pi-one
 interval = 15s   # trailing comment
 slow_interval = 2m
@@ -48,7 +48,7 @@ match = backups backup-*
 		t.Fatal(err)
 	}
 	if c.Title != "pi-one" || c.Interval != 15*time.Second || c.SlowInterval != 2*time.Minute {
-		t.Fatalf("cockpit section not applied: %+v", c)
+		t.Fatalf("vesper section not applied: %+v", c)
 	}
 	if c.Web.Listen != "systemd" || c.Web.Auth != "none" || c.Web.Username != "pilot" {
 		t.Fatalf("web: %+v", c.Web)
@@ -70,12 +70,20 @@ match = backups backup-*
 	}
 }
 
+// A config written before the rename to Vesper keeps working.
+func TestOldSectionName(t *testing.T) {
+	c, err := parse(t, "[cockpit]\ntitle = pi\ninterval = 30s\n")
+	if err != nil || c.Title != "pi" || c.Interval != 30*time.Second {
+		t.Fatalf("[cockpit] not read: %v %+v", err, c)
+	}
+}
+
 func TestRejectsMistakes(t *testing.T) {
 	cases := map[string]string{
 		"unknown section":   "[nope]\n",
-		"unknown key":       "[cockpit]\ntitel = x\n",
-		"bad duration":      "[cockpit]\ninterval = soon\n",
-		"too fast":          "[cockpit]\ninterval = 1s\n",
+		"unknown key":       "[vesper]\ntitel = x\n",
+		"bad duration":      "[vesper]\ninterval = soon\n",
+		"too fast":          "[vesper]\ninterval = 1s\n",
 		"service no target": "[service:x]\ntitle = X\n",
 		"bad probe scheme":  "[service:x]\nprobe = ftp://host\n",
 		"dns probe shape":   "[service:x]\nprobe = dns://127.0.0.1/example.com\n",
@@ -85,6 +93,7 @@ func TestRejectsMistakes(t *testing.T) {
 		"auth mode":         "[web]\nauth = maybe\n",
 		"username spaces":   "[web]\nusername = the owner\n",
 		"unnamed service":   "[service]\ncontainer = x\n",
+		"named vesper":      "[vesper:x]\n",
 		"named cockpit":     "[cockpit:x]\n",
 	}
 	for name, src := range cases {

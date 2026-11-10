@@ -10,7 +10,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // Scenarios.
@@ -18,7 +18,7 @@ const (
 	Calm      = "calm"      // everything fine
 	Attention = "attention" // one config drift, one low alert
 	Incident  = "incident"  // a container down and an urgent alert
-	Blind     = "blind"     // Docker cannot be read: nothing is wrong that Cockpit can see
+	Blind     = "blind"     // Docker cannot be read: nothing is wrong that Vesper can see
 )
 
 // Generator builds snapshots for a fixed scenario. Histories are seeded, so

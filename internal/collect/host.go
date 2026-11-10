@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // hostState carries the counters CPU and write rates are computed from.

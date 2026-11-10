@@ -76,7 +76,7 @@ type Status struct {
 	Level     string      `json:"level"`
 	Headline  string      `json:"headline"`
 	Attention []Attention `json:"attention"`
-	// Blind lists what Cockpit cannot see right now (a source it cannot read,
+	// Blind lists what Vesper cannot see right now (a source it cannot read,
 	// services it cannot confirm). Never empty-by-accident: a blind spot keeps
 	// the status from reading all clear.
 	Blind []Attention `json:"blind"`
@@ -152,7 +152,7 @@ type Service struct {
 	Beats string `json:"beats"`
 	// Day is the last 24 hours, oldest first: one char per DaySlot, the last
 	// one being the slot that holds Generated. Each slot holds the worst state
-	// sampled in it, and "?" where Cockpit took no sample.
+	// sampled in it, and "?" where Vesper took no sample.
 	Day string `json:"day,omitempty"`
 }
 

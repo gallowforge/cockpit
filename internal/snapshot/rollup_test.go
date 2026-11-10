@@ -116,7 +116,7 @@ func TestDrillAndHeartbeat(t *testing.T) {
 	}
 }
 
-// Not knowing is never shown as fine: a source Cockpit cannot read, services it
+// Not knowing is never shown as fine: a source Vesper cannot read, services it
 // cannot confirm and checks with nothing to go on keep the status off all clear.
 func TestBlindSpotsAreNotAllClear(t *testing.T) {
 	s := healthy()
@@ -126,13 +126,13 @@ func TestBlindSpotsAreNotAllClear(t *testing.T) {
 	if s.Status.Level != Unknown || len(s.Status.Attention) != 0 {
 		t.Fatalf("status %+v", s.Status)
 	}
-	if len(s.Status.Blind) != 1 || s.Status.Blind[0].Title != "Cockpit can't read Docker" {
+	if len(s.Status.Blind) != 1 || s.Status.Blind[0].Title != "Vesper can't read Docker" {
 		t.Fatalf("one blind spot for the services area, got %+v", s.Status.Blind)
 	}
 	if s.Status.Blind[0].Detail != "2 services can't be confirmed: Home Assistant, Uptime Kuma." || !strings.Contains(s.Status.Blind[0].Evidence, "docker.sock") {
 		t.Fatalf("detail %q evidence %q", s.Status.Blind[0].Detail, s.Status.Blind[0].Evidence)
 	}
-	if s.Status.Headline != "Cockpit can't read Docker." {
+	if s.Status.Headline != "Vesper can't read Docker." {
 		t.Fatalf("headline %q", s.Status.Headline)
 	}
 
@@ -140,7 +140,7 @@ func TestBlindSpotsAreNotAllClear(t *testing.T) {
 	s.Drill.Runs = nil
 	s.Drift = Drift{Result: "unknown", Error: "open /srv/homelab/_host/MANIFEST: no such file"}
 	Finalize(s, now)
-	if s.Status.Level != Unknown || len(s.Status.Blind) != 2 || s.Status.Headline != "Cockpit can't see 2 things." {
+	if s.Status.Level != Unknown || len(s.Status.Blind) != 2 || s.Status.Headline != "Vesper can't see 2 things." {
 		t.Fatalf("status %+v", s.Status)
 	}
 

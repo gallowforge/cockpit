@@ -128,10 +128,10 @@ export function heroOf(s: Snapshot, now: number, opts: { online?: boolean; strea
   const age = now - ms(s.generated)
   if (opts.online === false) {
     return { ...base, kind: 'offline', light: 'none', title: "You're offline.",
-      detail: [{ text: `Showing the state from ${clock(s.generated)}, ${ago(s.generated, now)}. Cockpit reconnects by itself.` }] }
+      detail: [{ text: `Showing the state from ${clock(s.generated)}, ${ago(s.generated, now)}. Vesper reconnects by itself.` }] }
   }
   if (age > STALE_MS) {
-    return { ...base, kind: 'stale', light: 'none', title: 'Cockpit lost sight of the house.',
+    return { ...base, kind: 'stale', light: 'none', title: 'Vesper lost sight of the house.',
       detail: [{ text: `Last snapshot ${clock(s.generated)}, ${ago(s.generated, now)}. Below is the last known state.` }] }
   }
   if (s.maintenance) {
@@ -182,7 +182,7 @@ export function isFrequent(t: Timer): boolean {
   return !!t.next && !!t.last && ms(t.next) - ms(t.last) < 55 * 60e3
 }
 
-/** The all-clear's proof: each part is something Cockpit actually checked. */
+/** The all-clear's proof: each part is something Vesper actually checked. */
 export function clearFacts(s: Snapshot, now: number): { text: string; href: string }[] {
   const out: { text: string; href: string }[] = []
   const svcs = s.services.filter((x) => x.state !== 'off')
@@ -299,7 +299,7 @@ export function normalizeSnap(s: Snapshot): Snapshot {
   if ((s.schema ?? 1) < 2 && !Array.isArray(s.status.blind)) {
     // a collector older than this page cannot report what it can't see, so its all-clear is not proof
     s.status.blind = [{ level: 'unknown', area: 'services', title: 'The collector is an older version',
-      detail: 'Restart cockpit-collect so it writes the new state. Until then Cockpit cannot tell what it cannot see.' }]
+      detail: 'Restart vesper-collect so it writes the new state. Until then Vesper cannot tell what it cannot see.' }]
     if (s.status.level === 'ok' || s.status.level === 'info') s.status.level = 'unknown'
   }
   s.status.blind = a(s.status.blind)
@@ -325,7 +325,7 @@ export const DAY_SLOT_MS = 5 * 60_000
 export const DAY_SLOTS = 288
 const dayRank: Record<string, number> = { u: 0, o: 0, '?': 1, d: 2, x: 3 }
 
-/** A service's day line padded to a full day: time before Cockpit's first
+/** A service's day line padded to a full day: time before Vesper's first
  *  sample is unknown, never assumed up. */
 export function fullDay(day: string | undefined): string {
   const d = (day ?? '').slice(-DAY_SLOTS)
@@ -346,7 +346,7 @@ export function fleetDay(list: Service[]): string {
 }
 
 /** Folds slots into n buckets, the worst state winning, for narrow drawings.
- *  A bucket Cockpit did not fully see shows as unknown unless it holds worse. */
+ *  A bucket Vesper did not fully see shows as unknown unless it holds worse. */
 export function bucket(day: string, n: number): string {
   if (n >= day.length) return day
   const per = day.length / n
@@ -363,7 +363,7 @@ export function bucket(day: string, n: number): string {
 }
 
 /** Share of the seen time that was up (degraded counts as up), or null when
- *  Cockpit saw nothing. Off and unknown slots are left out of the count. */
+ *  Vesper saw nothing. Off and unknown slots are left out of the count. */
 export function dayUptime(day: string): number | null {
   let up = 0
   let down = 0
@@ -374,7 +374,7 @@ export function dayUptime(day: string): number | null {
   return up + down ? (up / (up + down)) * 100 : null
 }
 
-/** How many slots of the day Cockpit actually watched. */
+/** How many slots of the day Vesper actually watched. */
 export function daySeen(day: string): number {
   let n = 0
   for (const c of day) if (c !== '?') n++

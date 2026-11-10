@@ -27,7 +27,7 @@ jobs:
           notes=$(awk -v v="## ${GITHUB_REF_NAME#v}" '$0 ~ "^## " {p = ($0 ~ v)} p' CHANGELOG.md)
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             && gh release upload "$GITHUB_REF_NAME" dist/* --clobber \
-            || gh release create "$GITHUB_REF_NAME" dist/* --title "Cockpit $GITHUB_REF_NAME" --notes "$notes"
+            || gh release create "$GITHUB_REF_NAME" dist/* --title "Vesper $GITHUB_REF_NAME" --notes "$notes"
 
   image:
     runs-on: ubuntu-latest
@@ -46,5 +46,5 @@ jobs:
           push: true
           build-args: VERSION=${{ github.ref_name }}
           tags: |
-            ghcr.io/gallowforge/cockpit:${{ github.ref_name }}
-            ghcr.io/gallowforge/cockpit:latest
+            ghcr.io/gallowforge/vesper:${{ github.ref_name }}
+            ghcr.io/gallowforge/vesper:latest

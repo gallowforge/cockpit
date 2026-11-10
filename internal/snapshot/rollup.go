@@ -11,7 +11,7 @@ import (
 
 // Finalize derives every level and the overall status from the raw facts the
 // collectors (or the demo generator) filled in. It is the only place where
-// "is this a problem?" is decided, so the UI, `cockpit check` and the tests all
+// "is this a problem?" is decided, so the UI, `vesper check` and the tests all
 // agree.
 func Finalize(s *Snapshot, now time.Time) {
 	defer normalize(s)
@@ -261,7 +261,7 @@ func headline(att, blind []Attention) string {
 	case n == 0 && len(blind) == 1:
 		return sentence(blind[0].Title)
 	case n == 0:
-		return fmt.Sprintf("Cockpit can't see %d things.", len(blind))
+		return fmt.Sprintf("Vesper can't see %d things.", len(blind))
 	case n == 1:
 		return sentence(att[0].Title)
 	}
@@ -276,19 +276,19 @@ func sentence(s string) string {
 	return s + "."
 }
 
-// sourceTitles names, in plain words, what Cockpit loses when a source fails.
+// sourceTitles names, in plain words, what Vesper loses when a source fails.
 var sourceTitles = map[string][3]string{
-	"services": {"services", "Cockpit can't read the service states", "Services can't be confirmed."},
-	"timers":   {"timers", "Cockpit can't read the timers", "Scheduled jobs can't be confirmed."},
-	"journal":  {"backups", "Cockpit can't read the journal", "Backup runs, restore drills and the heartbeat can't be confirmed."},
-	"backups":  {"backups", "Cockpit can't read the backup status", "Backups can't be confirmed as verified."},
-	"alerts":   {"alerts", "Cockpit can't read the alert history", "Open alerts can't be confirmed."},
-	"drift":    {"drift", "Cockpit can't check for config drift", "The live files can't be compared with the repo."},
-	"host":     {"host", "Cockpit can't read the host", "Temperature, memory and disks can't be confirmed."},
-	"runbooks": {"runbooks", "Cockpit can't copy the checklists", "Checklists may be out of date."},
+	"services": {"services", "Vesper can't read the service states", "Services can't be confirmed."},
+	"timers":   {"timers", "Vesper can't read the timers", "Scheduled jobs can't be confirmed."},
+	"journal":  {"backups", "Vesper can't read the journal", "Backup runs, restore drills and the heartbeat can't be confirmed."},
+	"backups":  {"backups", "Vesper can't read the backup status", "Backups can't be confirmed as verified."},
+	"alerts":   {"alerts", "Vesper can't read the alert history", "Open alerts can't be confirmed."},
+	"drift":    {"drift", "Vesper can't check for config drift", "The live files can't be compared with the repo."},
+	"host":     {"host", "Vesper can't read the host", "Temperature, memory and disks can't be confirmed."},
+	"runbooks": {"runbooks", "Vesper can't copy the checklists", "Checklists may be out of date."},
 }
 
-// blindSpots lists what Cockpit cannot see: every source that failed, every
+// blindSpots lists what Vesper cannot see: every source that failed, every
 // service it cannot confirm, and the checks that have nothing to go on yet.
 func blindSpots(s *Snapshot) []Attention {
 	out := []Attention{}
@@ -323,7 +323,7 @@ func blindSpots(s *Snapshot) []Attention {
 		if n > 3 {
 			names = strings.Join(unknown[:3], ", ") + fmt.Sprintf(" and %d more", n-3)
 		}
-		put("services", "unknown", fmt.Sprintf("Cockpit can't confirm %s", plural(n, "service", "services")),
+		put("services", "unknown", fmt.Sprintf("Vesper can't confirm %s", plural(n, "service", "services")),
 			fmt.Sprintf("%s can't be confirmed: %s.", plural(n, "service", "services"), names), "", false)
 	}
 	for _, src := range s.Sources {
@@ -332,11 +332,11 @@ func blindSpots(s *Snapshot) []Attention {
 		}
 		t, ok := sourceTitles[src.Name]
 		if !ok {
-			t = [3]string{src.Name, "Cockpit can't read " + src.Name, ""}
+			t = [3]string{src.Name, "Vesper can't read " + src.Name, ""}
 		}
 		title := t[1]
 		if src.Name == "services" && strings.Contains(strings.ToLower(src.Error), "docker") {
-			title = "Cockpit can't read Docker"
+			title = "Vesper can't read Docker"
 		}
 		detail := t[2]
 		if _, has := byArea[t[0]]; has {
@@ -345,7 +345,7 @@ func blindSpots(s *Snapshot) []Attention {
 		put(t[0], "source-"+src.Name, title, detail, firstLine(src.Error), true)
 	}
 	if s.Drift.Result != "clean" && s.Drift.Result != "drift" {
-		put("drift", "manifest", "Cockpit can't check for config drift", "The live files can't be compared with the repo.", firstLine(s.Drift.Error), false)
+		put("drift", "manifest", "Vesper can't check for config drift", "The live files can't be compared with the repo.", firstLine(s.Drift.Error), false)
 	}
 	if s.Heartbeat.Unit != "" && s.Heartbeat.Last == nil {
 		put("heartbeat", "none", "No heartbeat in the journal yet", "The dead-man switch has not pinged since the journal begins.", "", false)
@@ -543,5 +543,5 @@ func filesDiffer(n int) string {
 	return fmt.Sprintf("%d files differ", n)
 }
 
-// FilesDiffer is filesDiffer for other packages (cockpit check).
+// FilesDiffer is filesDiffer for other packages (vesper check).
 func FilesDiffer(n int) string { return filesDiffer(n) }

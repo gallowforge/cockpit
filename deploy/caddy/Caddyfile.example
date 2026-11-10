@@ -1,13 +1,13 @@
-# Cockpit behind Caddy: TLS here, the dashboard on a unix socket.
+# Vesper behind Caddy: TLS here, the dashboard on a unix socket.
 # Caddy forwards X-Forwarded-For/-Proto/-Host, and streams Server-Sent Events
 # without buffering, so nothing else is needed.
 https://homelab.example-tailnet.ts.net:8447 {
 	tls /certs/homelab.example-tailnet.ts.net.crt /certs/homelab.example-tailnet.ts.net.key
 	encode zstd gzip
-	reverse_proxy unix//run/cockpit/web.sock
+	reverse_proxy unix//run/vesper/web.sock
 }
 
 # If Caddy runs in Docker, mount the directory (not the socket file) and publish
 # the port, in its compose file:
 #   ports:   - "8447:8447"
-#   volumes: - /run/cockpit:/run/cockpit:ro
+#   volumes: - /run/vesper:/run/vesper:ro

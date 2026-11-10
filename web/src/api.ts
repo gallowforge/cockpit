@@ -31,9 +31,9 @@ export async function logout(): Promise<void> {
   await fetch('/api/logout', { method: 'POST', headers: json, credentials: 'same-origin', body: '{}' })
 }
 
-// The last snapshot is kept on this device, so Cockpit opens on the last known
+// The last snapshot is kept on this device, so Vesper opens on the last known
 // state at once (and offline), clearly marked with its time, while it reconnects.
-const SNAP_KEY = 'cockpit-last-snapshot'
+const SNAP_KEY = 'vesper-last-snapshot'
 
 export function readCachedSnap(): Snapshot | null {
   try {

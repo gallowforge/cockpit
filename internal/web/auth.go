@@ -80,7 +80,7 @@ type sessions struct {
 }
 
 func newSessions(passwordHash, machineSecret string, ttl time.Duration) *sessions {
-	m := hmac.New(sha256.New, []byte("cockpit-session-v1"))
+	m := hmac.New(sha256.New, []byte("vesper-session-v1"))
 	m.Write([]byte(passwordHash))
 	m.Write([]byte{0})
 	m.Write([]byte(machineSecret))

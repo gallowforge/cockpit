@@ -1,3 +1,3 @@
-module github.com/gallowforge/cockpit
+module github.com/gallowforge/vesper
 
 go 1.24

@@ -1,14 +1,16 @@
 # Changelog
 
-## 2.0.0 "Operations console"
+## 2.0.0 "Vesper"
 
-A ground-up redesign of the UI, a real day of history, and a stricter rule: Cockpit never calls something fine that it cannot see.
+Cockpit is now **Vesper**, with a ground-up redesign of the UI, a real day of history, and a stricter rule: Vesper never calls something fine that it cannot see.
 
-- **A console, not a poster.** A sidebar with Overview, Services, Backups, History, Jobs, System and Checklists (on a phone, a tab bar with a More tab). The Overview opens with one sentence and the facts behind it, then the last 24 hours of every service in quarter hours, four key figures, the services table and a rail with what happened since you last looked, backups, the next jobs, the host and what Cockpit can see. Colour only means state: green up, amber needs you, red down, hatched grey can't see. Type is IBM Plex Sans and Plex Mono, vendored with their licences; a new neutral mark and app icons.
-- **24 hours of history.** Every service carries a day line, one mark per five minutes, kept across restarts. A slot holds the worst state sampled in it; time Cockpit did not watch stays unknown instead of being assumed up. Uptime and outages on the Services pages come from it.
-- **Honest states.** A source that cannot be read, a service that cannot be confirmed, an unreadable MANIFEST, or a drill, heartbeat or health check that is set up but has never run, is a blind spot: the status is "Cockpit can't see", never "Nothing needs you", and `cockpit check` exits 1. An alert about a service that is already down is folded into it; failed pushes raise "Alerts may not reach your phone".
+- **New name.** Vesper is the evening star, the first light of the night. The binary, the config and the units follow it: `vesper`, `/etc/vesper/vesper.conf`, `vesper-collect.service` and `vesper-web.socket`, with the state in `/run/vesper`. A config that still has the old `[cockpit]` section is read the same way. The session cookie is new, so every device signs in once more.
+- **Upgrading from Cockpit 1.x**: stop and disable `cockpit-collect.service`, `cockpit-web.socket` and `cockpit-web.service`; install the `vesper` binary; copy `/etc/cockpit/cockpit.conf` to `/etc/vesper/vesper.conf` and `password.hash` beside it (change any `/run/cockpit` or `/etc/cockpit` path inside); install the units and the tmpfiles entry from `deploy/`; enable `vesper-collect.service` and `vesper-web.socket`; and point your reverse proxy at `/run/vesper/web.sock`.
+- **A console, not a poster.** A sidebar with Overview, Services, Backups, History, Jobs, System and Checklists (on a phone, a tab bar with a More tab). The Overview opens with one sentence and the facts behind it, then the last 24 hours of every service in quarter hours, four key figures, the services table and a rail with what happened since you last looked, backups, the next jobs, the host and what Vesper can see. Colour only means state: green up, amber needs you, red down, hatched grey can't see. Type is IBM Plex Sans and Plex Mono, vendored with their licences; a new neutral mark and app icons.
+- **24 hours of history.** Every service carries a day line, one mark per five minutes, kept across restarts. A slot holds the worst state sampled in it; time Vesper did not watch stays unknown instead of being assumed up. Uptime and outages on the Services pages come from it.
+- **Honest states.** A source that cannot be read, a service that cannot be confirmed, an unreadable MANIFEST, or a drill, heartbeat or health check that is set up but has never run, is a blind spot: the status is "Vesper can't see", never "Nothing needs you", and `vesper check` exits 1. An alert about a service that is already down is folded into it; failed pushes raise "Alerts may not reach your phone".
 - **Jobs** have their own page: the next 24 hours on one line, daily and weekly jobs apart from the ones that run every few minutes.
-- Schema 2 (`status.blind`, `services[].day`, `drill.unit`, `health.unit`). A page served to an older collector treats its snapshot as a blind spot until the collector is restarted. Nothing to change in `cockpit.conf`.
+- Schema 2 (`status.blind`, `services[].day`, `drill.unit`, `health.unit`). A page served to an older collector treats its snapshot as a blind spot until the collector is restarted. Nothing else to change in the config.
 - README images and the social preview show the new UI; `scripts/readme-visuals.sh` captures it as before.
 
 ## 1.2.0

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/config"
+	"github.com/gallowforge/vesper/internal/config"
 )
 
 var now = time.Date(2026, 3, 10, 7, 42, 0, 0, time.UTC)
@@ -197,9 +197,9 @@ func fakeJournal(_ context.Context, args []string) ([]byte, error) {
 func TestCollectFixture(t *testing.T) {
 	root := fixture(t)
 	cfg, err := config.FromINI(mustINI(t, `
-[cockpit]
+[vesper]
 title = pi
-state = /run/cockpit/state.json
+state = /run/vesper/state.json
 [docker]
 enabled = false
 [host]

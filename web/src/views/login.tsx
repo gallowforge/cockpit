@@ -51,7 +51,7 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
     <div class="login">
       <form class="login-card" method="post" action="/api/login" onSubmit={submit} noValidate>
         <Mark size={36} />
-        <h1>Sign in to Cockpit</h1>
+        <h1>Sign in to Vesper</h1>
         <p class="sub">for <b>{session.title}</b></p>
         <label class="field" for="username">
           <span>Username</span>

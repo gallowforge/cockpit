@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/redact"
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/redact"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 // Runs groups entries by invocation into runs of unit, newest first.

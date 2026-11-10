@@ -18,7 +18,7 @@ export function JobsView({ snap, now }: ViewProps) {
   const next = notableTimers(snap.timers)[0]
   return (
     <div>
-      <PageHead title="Jobs" sub="Scheduled jobs from systemd timers. The homelab's own jobs are the ones Cockpit watches; the rest come with the system."
+      <PageHead title="Jobs" sub="Scheduled jobs from systemd timers. The homelab's own jobs are the ones Vesper watches; the rest come with the system."
         aside={<Seg label="Show" value={f} onChange={setF} options={[['homelab', `Homelab (${homelab.length})`], ['all', `All timers (${snap.timers.length})`]]} />} />
       <Figures items={[
         { label: 'Homelab jobs', value: homelab.length, caption: `${plural(snap.timers.length - homelab.length, 'system timer')} besides` },

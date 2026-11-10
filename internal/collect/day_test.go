@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gallowforge/cockpit/internal/snapshot"
+	"github.com/gallowforge/vesper/internal/snapshot"
 )
 
 func TestDayLineKeepsTheWorstStatePerSlot(t *testing.T) {

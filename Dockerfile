@@ -1,5 +1,5 @@
-# Cockpit in a container. The default command is the demo, so
-#   docker run --rm -p 8080:8080 ghcr.io/gallowforge/cockpit
+# Vesper in a container. The default command is the demo, so
+#   docker run --rm -p 8080:8080 ghcr.io/gallowforge/vesper
 # shows the dashboard on synthetic data. For a real host, run the binary under
 # systemd instead (see deploy/): the collector needs the host's journal,
 # systemd and Docker socket, which a container should not be handed.
@@ -20,16 +20,16 @@ COPY go.mod ./
 COPY . .
 COPY --from=ui /src/internal/web/ui/dist ./internal/web/ui/dist
 ARG VERSION=dev
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /cockpit ./cmd/cockpit \
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /vesper ./cmd/vesper \
  && mkdir -p /rootfs/tmp && chmod 1777 /rootfs/tmp
 
 FROM scratch
-LABEL org.opencontainers.image.source="https://github.com/gallowforge/cockpit" \
-      org.opencontainers.image.description="Cockpit demo: a read-only homelab dashboard on synthetic data" \
+LABEL org.opencontainers.image.source="https://github.com/gallowforge/vesper" \
+      org.opencontainers.image.description="Vesper demo: a read-only homelab dashboard on synthetic data" \
       org.opencontainers.image.licenses="MIT"
 COPY --from=bin /rootfs/ /
-COPY --from=bin /cockpit /cockpit
+COPY --from=bin /vesper /vesper
 USER 65534:65534
 EXPOSE 8080
-ENTRYPOINT ["/cockpit"]
+ENTRYPOINT ["/vesper"]
 CMD ["demo", "-listen", "0.0.0.0:8080"]
