@@ -76,6 +76,7 @@ function Lane({ snap, now }: { snap: Snapshot; now: number }) {
       <div class="lane-line">
         {jobs.map((t) => (
           <i key={t.unit} role="img" aria-label={`${clock(t.next)} ${name(t)}`} class={`lane-job${t.highlight ? ' hl' : ''}${t.level === 'warn' ? ' warn' : ''}`} style={{ left: `${((Date.parse(t.next!) - now) / span) * 100}%` }}
+            tabIndex={0} onFocus={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as FocusEvent)} onBlur={() => setTip(null)}
             onMouseMove={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as MouseEvent)} onClick={(e) => setTip(<><b>{clock(t.next)}</b> · {name(t)}</>, e as unknown as MouseEvent)} onMouseLeave={() => setTip(null)} />
         ))}
       </div>

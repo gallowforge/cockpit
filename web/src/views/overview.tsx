@@ -186,7 +186,7 @@ function figures(s: Snapshot, now: number): FigProps[] {
   const open = s.alerts.open.length
   const d = s.drill.runs[0]
   if (open) out.push({ label: 'Open alerts', value: open, caption: `opened ${clock(s.alerts.open[0].opened)}`, level: worst(s.alerts.open.map((i) => prioLevel(i.prio))) })
-  else out.push({ label: 'Restore drill', value: d ? d.passed : '—', unit: d ? `/ ${d.passed + d.failed}` : undefined, caption: d ? `${d.failed ? 'failed' : 'passed'} ${weekday(d.end, now)}` : 'none has run yet', level: s.drill.level === 'info' || s.drill.level === 'ok' ? undefined : s.drill.level })
+  else out.push({ label: 'Restore drill', value: d ? d.passed : '—', unit: d ? `/ ${d.passed + d.failed}` : undefined, caption: d ? `${d.failed ? 'failed' : 'passed'} ${weekday(d.end, now)}` : s.drill.level === 'off' ? 'not set up' : 'none has run yet', level: s.drill.level === 'crit' || s.drill.level === 'warn' || s.drill.level === 'unknown' ? s.drill.level : undefined })
   return out
 }
 
@@ -309,12 +309,12 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
   const rows: { level: Level; name: string; text: string; href: string }[] = [
     { level: servicesLevel(snap.services), name: 'Services', text: `${svcs.filter((x) => x.state === 'up').length} of ${svcs.length} up; any down or degraded counts`, href: '#/services' },
     { level: snap.backups.level, name: 'Backups', text: `every set verified within its own limit (${[...new Set(snap.backups.sets.map((b) => b.max_age_h))].join(' or ')} hours)`, href: '#/backups' },
-    { level: snap.drill.level, name: 'Restore drill', text: snap.drill.runs[0] ? `the last drill passed and ran within 8 days (${ago(snap.drill.runs[0].end, now)})` : 'no drill has run yet', href: '#/backups' },
+    { level: snap.drill.level, name: 'Restore drill', text: snap.drill.level === 'off' ? 'no drill is set up, so none is expected' : snap.drill.runs[0] ? `the last drill passed and ran within 8 days (${ago(snap.drill.runs[0].end, now)})` : 'no drill has run yet', href: '#/backups' },
     { level: snap.alerts.level, name: 'Alerts', text: 'no open alert at normal or high priority, and every push delivered', href: '#/history' },
     { level: worst(snap.timers.filter((t) => t.highlight).map((t) => t.level)), name: 'Scheduled jobs', text: 'every homelab job enabled and its last run fine', href: '#/jobs' },
     { level: snap.drift.level === 'info' ? 'ok' : snap.drift.level, name: 'Config drift', text: 'the live files match the repo', href: '#/system' },
     { level: snap.heartbeat.level, name: 'Heartbeat', text: 'the dead-man switch pinged in the last 30 minutes', href: '#/system' },
-    { level: snap.health.level, name: 'Daily health check', text: 'ran in the last 29 hours with no open category', href: '#/system' },
+    { level: snap.health.level, name: 'Daily health check', text: snap.health.level === 'off' ? 'none is set up, so none is expected' : 'ran in the last 29 hours with no open category', href: '#/system' },
     { level: snap.host.level, name: 'Host', text: 'temperature, power, memory and disks inside their limits', href: '#/system' },
     { level: snap.sources.every((s) => s.ok) ? 'ok' : 'unknown', name: 'What Cockpit reads', text: `${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources read on the last pass`, href: '#/system' },
   ]

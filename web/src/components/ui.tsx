@@ -2,7 +2,7 @@
 // no colour beyond a quiet green, and a state is never shown by colour alone:
 // it always has a shape and, where there is room, a word.
 import type { ComponentChildren } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import type { Level } from '../types'
 import { bucket } from '../derive'
 
@@ -196,9 +196,20 @@ export function Runs({ items, selected, onPick, label }: { items: { level: Level
   )
 }
 
-/** A quiet tooltip that follows the pointer. */
-export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e?: MouseEvent) => void] {
+/** A quiet tooltip that follows the pointer. Opened by a tap or the keyboard
+ *  (no pointer to leave), it closes by itself after a few seconds. */
+export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e?: MouseEvent | FocusEvent) => void] {
   const [tip, setTip] = useState<{ body: ComponentChildren; x: number; y: number } | null>(null)
-  const node = tip ? <div class="tip" style={{ left: `${Math.min(tip.x + 12, innerWidth - 280)}px`, top: `${tip.y - 44}px` }}>{tip.body}</div> : null
-  return [node, (body, e) => setTip(body && e ? { body, x: e.clientX, y: e.clientY } : null)]
+  const timer = useRef(0)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const node = tip ? <div class="tip" role="status" style={{ left: `${Math.max(8, Math.min(tip.x + 12, innerWidth - 280))}px`, top: `${tip.y - 44}px` }}>{tip.body}</div> : null
+  return [node, (body, e) => {
+    clearTimeout(timer.current)
+    if (!body || !e) return setTip(null)
+    if (e.type === 'focus') {
+      const r = (e.target as HTMLElement).getBoundingClientRect()
+      setTip({ body, x: r.left, y: r.top })
+    } else setTip({ body, x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY })
+    if (e.type === 'click' || e.type === 'focus') timer.current = window.setTimeout(() => setTip(null), 3500)
+  }]
 }

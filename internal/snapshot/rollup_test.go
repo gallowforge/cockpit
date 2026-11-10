@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -160,8 +161,8 @@ func TestOnlyExpectWhatIsSetUp(t *testing.T) {
 	s.Drill = Drill{}
 	s.Health = Health{}
 	Finalize(s, now)
-	if s.Status.Level != OK || len(s.Status.Blind) != 0 || s.Drill.Level != Off {
-		t.Fatalf("nothing set up: status %+v drill %s", s.Status, s.Drill.Level)
+	if s.Status.Level != OK || len(s.Status.Blind) != 0 || s.Drill.Level != Off || s.Health.Level != Off {
+		t.Fatalf("nothing set up: status %+v drill %s health %s", s.Status, s.Drill.Level, s.Health.Level)
 	}
 	s = healthy()
 	s.Health.Last = nil
@@ -198,6 +199,25 @@ func TestAgo(t *testing.T) {
 		if got := Ago(d); got != want {
 			t.Errorf("Ago(%v) = %s, want %s", d, got, want)
 		}
+	}
+}
+
+// A snapshot from the previous schema still seeds the collector's history.
+func TestReadAcceptsTheOlderSchema(t *testing.T) {
+	dir := t.TempDir()
+	p := dir + "/state.json"
+	if err := os.WriteFile(p, []byte(`{"schema":1,"services":[{"id":"a","beats":"uux"}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Read(p)
+	if err != nil || len(s.Services) != 1 || s.Services[0].Beats != "uux" {
+		t.Fatalf("schema 1: %v %+v", err, s)
+	}
+	if err := os.WriteFile(p, []byte(`{"schema":99}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(p); err == nil {
+		t.Fatal("a newer schema must be refused")
 	}
 }
 

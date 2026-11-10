@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 "Operations console"
 
-- **README in the Glass look.** The README images are now the real UI of `cockpit demo` as frosted-glass windows floating in a night sky, the same family as the author's GitHub profile, in a dark and a light version that follow GitHub's theme, each with a phone layout. Cockpit's screens stay dark in both, as the app has one theme. In the hero the horizon behind the glass banks amber for one caution and levels again. `scripts/readme-visuals.sh` captures the UI, typesets `cockpit check` and the end-to-end output, and renders the scenes with three.js in headless Chromium. See `docs/readme/IDENTITY.md`.
+A ground-up redesign of the UI, a real day of history, and a stricter rule: Cockpit never calls something fine that it cannot see.
+
+- **A console, not a poster.** A sidebar with Overview, Services, Backups, History, Jobs, System and Checklists (on a phone, a tab bar with a More tab). The Overview opens with one sentence and the facts behind it, then the last 24 hours of every service in quarter hours, four key figures, the services table and a rail with what happened since you last looked, backups, the next jobs, the host and what Cockpit can see. Colour only means state: green up, amber needs you, red down, hatched grey can't see. Type is IBM Plex Sans and Plex Mono, vendored with their licences; a new neutral mark and app icons.
+- **24 hours of history.** Every service carries a day line, one mark per five minutes, kept across restarts. A slot holds the worst state sampled in it; time Cockpit did not watch stays unknown instead of being assumed up. Uptime and outages on the Services pages come from it.
+- **Honest states.** A source that cannot be read, a service that cannot be confirmed, an unreadable MANIFEST, or a drill, heartbeat or health check that is set up but has never run, is a blind spot: the status is "Cockpit can't see", never "Nothing needs you", and `cockpit check` exits 1. An alert about a service that is already down is folded into it; failed pushes raise "Alerts may not reach your phone".
+- **Jobs** have their own page: the next 24 hours on one line, daily and weekly jobs apart from the ones that run every few minutes.
+- Schema 2 (`status.blind`, `services[].day`, `drill.unit`, `health.unit`). A page served to an older collector treats its snapshot as a blind spot until the collector is restarted. Nothing to change in `cockpit.conf`.
+- README images and the social preview show the new UI; `scripts/readme-visuals.sh` captures it as before.
 
 ## 1.2.0
 

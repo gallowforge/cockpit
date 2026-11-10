@@ -367,8 +367,10 @@ func Read(p string) (*Snapshot, error) {
 	if err := json.Unmarshal(b, &s); err != nil {
 		return nil, fmt.Errorf("%s: %w", p, err)
 	}
-	if s.Schema != Schema {
-		return nil, fmt.Errorf("%s: schema %d, this build reads %d", p, s.Schema, Schema)
+	// an older snapshot is still readable: what it lacks reads as empty, so an
+	// upgrade keeps the beat and latency history instead of starting blank
+	if s.Schema < 1 || s.Schema > Schema {
+		return nil, fmt.Errorf("%s: schema %d, this build reads 1 to %d", p, s.Schema, Schema)
 	}
 	return &s, nil
 }

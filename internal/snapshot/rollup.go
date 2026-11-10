@@ -220,6 +220,9 @@ func Finalize(s *Snapshot, now time.Time) {
 	// daily health check
 	h := &s.Health
 	h.Level = OK
+	if h.Unit == "" && h.Last == nil && len(h.Categories) == 0 {
+		h.Level = Off // none is set up
+	}
 	for _, c := range h.Categories {
 		if c.Open {
 			h.Level = Worst(h.Level, PrioLevel(c.Prio))

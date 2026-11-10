@@ -240,7 +240,7 @@ export function App() {
 
   const page0 = route[0] ?? ''
   useEffect(() => {
-    if (MOVED[page0]) location.replace('#/' + MOVED[page0](route.slice(1)))
+    if (Object.hasOwn(MOVED, page0)) location.replace('#/' + MOVED[page0](route.slice(1)))
   }, [page0])
 
   if (sessionErr && !snap) {
@@ -266,7 +266,7 @@ export function App() {
   }
 
   const state = areas(snap)
-  const page = (MOVED[page0] ? MOVED[page0](route.slice(1)).split('/')[0] : page0) as NavId
+  const page = (Object.hasOwn(MOVED, page0) ? MOVED[page0](route.slice(1)).split('/')[0] : page0) as NavId
   const props: ViewProps = { snap, now, route, since, online }
   const age = now - Date.parse(snap.generated)
   const live = stream === 'live' && age <= 90_000 && online

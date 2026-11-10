@@ -90,7 +90,7 @@ export function SystemView({ snap, now, route }: ViewProps) {
             <Glyph level={snap.health.level === 'info' ? 'ok' : snap.health.level} size={14} />
             <span class="main-col">
               <span class="ttl"><span>Daily health check</span></span>
-              <span class="sub wrap">{snap.health.last ? `Ran ${ago(snap.health.last, now)}${snap.health.result ? `: ${snap.health.result}` : ''}.` : 'No run in the journal.'}</span>
+              <span class="sub wrap">{snap.health.level === 'off' ? 'Not set up.' : snap.health.last ? `Ran ${ago(snap.health.last, now)}${snap.health.result ? `: ${snap.health.result}` : ''}.` : 'No run in the journal yet.'}</span>
             </span>
             <span />
           </div>

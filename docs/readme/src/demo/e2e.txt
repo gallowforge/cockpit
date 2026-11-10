@@ -1,6 +1,6 @@
 == collector
 PASS collector is running
-PASS state.json written, schema 1
+PASS state.json written, schema 2
 PASS collector holds only CAP_DAC_READ_SEARCH
 PASS host CPU and memory measured
 PASS every source read without error
@@ -8,6 +8,7 @@ PASS every source read without error
 PASS healthy container is up, probe ok
 PASS exited container is down
 PASS systemd unit is up
+PASS day line written for every service
 PASS dns probe answers
 PASS sandbox blocks probes leaving the host
 == backups and drill
@@ -25,6 +26,30 @@ PASS heartbeat runs counted
 PASS health check result and open category
 PASS runbook copied for the web process
 PASS rollup is crit with attention items
+■ e2e · 6 things need you.
+  crit  crashy is down
+        exited (3) · 5s ago
+  crit  outside is down
+        tcp://1.1.1.1:443 timeout
+  crit  Backup set homeassistant is stale
+        stale: verified 2d ago, limit 50h
+        runbook: Restore a backup
+  crit  Last backup run failed
+        [homeassistant] no new backup - nothing pruned
+        runbook: Restore a backup
+  warn  Homelab: storage needs attention
+        Open since 2d ago
+  warn  Config drift: 1 file differs from the repo
+        /etc/hosts (differs)
+
+  ● services   5/7 up · 2 probes ok, slowest 0 ms
+  ● backups    2/3 verified · newest 3h ago · 96.7 MB
+  ● drill      2 passed, 0 failed · 5s ago
+  ● alerts     1 open · 18 sent in 24 h, 28 in 7 days
+  ● timers     8 timers, 0 failed · next snapper-cleanup in 3m
+  ● drift      1 file differs · 2 files tracked
+  ● heartbeat  27/27 pings in 24 h · last 5s ago
+  ● host       cpu 2% · mem 49% · / 33% · up 16h
 == web on the unix socket
 PASS socket activation starts the web unit
 PASS web runs as a dynamic user, not root
@@ -38,6 +63,6 @@ PASS state through Caddy with the cookie
 PASS live stream delivers a snapshot event
 PASS UI served through Caddy
 == hardening (systemd-analyze security, lower is safer)
-cockpit-collect.service    2.4 OK
-cockpit-web.service        0.5 SAFE
-RESULT: 33 passed, 0 failed
+cockpit-collect.service    2.4 OK 🙂
+cockpit-web.service        0.5 SAFE 😀
+RESULT: 34 passed, 0 failed
