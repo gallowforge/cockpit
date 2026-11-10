@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ago, bytes, duration, pct, plural, precise, short, until } from './format'
+import { ago, bytes, duration, inAbout, pct, plural, precise, short, until } from './format'
 
 const now = Date.parse('2026-03-10T07:42:00Z')
 
@@ -36,5 +36,14 @@ describe('format', () => {
     expect(plural(2, 'set')).toBe('2 sets')
     expect(duration('2026-03-10T05:00:01Z', '2026-03-10T05:02:28Z')).toBe('2m 27s')
     expect(duration('2026-03-10T05:00:01.000Z', '2026-03-10T05:00:01.250Z')).toBe('250 ms')
+  })
+})
+
+describe('inAbout', () => {
+  const now = Date.parse('2026-03-10T07:42:00Z')
+  it('counts down in minutes and hours', () => {
+    expect(inAbout('2026-03-10T08:00:30Z', now)).toBe('in 19 min')
+    expect(inAbout('2026-03-11T02:00:00Z', now)).toBe('in 18 h 18 min')
+    expect(inAbout('2026-03-10T07:00:00Z', now)).toBe('now')
   })
 })

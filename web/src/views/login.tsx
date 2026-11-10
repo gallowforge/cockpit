@@ -49,11 +49,10 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
 
   return (
     <div class="login">
-      <div class="login-glow" />
       <form class="login-card" method="post" action="/api/login" onSubmit={submit} noValidate>
-        <Mark size={48} />
-        <h1>Cockpit</h1>
-        <p class="login-sub">for <b>{session.title}</b></p>
+        <Mark size={36} />
+        <h1>Sign in to Cockpit</h1>
+        <p class="sub">for <b>{session.title}</b></p>
         <label class="field" for="username">
           <span>Username</span>
           <input ref={user} id="username" name="username" type="text" autocomplete="username"
@@ -64,10 +63,10 @@ export function Login({ session, onDone }: { session: Session; onDone: () => voi
           <input ref={pass} id="password" name="password" type="password" autocomplete="current-password"
             required readOnly={busy} />
         </label>
-        <button class="btn btn-primary" type="submit" disabled={busy || wait > 0}>
+        <button class="btn primary" type="submit" disabled={busy || wait > 0}>
           {busy ? 'Checking…' : wait > 0 ? `Wait ${wait}s` : 'Sign in'}
         </button>
-        <p class={`login-err${err ? ' on' : ''}`} role="alert">{err}</p>
+        <p class="login-err" role="alert">{err}</p>
         <p class="login-foot">Read-only. Nothing here can change the server.</p>
       </form>
     </div>

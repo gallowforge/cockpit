@@ -83,15 +83,15 @@ type Status struct {
 
 // Attention is one thing that needs a look, worst first.
 type Attention struct {
-	Level   string `json:"level"`
-	Area    string `json:"area"` // services, backups, drill, alerts, timers, drift, heartbeat, host
-	Title   string `json:"title"`
-	Detail  string `json:"detail,omitempty"`
-	Ref     string `json:"ref,omitempty"` // id inside the area
+	Level  string `json:"level"`
+	Area   string `json:"area"` // services, backups, drill, alerts, timers, drift, heartbeat, host
+	Title  string `json:"title"`
+	Detail string `json:"detail,omitempty"`
+	Ref    string `json:"ref,omitempty"` // id inside the area
 	// Evidence is a related signal folded into this item instead of being
 	// counted again (an alert about a service that is already down).
 	Evidence string `json:"evidence,omitempty"`
-	Runbook string `json:"runbook,omitempty"`
+	Runbook  string `json:"runbook,omitempty"`
 }
 
 type Host struct {
@@ -149,7 +149,17 @@ type Service struct {
 	// Beats is the recent state, oldest first: one char per sample,
 	// u = up, d = degraded, x = down, o = off, ? = unknown.
 	Beats string `json:"beats"`
+	// Day is the last 24 hours, oldest first: one char per DaySlot, the last
+	// one being the slot that holds Generated. Each slot holds the worst state
+	// sampled in it, and "?" where Cockpit took no sample.
+	Day string `json:"day,omitempty"`
 }
+
+// The day line's resolution: 288 slots of five minutes.
+const (
+	DaySlot  = 5 * time.Minute
+	DaySlots = 288
+)
 
 type Probe struct {
 	Target    string    `json:"target"`

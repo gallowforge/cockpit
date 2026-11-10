@@ -68,6 +68,8 @@ export interface Service {
   runbook?: string
   probe?: Probe
   beats: string
+  /** the last 24 hours, one char per five minutes, oldest first (collector 2.0 and later) */
+  day?: string
 }
 
 export interface Probe {

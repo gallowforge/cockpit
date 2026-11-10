@@ -213,9 +213,44 @@ func (g *Generator) services(now time.Time, r *rand.Rand) []snapshot.Service {
 			}
 		}
 		sv.Beats = string(beats)
+		sv.Day = g.dayLine(now, d)
 		out = append(out, sv)
 	}
 	return out
+}
+
+// dayLine draws the demo's last 24 hours: up throughout, apart from what the
+// scenario tells. Home Assistant's blip an hour ago matches the resolved
+// Uptime Kuma alert; the outage and the blind spot run up to now.
+func (g *Generator) dayLine(now time.Time, d svcDef) string {
+	type span struct {
+		from, to time.Duration // how long ago it started and ended
+		ch       byte
+	}
+	var spans []span
+	if d.id == "homeassistant" {
+		spans = append(spans, span{63 * time.Minute, 59 * time.Minute, 'x'})
+		if g.Scenario == Incident {
+			spans = append(spans, span{4 * time.Minute, 0, 'x'})
+		}
+	}
+	if g.Scenario == Blind && d.kind == "container" {
+		spans = append(spans, span{2 * time.Minute, 0, '?'})
+	}
+	step := int64(snapshot.DaySlot / time.Second)
+	end := now.Unix() / step
+	out := make([]byte, snapshot.DaySlots)
+	for i := range out {
+		slot := end - int64(snapshot.DaySlots-1-i)
+		a, b := time.Unix(slot*step, 0), time.Unix((slot+1)*step, 0)
+		out[i] = 'u'
+		for _, sp := range spans {
+			if now.Add(-sp.from).Before(b) && !now.Add(-sp.to).Before(a) {
+				out[i] = sp.ch
+			}
+		}
+	}
+	return string(out)
 }
 
 // at returns today's (or an earlier day's) wall-clock time in the demo's

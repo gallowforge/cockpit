@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSnap, alertHistogram, areaHref, awayEvents, byDay, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, proof, serverNow, sortTimers, uptimeOf, worst } from './derive'
+import { normalizeSnap, alertHistogram, areaHref, awayEvents, byDay, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, proof, serverNow, sortTimers, uptimeOf, worst, fullDay, fleetDay, bucket, dayUptime, daySeen, dayRuns, slotStart, latencyStats, DAY_SLOTS, DAY_SLOT_MS } from './derive'
 import type { Incident, Service, Snapshot, Timer } from './types'
 
 const svc = (id: string, group?: string): Service =>
@@ -143,5 +143,41 @@ describe('events', () => {
     expect(awayEvents(s, NOW - 3 * 3600e3, NOW).list.map((e) => e.kind)).toEqual(['backup'])
     expect(awayEvents(s, null, NOW).from).toBe(NOW - 24 * 3600e3)
     expect(durationWords(90 * 60e3)).toBe('2 hours')
+  })
+})
+
+describe('day line', () => {
+  const gen = '2026-03-10T07:42:00Z'
+  it('pads a short line with unknown time', () => {
+    const d = fullDay('uux')
+    expect(d.length).toBe(DAY_SLOTS)
+    expect(d.endsWith('?uux')).toBe(true)
+  })
+  it('takes the worst state per slot and leaves off services out', () => {
+    const mk = (day: string, state: Service['state'] = 'up') => ({ id: day, title: day, kind: 'unit', state, level: 'ok', detail: '', beats: '', day }) as Service
+    const f = fleetDay([mk('u'.repeat(DAY_SLOTS - 1) + 'x'), mk('d'.repeat(DAY_SLOTS)), mk('x'.repeat(DAY_SLOTS), 'off')])
+    expect(f.slice(-2)).toBe('dx')
+  })
+  it('folds slots into buckets without hiding an outage', () => {
+    expect(bucket('uuuxuu', 2)).toBe('ux')
+    expect(bucket('??????', 3)).toBe('???')
+    expect(bucket('u?????', 3)).toBe('???')
+    expect(bucket('x?uuuu', 3)).toBe('xuu')
+  })
+  it('counts uptime only over the time it saw', () => {
+    expect(dayUptime('uuux')).toBe(75)
+    expect(dayUptime('??uu')).toBe(100)
+    expect(dayUptime('????')).toBeNull()
+    expect(daySeen('??uu')).toBe(2)
+  })
+  it('turns stretches into times', () => {
+    const runs = dayRuns('uxxu?', gen)
+    expect(runs.map((r) => r.ch)).toEqual(['x', '?'])
+    expect(runs[0].to - runs[0].from).toBe(2 * DAY_SLOT_MS)
+    expect(slotStart(gen, 4, 5)).toBe(Math.floor(Date.parse(gen) / DAY_SLOT_MS) * DAY_SLOT_MS)
+  })
+  it('summarises answer times without the failed probes', () => {
+    expect(latencyStats([3, 1, -1, 2])).toEqual({ p50: 2, p95: 3 })
+    expect(latencyStats(undefined)).toEqual({ p50: null, p95: null })
   })
 })

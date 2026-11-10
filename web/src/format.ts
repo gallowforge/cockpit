@@ -104,3 +104,15 @@ export function plural(n: number, one: string, many = one + 's'): string {
 export function humanize(s: string): string {
   return s.replace(/[-_]+/g, ' ')
 }
+
+/** "in 18 min", "in 4 h 18 min": a countdown without the noise of seconds. */
+export function inAbout(iso: string | undefined, now: number): string {
+  const t = ms(iso)
+  if (!isFinite(t)) return '—'
+  const m = Math.round((t - now) / 60000)
+  if (m <= 0) return t > now ? 'in under a minute' : 'now'
+  if (m < 60) return `in ${m} min`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `in ${h} h${m % 60 ? ` ${m % 60} min` : ''}`
+  return `in ${Math.floor(h / 24)} d ${h % 24} h`
+}

@@ -335,3 +335,99 @@ export function normalizeSnap(s: Snapshot): Snapshot {
   s.sources = a(s.sources)
   return s
 }
+
+/* ---------- the day line: 24 hours in five-minute slots ---------- */
+
+export const DAY_SLOT_MS = 5 * 60_000
+export const DAY_SLOTS = 288
+const dayRank: Record<string, number> = { u: 0, o: 0, '?': 1, d: 2, x: 3 }
+
+/** A service's day line padded to a full day: time before Cockpit's first
+ *  sample is unknown, never assumed up. */
+export function fullDay(day: string | undefined): string {
+  const d = (day ?? '').slice(-DAY_SLOTS)
+  return '?'.repeat(DAY_SLOTS - d.length) + d
+}
+
+/** The worst state in each slot across services; off services are left out. */
+export function fleetDay(list: Service[]): string {
+  const lines = list.filter((s) => s.state !== 'off').map((s) => fullDay(s.day))
+  if (!lines.length) return fullDay('')
+  let out = ''
+  for (let i = 0; i < DAY_SLOTS; i++) {
+    let w = 'u'
+    for (const l of lines) if ((dayRank[l[i]] ?? 1) > (dayRank[w] ?? 0)) w = l[i]
+    out += w
+  }
+  return out
+}
+
+/** Folds slots into n buckets, the worst state winning, for narrow drawings.
+ *  A bucket Cockpit did not fully see shows as unknown unless it holds worse. */
+export function bucket(day: string, n: number): string {
+  if (n >= day.length) return day
+  const per = day.length / n
+  let out = ''
+  for (let b = 0; b < n; b++) {
+    let w = 'u'
+    for (let i = Math.floor(b * per); i < Math.floor((b + 1) * per); i++) {
+      const c = day[i]
+      if ((dayRank[c] ?? 1) > (dayRank[w] ?? 0)) w = c
+    }
+    out += w
+  }
+  return out
+}
+
+/** Share of the seen time that was up (degraded counts as up), or null when
+ *  Cockpit saw nothing. Off and unknown slots are left out of the count. */
+export function dayUptime(day: string): number | null {
+  let up = 0
+  let down = 0
+  for (const c of day) {
+    if (c === 'u' || c === 'd') up++
+    else if (c === 'x') down++
+  }
+  return up + down ? (up / (up + down)) * 100 : null
+}
+
+/** How many slots of the day Cockpit actually watched. */
+export function daySeen(day: string): number {
+  let n = 0
+  for (const c of day) if (c !== '?') n++
+  return n
+}
+
+/** When slot i (of a line `len` long whose last slot holds `generated`) began. */
+export function slotStart(generated: string, i: number, len = DAY_SLOTS): number {
+  const end = Math.floor(ms(generated) / DAY_SLOT_MS)
+  return (end - (len - 1 - i)) * DAY_SLOT_MS
+}
+
+export interface DayRun {
+  ch: string
+  from: number
+  to: number
+}
+
+/** Stretches of the day that were not plainly up, oldest first. */
+export function dayRuns(day: string, generated: string): DayRun[] {
+  const out: DayRun[] = []
+  for (let i = 0; i < day.length; i++) {
+    const c = day[i]
+    if (c === 'u' || c === 'o') continue
+    const last = out[out.length - 1]
+    const from = slotStart(generated, i, day.length)
+    if (last && last.ch === c && last.to === from) last.to = from + DAY_SLOT_MS
+    else out.push({ ch: c, from, to: from + DAY_SLOT_MS })
+  }
+  return out
+}
+
+/** Median and 95th percentile of probe answer times; failed probes are left out. */
+export function latencyStats(v: number[] | undefined): { p50: number | null; p95: number | null } {
+  const x = (v ?? []).filter((n) => n >= 0).sort((a, b) => a - b)
+  if (!x.length) return { p50: null, p95: null }
+  const m = Math.floor(x.length / 2)
+  return { p50: x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2, p95: x[Math.min(x.length - 1, Math.floor(0.95 * x.length))] }
+}

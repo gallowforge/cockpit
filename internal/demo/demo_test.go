@@ -81,3 +81,30 @@ func TestWriteRunbooks(t *testing.T) {
 		}
 	}
 }
+
+// The day line covers 24 hours and tells the same story as the alerts.
+func TestDayLine(t *testing.T) {
+	day := func(scen, id string) string {
+		for _, sv := range (&Generator{Scenario: scen}).Snapshot(clockAt).Services {
+			if sv.ID == id {
+				return sv.Day
+			}
+		}
+		t.Fatalf("%s: no service %s", scen, id)
+		return ""
+	}
+	calm := day(Calm, "homeassistant")
+	// 06:39 to 06:43 straddles a slot boundary, so the blip marks two slots
+	if len(calm) != snapshot.DaySlots || strings.Count(calm, "x") != 2 || calm[len(calm)-1] != 'u' {
+		t.Errorf("calm: one blip an hour ago and up now, got %q", calm[len(calm)-20:])
+	}
+	if inc := day(Incident, "homeassistant"); inc[len(inc)-1] != 'x' {
+		t.Errorf("incident: down now, got %q", inc[len(inc)-5:])
+	}
+	if b := day(Blind, "vaultwarden"); b[len(b)-1] != '?' {
+		t.Errorf("blind: a container is unknown now, got %q", b[len(b)-5:])
+	}
+	if b := day(Blind, "tailscale"); strings.Contains(b, "?") {
+		t.Errorf("blind: a systemd unit is still seen, got %q", b[len(b)-5:])
+	}
+}

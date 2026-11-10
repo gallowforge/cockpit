@@ -17,10 +17,11 @@ export interface PaletteItem {
 }
 
 export const PAGES: { id: string; title: string; key: string }[] = [
-  { id: '', title: 'Now', key: 'N' },
+  { id: '', title: 'Overview', key: 'O' },
   { id: 'services', title: 'Services', key: 'S' },
   { id: 'backups', title: 'Backups', key: 'B' },
   { id: 'history', title: 'History', key: 'H' },
+  { id: 'jobs', title: 'Jobs', key: 'J' },
   { id: 'system', title: 'System', key: 'Y' },
   { id: 'runbooks', title: 'Checklists', key: 'C' },
 ]
@@ -47,7 +48,7 @@ export function paletteItems(s: Snapshot): PaletteItem[] {
     out.push({ id: 'al:' + i.key + i.opened, group: 'Alerts', title: i.title, sub: i.state === 'open' ? 'open now' : i.state, href: `#/history/alert/${encodeURIComponent(i.key)}`, level: i.state === 'open' ? prioLevel(i.prio) : 'off' })
   }
   for (const t of s.timers) {
-    out.push({ id: 'tm:' + t.unit, group: 'Timers', title: t.activates.replace(/\.service$/, ''), sub: t.description, href: '#/system', level: t.result === 'failed' ? 'warn' : undefined })
+    out.push({ id: 'tm:' + t.unit, group: 'Jobs', title: t.description || t.activates.replace(/\.service$/, ''), sub: t.unit, href: '#/jobs', level: t.result === 'failed' ? 'warn' : undefined })
   }
   return out
 }
@@ -71,7 +72,14 @@ export function search(items: PaletteItem[], q: string): PaletteItem[] {
     if (i.group === 'Go to') score += 1
     scored.push({ i, score })
   }
-  return scored.sort((a, b) => b.score - a.score).slice(0, 40).map((x) => x.i)
+  // best matches first, but each group stays together under one heading
+  scored.sort((a, b) => b.score - a.score)
+  const groups = new Map<string, PaletteItem[]>()
+  for (const x of scored.slice(0, 40)) {
+    if (!groups.has(x.i.group)) groups.set(x.i.group, [])
+    groups.get(x.i.group)!.push(x.i)
+  }
+  return [...groups.values()].flat()
 }
 
 export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClose: () => void; initial?: string }) {
@@ -114,10 +122,10 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
 
   let lastGroup = ''
   return (
-    <div class="palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div class="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div class="palette" role="dialog" aria-label="Jump to anything">
         <div class="palette-input">
-          <IconSearch size={18} />
+          <IconSearch size={16} />
           <input ref={input} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} onKeyDown={onKey}
             placeholder="Jump to a service, backup, alert, timer or checklist" aria-label="Search" spellcheck={false} autocomplete="off" />
           <kbd>esc</kbd>
@@ -135,7 +143,7 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
                   {it.level && it.level !== 'ok' ? <Glyph level={it.level} size={13} /> : <span class="palette-bullet" />}
                   <span class="palette-title">{it.title}</span>
                   {it.sub && <span class="palette-sub">{it.sub}</span>}
-                  {it.external && <IconExternal size={14} />}
+                  {it.external && <IconExternal size={13} />}
                   {it.keys && <span class="palette-keys">{it.keys.split(' ').map((k) => <kbd key={k}>{k}</kbd>)}</span>}
                 </button>
               </>

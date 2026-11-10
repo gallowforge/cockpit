@@ -16,7 +16,7 @@ const snap = (): Snapshot => ({
 describe('command bar', () => {
   it('lists every page, service, app, checklist, backup set, alert and timer', () => {
     const groups = new Set(paletteItems(snap()).map((i) => i.group))
-    expect([...groups]).toEqual(['Go to', 'Services', 'Open an app', 'Checklists', 'Backup sets', 'Alerts', 'Timers'])
+    expect([...groups]).toEqual(['Go to', 'Services', 'Open an app', 'Checklists', 'Backup sets', 'Alerts', 'Jobs'])
   })
   it('opens on the pages and whatever needs you', () => {
     const r = search(paletteItems(snap()), '  ')
@@ -28,6 +28,10 @@ describe('command bar', () => {
     const r = search(paletteItems(snap()), 'vau')
     expect(r[0]).toMatchObject({ group: 'Services', title: 'Vaultwarden', href: '#/services/vaultwarden' })
     expect(r.map((i) => i.group)).toEqual(expect.arrayContaining(['Backup sets', 'Open an app']))
+  })
+  it('keeps each group under one heading', () => {
+    const groups = search(paletteItems(snap()), 'home').map((i) => i.group)
+    expect(groups.filter((g, i) => g !== groups[i - 1])).toEqual([...new Set(groups)])
   })
   it('needs every word to match', () => {
     expect(search(paletteItems(snap()), 'home down').map((i) => i.group)).toEqual(['Alerts'])

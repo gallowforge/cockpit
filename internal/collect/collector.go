@@ -56,6 +56,7 @@ type Collector struct {
 	host       hostState
 	writesEWMA *float64
 	beats      map[string]string
+	day        map[string]*dayLine
 	lat        map[string][]float64
 	hostHist   []snapshot.Sample
 	restarts   map[string][]restartMark
@@ -96,6 +97,7 @@ func New(cfg *config.Config) *Collector {
 		Now:      time.Now,
 		Log:      log.New(os.Stderr, "", 0),
 		beats:    map[string]string{},
+		day:      map[string]*dayLine{},
 		lat:      map[string][]float64{},
 		restarts: map[string][]restartMark{},
 		tails:    map[string]*journal.Tail{},
@@ -109,6 +111,7 @@ func New(cfg *config.Config) *Collector {
 	if prev, err := snapshot.Read(cfg.StatePath); err == nil {
 		for _, s := range prev.Services {
 			c.beats[s.ID] = s.Beats
+			c.day[s.ID] = seedDay(s.Day, prev.Generated)
 			if s.Probe != nil {
 				c.lat[s.ID] = s.Probe.Latencies
 			}
@@ -416,6 +419,7 @@ func (c *Collector) readServices(ctx context.Context, now time.Time) ([]snapshot
 	out = append(out, rest...)
 	for i := range out {
 		out[i].Beats = c.beat(out[i].ID, out[i].State)
+		out[i].Day = c.dayMark(out[i].ID, out[i].Beats, now)
 	}
 	if len(errs) > 0 {
 		return out, fmt.Errorf("%s", strings.Join(errs, "; "))

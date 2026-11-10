@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import { getRunbook } from '../api'
 import { outline, renderMarkdown, safeHref } from '../markdown'
-import { PageHead } from '../components/ui'
+import { Empty, Meter, PageHead } from '../components/ui'
 import { IconChecklist, IconExternal } from '../components/icons'
 
 // Ticks are kept on this device for 12 hours: long enough for an incident,
@@ -117,37 +117,35 @@ export function RunbooksView({ snap, route }: ViewProps) {
     <div>
       <PageHead title={current?.title ?? 'Checklists'} sub="Tap each step as you do it. Ticks stay on this device for 12 hours." />
       {list.length === 0 ? (
-        <div class="empty">No checklists configured. Add [runbook:name] blocks to cockpit.conf.</div>
+        <Empty>No checklists configured. Add [runbook:name] blocks to cockpit.conf.</Empty>
       ) : (
-        <div class="rb-layout">
-          <nav class="rb-nav">
+        <div class="rb">
+          <nav class="rb-nav" aria-label="Checklists">
             {list.map((r) =>
               r.local ? (
-                <a key={r.id} href={`#/runbooks/${encodeURIComponent(r.id)}`} class={r.id === id ? 'on' : ''}>
-                  <IconChecklist size={16} /> {r.title}
+                <a key={r.id} href={`#/runbooks/${encodeURIComponent(r.id)}`} aria-current={r.id === id ? 'page' : undefined}>
+                  <IconChecklist size={14} /> {r.title}
                 </a>
               ) : (
                 <a key={r.id} href={safeHref(r.url ?? '') ?? undefined} target="_blank" rel="noopener noreferrer">
-                  <IconExternal size={16} /> {r.title}
+                  <IconExternal size={14} /> {r.title}
                 </a>
               ),
             )}
           </nav>
-          <article class="rb-doc">
-            {err && <p class="lv-text-warn">{err}</p>}
+          <article>
+            {err && <p class="state warn">{err}</p>}
             {!err && current?.local && !text && <p class="muted">Loading…</p>}
             {steps > 0 && (
               <div class="rb-progress">
-                <span class={`rb-count${ticked === steps ? ' all' : ''}`}>
-                  {ticked === steps ? 'Checklist complete' : `${ticked} of ${steps} steps done`}
-                </span>
-                <span class="rb-bar"><i style={{ width: `${(ticked / steps) * 100}%` }} /></span>
-                {ticked > 0 && <button type="button" class="linklike" onClick={reset}>Reset</button>}
+                <b class={ticked === steps ? 'all' : ''}>{ticked === steps ? 'Checklist complete' : `${ticked} of ${steps} steps done`}</b>
+                <Meter pct={(ticked / steps) * 100} level={ticked === steps ? 'ok' : 'plain'} label="Steps done" />
+                {ticked > 0 ? <button type="button" class="linklike" onClick={reset}>Reset</button> : <span />}
               </div>
             )}
             {toc.length > 1 && (
               <div class="rb-toc">
-                <span class="rb-toc-label">On this page</span>
+                <span>On this page:</span>
                 {toc.map((t) => (
                   <a key={t.id} href={`#/runbooks/${encodeURIComponent(current!.id)}`} onClick={(e) => {
                     e.preventDefault()
@@ -158,7 +156,7 @@ export function RunbooksView({ snap, route }: ViewProps) {
             )}
             <div class="md" ref={doc} onClick={toggle} dangerouslySetInnerHTML={{ __html: html }} />
             {current?.match && current.match.length > 0 && (
-              <p class="rb-match">Opened from: {current.match.map((m) => <code key={m}>{m}</code>)}</p>
+              <p class="rb-match">Opened from {current.match.map((m) => <code key={m}>{m}</code>)}</p>
             )}
           </article>
         </div>
