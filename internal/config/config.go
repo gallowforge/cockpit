@@ -208,9 +208,12 @@ func FromINI(f *File) (*Config, error) {
 		}
 	}
 
-	main := f.Find("vesper")
-	if main == nil {
-		main = f.Find("cockpit") // a config written before the rename
+	main, old := f.Find("vesper"), f.Find("cockpit") // [cockpit]: a config written before the rename
+	switch {
+	case main != nil && old != nil:
+		bad(old, "is the old name of [vesper]; keep only one of them")
+	case main == nil:
+		main = old
 	}
 	if s := main; s != nil {
 		c.Title = s.Get("title", c.Title)

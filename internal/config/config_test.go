@@ -95,6 +95,7 @@ func TestRejectsMistakes(t *testing.T) {
 		"unnamed service":   "[service]\ncontainer = x\n",
 		"named vesper":      "[vesper:x]\n",
 		"named cockpit":     "[cockpit:x]\n",
+		"old and new name":  "[vesper]\ntitle = a\n[cockpit]\ntitle = b\n",
 	}
 	for name, src := range cases {
 		if _, err := parse(t, src); err == nil {
