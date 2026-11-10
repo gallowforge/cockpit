@@ -17,6 +17,7 @@ import { JobsView } from './views/jobs'
 import { SystemView } from './views/system'
 import { RunbooksView } from './views/runbooks'
 import { More } from './views/more'
+import { routeOf } from './route'
 
 export interface ViewProps {
   snap: Snapshot
@@ -45,7 +46,7 @@ const MOVED: Record<string, (rest: string[]) => string> = {
 }
 
 function useRoute(): string[] {
-  const parse = () => location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
+  const parse = () => routeOf(location.hash)
   const [r, setR] = useState(parse)
   useEffect(() => {
     const on = () => {
