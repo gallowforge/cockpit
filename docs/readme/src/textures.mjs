@@ -1,6 +1,7 @@
 // Builds the content of every glass window as a PNG in shots/.
 //  - Screens: the real UI, served by `vesper demo` on a frozen clock and captured at 2x (desktop)
-//    and 3x (phone). Vesper has one theme, night, so the light images use the same captures.
+//    and 3x (phone), once in each theme: name.png is night, name-light.png is day. The two lay
+//    out alike, so the parts marked on the night capture serve both.
 //  - Terminals: `vesper check` run fresh on a demo snapshot (its ANSI colours kept), and the
 //    end-to-end run in demo/e2e.txt (written by `sudo scripts/e2e.sh bin/vesper`), dark and light.
 //  - The design diagram and the numbers band, typeset from the README's own facts, dark and light.
@@ -158,12 +159,19 @@ if (SHOTS.some(s => want(s[0]))) {
     await new Promise(r => setTimeout(r, 800));
     for (const [name, scen, route, q, w, h, scale] of SHOTS) {
       if (!want(name)) continue;
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: 'dark', timezoneId: 'UTC', isMobile: w < 500, hasTouch: w < 500 });
-      const page = await ctx.newPage();
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.goto(`http://127.0.0.1:${SCEN[scen]}/?shot${q ? '&' + q : ''}#/${route}`, { waitUntil: 'networkidle' });
-      await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(900);
+      const open = async (theme) => {
+        const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale, colorScheme: theme, timezoneId: 'UTC', isMobile: w < 500, hasTouch: w < 500 });
+        const page = await ctx.newPage();
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.goto(`http://127.0.0.1:${SCEN[scen]}/?shot${q ? '&' + q : ''}#/${route}`, { waitUntil: 'networkidle' });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(900);
+        return { ctx, page };
+      };
+      const day = await open('light');
+      await day.page.screenshot({ path: join(OUT, `${name}-light.png`) });
+      await day.ctx.close();
+      const { ctx, page } = await open('dark');
       await page.screenshot({ path: join(OUT, `${name}.png`) });
       BOXES[name] = { size: [w * scale, h * scale] };
       // parts of the screen that the compositions lift out toward the viewer
@@ -171,7 +179,7 @@ if (SHOTS.some(s => want(s[0]))) {
         const r = await page.$eval(sel, e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; }).catch(() => null);
         if (r) BOXES[name][k] = r.map(v => Math.round(v * scale));
       }
-      console.log(`${name}.png  ${w * scale}x${h * scale}  ${Object.keys(BOXES[name]).filter(k => k !== 'size').join(' ')}`);
+      console.log(`${name}.png, ${name}-light.png  ${w * scale}x${h * scale}  ${Object.keys(BOXES[name]).filter(k => k !== 'size').join(' ')}`);
       await ctx.close();
     }
   } finally { procs.forEach(p => p.kill()); }

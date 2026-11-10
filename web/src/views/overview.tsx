@@ -50,15 +50,14 @@ export function Overview({ snap, now, since, online }: ViewProps) {
 const LIGHT_LEVEL: Record<Hero['light'], Level> = { calm: 'ok', attn: 'warn', down: 'crit', blind: 'unknown', none: 'off' }
 
 function StatusIcon({ level }: { level: Level }) {
-  // [disc, mark]: the state colours of styles.css on a disc of the same hue sunk into the ground
-  const tone = { ok: ['#10301f', '#58de86'], warn: ['#33240c', '#f7ab3e'], crit: ['#3a1512', '#ff6a5c'], unknown: ['transparent', '#93a59a'], off: ['#13211a', '#8fa395'], info: ['#13211a', '#8fa395'] }[level]
+  // the mark on a disc of the same hue sunk into the ground; styles.css colours both from the level
   return (
-    <svg class="status-glyph" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r={level === 'unknown' ? 12.2 : 13} fill={tone[0]} stroke={level === 'unknown' ? tone[1] : 'none'} stroke-width="1.6" stroke-dasharray={level === 'unknown' ? '3 3' : undefined} />
-      {level === 'ok' && <path d="M8.6 14.4l3.6 3.6 7.2-8" fill="none" stroke={tone[1]} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />}
-      {(level === 'crit' || level === 'warn') && <path d="M14 8.6v6.4M14 19h.01" fill="none" stroke={tone[1]} stroke-width="2.2" stroke-linecap="round" />}
-      {level === 'unknown' && <path d="M11.5 11.2a2.6 2.6 0 1 1 3.7 2.4c-.75.37-1.2.95-1.2 1.75M14 18.6h.01" fill="none" stroke="#bccabf" stroke-width="1.8" stroke-linecap="round" />}
-      {(level === 'off' || level === 'info') && <path d="M14 9v5l3 2" fill="none" stroke={tone[1]} stroke-width="1.8" stroke-linecap="round" />}
+    <svg class={`status-glyph ${level}`} width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r={level === 'unknown' ? 12.2 : 13} stroke="none" stroke-width="1.6" stroke-dasharray={level === 'unknown' ? '3 3' : undefined} />
+      {level === 'ok' && <path d="M8.6 14.4l3.6 3.6 7.2-8" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />}
+      {(level === 'crit' || level === 'warn') && <path d="M14 8.6v6.4M14 19h.01" fill="none" stroke-width="2.2" stroke-linecap="round" />}
+      {level === 'unknown' && <path d="M11.5 11.2a2.6 2.6 0 1 1 3.7 2.4c-.75.37-1.2.95-1.2 1.75M14 18.6h.01" fill="none" stroke-width="1.8" stroke-linecap="round" />}
+      {(level === 'off' || level === 'info') && <path d="M14 9v5l3 2" fill="none" stroke-width="1.8" stroke-linecap="round" />}
     </svg>
   )
 }

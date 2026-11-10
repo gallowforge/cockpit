@@ -4,6 +4,8 @@
 package web
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,6 +60,7 @@ type Server struct {
 	checking chan struct{} // one password check at a time: a burst cannot outrun the limiter
 	static   http.Handler
 	index    []byte
+	tags     map[string]string // validators for the UI's unhashed files, by URL path
 }
 
 // New builds the handler. It refuses to start with password auth and no hash.
@@ -94,6 +97,7 @@ func New(store *Store, opt Options) (*Server, error) {
 		if b, err := fs.ReadFile(opt.UI, "index.html"); err == nil {
 			s.index = b
 		}
+		s.tags = fileTags(opt.UI)
 	}
 	s.mux.HandleFunc("GET /healthz", s.healthz)
 	s.mux.HandleFunc("GET /api/session", s.session)
@@ -380,8 +384,35 @@ func (s *Server) ui(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(p, "/assets/") {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		// a file outside /assets keeps its name from one release to the next
+		// (the theme script, the icons, the manifest), so it is checked every
+		// time; its tag lets the answer be "not changed" rather than the file
+		w.Header().Set("Cache-Control", "no-cache")
+		if tag := s.tags[p]; tag != "" {
+			w.Header().Set("ETag", tag)
+		}
 	}
 	s.static.ServeHTTP(w, r)
+}
+
+// fileTags makes a validator from the bytes of each file at the top of the UI.
+func fileTags(ui fs.FS) map[string]string {
+	tags := map[string]string{}
+	entries, err := fs.ReadDir(ui, ".")
+	if err != nil {
+		return tags
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if b, err := fs.ReadFile(ui, e.Name()); err == nil {
+			sum := sha256.Sum256(b)
+			tags["/"+e.Name()] = `"` + hex.EncodeToString(sum[:8]) + `"`
+		}
+	}
+	return tags
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

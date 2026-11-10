@@ -14,9 +14,15 @@ const snap = (): Snapshot => ({
 } as unknown as Snapshot)
 
 describe('command bar', () => {
-  it('lists every page, service, app, checklist, backup set, alert and timer', () => {
+  it('lists every page, service, app, checklist, backup set, alert and timer, then the theme', () => {
     const groups = new Set(paletteItems(snap()).map((i) => i.group))
-    expect([...groups]).toEqual(['Go to', 'Services', 'Open an app', 'Checklists', 'Backup sets', 'Alerts', 'Jobs'])
+    expect([...groups]).toEqual(['Go to', 'Services', 'Open an app', 'Checklists', 'Backup sets', 'Alerts', 'Jobs', 'Theme'])
+  })
+  it('finds the three theme commands, which run rather than go anywhere', () => {
+    const r = search(paletteItems(snap()), 'theme')
+    expect(r.map((i) => i.title).sort()).toEqual(['Theme: dark', 'Theme: follow this device', 'Theme: light'])
+    expect(r.every((i) => typeof i.run === 'function' && i.href === '')).toBe(true)
+    expect(search(paletteItems(snap()), 'dark').map((i) => i.id)).toEqual(['theme:dark'])
   })
   it('opens on the pages and whatever needs you', () => {
     const r = search(paletteItems(snap()), '  ')

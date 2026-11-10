@@ -95,7 +95,7 @@ func newServer(t *testing.T, auth string) (*Server, *Store, string) {
 	os.WriteFile(filepath.Join(filepath.Dir(dir), "secret.md"), []byte("nope"), 0o644)
 	st := NewStore()
 	st.Set([]byte(`{"schema":1,"title":"pi"}`), time.Now())
-	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Vesper</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}}
+	ui := fstest.MapFS{"index.html": {Data: []byte("<!doctype html><title>Vesper</title>")}, "assets/app.js": {Data: []byte("1")}, "manifest.webmanifest": {Data: []byte("{}")}, "theme.js": {Data: []byte("0")}}
 	s, err := New(st, Options{Title: "pi", Version: "test", AuthMode: auth, Username: "owner", PasswordHash: testHash, MachineID: "m",
 		RunbookDir: dir, UI: ui, TrustProxy: true})
 	if err != nil {
@@ -338,6 +338,31 @@ func TestManifestHasItsType(t *testing.T) {
 	r := do(s, "GET", "/manifest.webmanifest", "", nil)
 	if r.Code != 200 || r.Header().Get("Content-Type") != "application/manifest+json" {
 		t.Fatalf("manifest: %d %q", r.Code, r.Header().Get("Content-Type"))
+	}
+}
+
+// The theme script keeps one name across releases, so the browser must ask
+// for it again each time; the built files under /assets carry a hash and never change.
+func TestUnhashedFilesAreRevalidated(t *testing.T) {
+	s, _, _ := newServer(t, "none")
+	r := do(s, "GET", "/theme.js", "", nil)
+	if r.Code != 200 || !strings.Contains(r.Header().Get("Content-Type"), "javascript") || r.Header().Get("Cache-Control") != "no-cache" {
+		t.Fatalf("theme.js: %d %q %q", r.Code, r.Header().Get("Content-Type"), r.Header().Get("Cache-Control"))
+	}
+	if r := do(s, "GET", "/assets/app.js", "", nil); !strings.Contains(r.Header().Get("Cache-Control"), "immutable") {
+		t.Fatalf("assets: %q", r.Header().Get("Cache-Control"))
+	}
+	// asked again with the tag it was given, the answer is "not changed" and no body
+	tag := r.Header().Get("ETag")
+	if tag == "" {
+		t.Fatal("theme.js: no ETag")
+	}
+	again := do(s, "GET", "/theme.js", "", map[string]string{"If-None-Match": tag})
+	if again.Code != http.StatusNotModified || again.Body.Len() != 0 {
+		t.Fatalf("theme.js with its tag: %d, %d bytes", again.Code, again.Body.Len())
+	}
+	if stale := do(s, "GET", "/theme.js", "", map[string]string{"If-None-Match": `"0000000000000000"`}); stale.Code != 200 {
+		t.Fatalf("theme.js with an old tag: %d", stale.Code)
 	}
 }
 

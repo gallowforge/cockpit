@@ -29,6 +29,9 @@ export const IconAlert = ({ size }: P) => <I size={size}><circle cx="8" cy="8" r
 export const IconPulse = ({ size }: P) => <I size={size}><path d="M1.75 8.5h2.5l1.75-4.5 2.75 8.5 1.75-4h3.75" /></I>
 export const IconHeart = ({ size }: P) => <I size={size}><path d="M8 13s-5.25-3-5.25-6.6A2.65 2.65 0 0 1 8 4.75a2.65 2.65 0 0 1 5.25 1.65C13.25 10 8 13 8 13z" /></I>
 export const IconEyeOff = ({ size }: P) => <I size={size}><path d="M2 8s2.25-4.25 6-4.25S14 8 14 8s-2.25 4.25-6 4.25S2 8 2 8z" /><path d="M3 13 13 3" /></I>
+export const IconSun = ({ size }: P) => <I size={size}><circle cx="8" cy="8" r="2.75" /><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M3.58 12.42l1.06-1.06M11.36 4.64l1.06-1.06" /></I>
+export const IconMoon = ({ size }: P) => <I size={size}><path d="M13.25 9.45A5.5 5.5 0 0 1 6.55 2.75a5.5 5.5 0 1 0 6.7 6.7Z" /></I>
+export const IconDevice = ({ size }: P) => <I size={size}><rect x="2" y="2.75" width="12" height="8.25" rx="1.4" /><path d="M5.75 13.5h4.5M8 11v2.5" /></I>
 export const IconClock = ({ size }: P) => <I size={size}><circle cx="8" cy="8" r="5.75" /><path d="M8 5v3l2 1.25" /></I>
 export const IconCheck = ({ size }: P) => <I size={size}><path d="m3.5 8.5 2.9 2.9 6.1-6.65" /></I>
 export const IconX = ({ size }: P) => <I size={size}><path d="m4.5 4.5 7 7M11.5 4.5l-7 7" /></I>

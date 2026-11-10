@@ -3,7 +3,8 @@
 // z is depth (+ toward the viewer; 1 unit = 1 px at z = 0); rot is in degrees.
 // A window with `parent` is a part of that window's screen lifted out toward the viewer
 // (`src` is the part, in texture pixels, from shots/boxes.js).
-// Vesper has one theme, night: in the light images its screens stay dark, on daylight glass.
+// Vesper has two themes. The dark images show it by night and the light images by day, each
+// on glass in the same light.
 import { BOXES } from './shots/boxes.js';
 
 // a quiet night: dark glass in cool light, no horizon
@@ -34,14 +35,17 @@ const C = {
 const T = (cls, html, x, y, style = {}, align) => ({ cls, html, x, y, align, style, ...C[cls] });
 
 const KEY = '#0C0D0F';          // the app's own background, keyed so its UI floats on the glass
+const KEY_DAY = '#EEF2EC';      // and its background by day
+const DAY_KEY_AMT = 0.55, DAY_LIFT_AMT = 0.8;
+const shot = (name, n) => `${name}${n ? '' : '-light'}.png`;   // a capture in the page's theme
 const pad = (b, x, y = x) => [b[0] - x, b[1] - y, b[2] + 2 * x, b[3] + 2 * y];
 const UNION = (a, b) => { const x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]); return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y]; };
 const full = (name) => [0, 0, ...BOXES[name].size];
-// a screen of the real app (dark in both themes)
-const S = (name, n, o) => ({ tex: `${name}.png`, crop: full(name), key: KEY, keyAmt: n ? 0.5 : 0.08, bezel: 9, glowColor: '#16304f', ...o });
+// a screen of the real app in the page's theme
+const S = (name, n, o) => ({ tex: shot(name, n), crop: full(name), key: n ? KEY : KEY_DAY, keyAmt: n ? 0.5 : DAY_KEY_AMT, bezel: 9, glowColor: '#16304f', ...o });
 // a typeset window (terminal, diagram, numbers) in the page's theme
 const D = (name, n, o) => ({ tex: `${name}-${n ? 'dark' : 'light'}.png`, crop: full(name), key: n ? '#0A0D12' : '#FBFBFC', keyAmt: n ? 0.6 : 0.72, bezel: 9, glowColor: '#16304f', ...o });
-const LIFT = (parent, src, n, o) => ({ parent, src, lift: 90, breathe: [10, 0.25], bezel: 8, radius: 14, key: KEY, keyAmt: n ? 0.85 : 0.15,
+const LIFT = (parent, src, n, o) => ({ parent, src, lift: 90, breathe: [10, 0.25], bezel: 8, radius: 14, key: n ? KEY : KEY_DAY, keyAmt: n ? 0.85 : DAY_LIFT_AMT,
   shadowOff: n ? [0, -16, 40] : [10, -22, 26], shadow: n ? 0.45 : 0.22, glow: 0.25, ...o });
 const FAR = (n) => ({ lod: 1.1, defocus: 2.4, fog: n ? 0.60 : 0.38 });
 const MID = (n) => ({ lod: 0.4, defocus: 0.8, fog: n ? 0.20 : 0.10 });
@@ -70,8 +74,8 @@ const heroWindows = (n, P) => [
   S('calm-services', n, { crop: TOP('calm-services', 900), ...P[2], ...MID(n), breathe: [12, 0.5] }),
   S('m-calm-runbook', n, { ...P[3], ...MID(n), breathe: [12, 0.0], bezel: 8 }),
   S('ov-calm', n, { crop: TOP('ov-calm', 920), ...P[4], breathe: [10, 0.6], bezel: 11, glow: 0.8 }),
-  S('m-ov-calm', n, { tex2: 'm-ov-inc.png', ...P[5], breathe: [9, 0.3], bezel: 8 }),
-  LIFT(4, pad(UNION(BOXES['ov-calm'].status, BOXES['ov-inc'].status), 8, 6), n, { tex2: 'ov-inc.png', lift: 120, breathe: [12, 0.85], radius: 14 }),
+  S('m-ov-calm', n, { tex2: shot('m-ov-inc', n), ...P[5], breathe: [9, 0.3], bezel: 8 }),
+  LIFT(4, pad(UNION(BOXES['ov-calm'].status, BOXES['ov-inc'].status), 8, 6), n, { tex2: shot('ov-inc', n), lift: 120, breathe: [12, 0.85], radius: 14 }),
 ];
 const HERO_LINE = 'A read-only operations dashboard for a home server.';
 

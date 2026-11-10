@@ -6,6 +6,7 @@
 // screenshot or a reader who asked for less motion gets one still frame, the
 // same one every time.
 import { ramp, SOURCE, spine, trace, weave, type Spine, type Stops, type Strand, type Tone } from './ribbon'
+import { onTheme, theme, type Theme } from './theme'
 
 export interface Ribbon {
   /** The fleet as it stands: one state for each service, in the snapshot's order. */
@@ -17,26 +18,29 @@ export interface Ribbon {
 
 type Rgb = readonly [number, number, number]
 
-// The state colours of styles.css. A lane that answers runs cool: the cyan of
-// the source, through the green of "up", to a chartreuse tail.
-const CYAN: Rgb = [95, 225, 234]
-const GREEN: Rgb = [88, 222, 134]
-const CHARTREUSE: Rgb = [190, 214, 96]
-const AMBER: Rgb = [247, 171, 62]
-const RED: Rgb = [255, 106, 92]
-const SAGE: Rgb = [147, 165, 154]
+/** The ribbon's colours in one theme: the state colours of styles.css, the two
+ *  glints, how overlapping threads combine and how strongly they are drawn. At
+ *  night the threads are light and add up where they cross. By day they are
+ *  ink: deeper, and darker where they cross. */
+interface Look { cyan: Rgb; green: Rgb; tail: Rgb; amber: Rgb; red: Rgb; sage: Rgb; glint: Rgb; glintWarn: Rgb; blend: GlobalCompositeOperation; gain: number }
+const LOOK: Record<Theme, Look> = {
+  dark: { cyan: [95, 225, 234], green: [88, 222, 134], tail: [190, 214, 96], amber: [247, 171, 62], red: [255, 106, 92], sage: [147, 165, 154], glint: [214, 250, 244], glintWarn: [255, 224, 170], blend: 'lighter', gain: 1 },
+  light: { cyan: [8, 136, 150], green: [22, 138, 78], tail: [148, 146, 22], amber: [186, 112, 0], red: [208, 57, 44], sage: [102, 122, 110], glint: [3, 84, 96], glintWarn: [122, 70, 0], blend: 'multiply', gain: 1.7 },
+}
 
 /** How a lane is lit: its colour along the thread ([position, colour] from the
  *  source outward), how bright it is beside the others, and whether a glint
- *  ever runs down it. */
+ *  ever runs down it. A lane that answers runs cool: the cyan of the source,
+ *  through the green of "up", to a chartreuse tail. */
 interface Light { hue: readonly (readonly [number, Rgb])[]; gain: number; glint: Rgb | null }
-const LIGHT: Record<Tone, Light> = {
-  up: { hue: [[0, CYAN], [0.34, CYAN], [0.62, GREEN], [1, CHARTREUSE]], gain: 1, glint: [214, 250, 244] },
-  degraded: { hue: [[0, AMBER], [1, AMBER]], gain: 1.25, glint: [255, 224, 170] },
-  down: { hue: [[0, RED], [1, RED]], gain: 1.5, glint: null },
-  unknown: { hue: [[0, SAGE], [1, SAGE]], gain: 0.4, glint: null },
-  off: { hue: [[0, SAGE], [1, SAGE]], gain: 0.14, glint: null },
-}
+const lights = (k: Look): Record<Tone, Light> => ({
+  up: { hue: [[0, k.cyan], [0.34, k.cyan], [0.62, k.green], [1, k.tail]], gain: 1, glint: k.glint },
+  degraded: { hue: [[0, k.amber], [1, k.amber]], gain: 1.25, glint: k.glintWarn },
+  down: { hue: [[0, k.red], [1, k.red]], gain: 1.5, glint: null },
+  unknown: { hue: [[0, k.sage], [1, k.sage]], gain: 0.4, glint: null },
+  off: { hue: [[0, k.sage], [1, k.sage]], gain: 0.14, glint: null },
+})
+const TONES: readonly Tone[] = ['up', 'degraded', 'down', 'unknown', 'off']
 
 /** How bright a thread is along its length: full where it leaves the source,
  *  nothing where it ends. Eased, so it has no visible end. */
@@ -72,6 +76,8 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
   let lanes: Lane[] = []
   let glints: Glint[] = []
   const paint = new Map<Tone, CanvasGradient>()
+  let look = LOOK[theme()]
+  let LIGHT = lights(look)
 
   let t = STILL_AT
   let vigor = 1
@@ -105,9 +111,14 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
     canvas.height = Math.round(h * dpr)
     sp = spine(w, h)
     path = new Float32Array(2 * sp.n)
-    paint.clear()
-    for (const tone of Object.keys(LIGHT) as Tone[]) paint.set(tone, gradient(tone))
+    tint()
     draw()
+  }
+
+  /** Mixes every lane's gradient again: the canvas changed size, or the theme changed. */
+  const tint = () => {
+    paint.clear()
+    for (const tone of TONES) paint.set(tone, gradient(tone))
   }
 
   /** Where the thread held in `path` is at point `p`, which may fall between two of its points. */
@@ -129,7 +140,7 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
     if (!w || !h) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
-    ctx.globalCompositeOperation = 'lighter'
+    ctx.globalCompositeOperation = look.blend
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     const end = sp.n - 1
@@ -143,7 +154,7 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
         ctx.strokeStyle = paint.get(tone)!
         for (const [width, strength] of PASSES) {
           ctx.lineWidth = width === 1 ? hair : width
-          ctx.globalAlpha = Math.min(1, strength * LIGHT[tone].gain * strand.weight * vigor * share)
+          ctx.globalAlpha = Math.min(1, strength * look.gain * LIGHT[tone].gain * strand.weight * vigor * share)
           stroke(0, end)
         }
       }
@@ -210,6 +221,14 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
     } else run()
   }
 
+  const unthemed = onTheme(() => {
+    if (look === LOOK[theme()]) return
+    look = LOOK[theme()]
+    LIGHT = lights(look)
+    if (!w || !h) return
+    tint()
+    draw()
+  })
   const sized = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null
   sized?.observe(canvas)
   document.addEventListener('visibilitychange', apply)
@@ -240,6 +259,7 @@ export function startRibbon(canvas: HTMLCanvasElement, opts: { still?: boolean }
     },
     stop() {
       halt()
+      unthemed()
       sized?.disconnect()
       document.removeEventListener('visibilitychange', apply)
       calm?.removeEventListener('change', apply)

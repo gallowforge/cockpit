@@ -1,6 +1,6 @@
 // More: on a phone, the pages that do not fit in the tab bar.
 import type { Level, Snapshot } from '../types'
-import { Glyph, PageHead } from '../components/ui'
+import { Glyph, PageHead, ThemeSwitch } from '../components/ui'
 import { IconChecklist, IconChevron, IconJobs, IconSearch, IconSystem } from '../components/icons'
 import { plural } from '../format'
 
@@ -31,6 +31,10 @@ export function More({ snap, levels, onSearch }: { snap: Snapshot; levels: Recor
           <IconChevron size={14} />
         </button>
       </div>
+      <section class="sec" aria-label="Appearance">
+        <div class="sec-h"><h2>Appearance</h2><span class="aside">Follows this device until you choose</span></div>
+        <ThemeSwitch />
+      </section>
       {snap.runbooks.some((r) => r.local) && (
         <section class="sec" aria-label="Checklists">
           <div class="sec-h"><h2>Checklists</h2></div>

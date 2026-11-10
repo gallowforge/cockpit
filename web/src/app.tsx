@@ -5,7 +5,7 @@ import { follow, getSession, logout, readCachedSnap, type StreamState } from './
 import { heroOf, levelRank, normalizeSnap, serverNow, servicesLevel, worst } from './derive'
 import { ago, precise } from './format'
 import { IconBackups, IconChecklist, IconHistory, IconJobs, IconLogout, IconMore, IconOverview, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
-import { Dot, Empty, Glyph, PageHead } from './components/ui'
+import { Dot, Empty, Glyph, PageHead, ThemeSwitch } from './components/ui'
 import { Login } from './views/login'
 import { Palette, PAGES } from './components/palette'
 import { readLastLook, writeLastLook } from './lastlook'
@@ -320,6 +320,7 @@ export function App() {
             {session && <span class="num">{/^\d/.test(session.version) ? 'v' : ''}{session.version}</span>}
           </div>
           <span>Read-only. Vesper never changes the server.</span>
+          <div class="row-x"><span>Theme</span><ThemeSwitch compact /></div>
           {session?.auth === 'password' && (
             <button type="button" class="linklike" onClick={() => logout().then(load)}><IconLogout size={14} />Sign out</button>
           )}

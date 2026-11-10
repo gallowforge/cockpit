@@ -4,6 +4,7 @@ import { prioLevel } from '../derive'
 import { Glyph } from './ui'
 import { IconExternal, IconSearch } from './icons'
 import { safeHref } from '../markdown'
+import { MODES, setMode } from '../theme'
 
 export interface PaletteItem {
   id: string
@@ -12,6 +13,8 @@ export interface PaletteItem {
   sub?: string
   href: string
   external?: boolean
+  /** A command rather than a place: it runs this and goes nowhere. */
+  run?: () => void
   level?: Parameters<typeof Glyph>[0]['level']
   keys?: string
 }
@@ -49,6 +52,9 @@ export function paletteItems(s: Snapshot): PaletteItem[] {
   }
   for (const t of s.timers) {
     out.push({ id: 'tm:' + t.unit, group: 'Jobs', title: t.description || t.activates.replace(/\.service$/, ''), sub: t.unit, href: '#/jobs', level: t.result === 'failed' ? 'warn' : undefined })
+  }
+  for (const [m, word] of MODES) {
+    out.push({ id: 'theme:' + m, group: 'Theme', title: m === 'system' ? 'Theme: follow this device' : `Theme: ${word.toLowerCase()}`, sub: m === 'system' ? 'day or night, as the device is set' : undefined, href: '', run: () => setMode(m) })
   }
   return out
 }
@@ -100,7 +106,8 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
 
   const open = (it?: PaletteItem) => {
     if (!it) return
-    if (it.external) window.open(it.href, '_blank', 'noopener,noreferrer')
+    if (it.run) it.run()
+    else if (it.external) window.open(it.href, '_blank', 'noopener,noreferrer')
     else location.hash = it.href.replace(/^#/, '')
     onClose()
   }

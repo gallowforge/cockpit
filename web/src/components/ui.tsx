@@ -5,7 +5,8 @@ import type { ComponentChildren } from 'preact'
 import { useEffect, useId, useRef, useState } from 'preact/hooks'
 import type { Level } from '../types'
 import { bucket } from '../derive'
-import { IconBack } from './icons'
+import { IconBack, IconDevice, IconMoon, IconSun } from './icons'
+import { MODES, setMode, useMode } from '../theme'
 
 export const WORD: Record<Level, string> = { ok: 'Fine', info: 'Note', warn: 'Needs you', crit: 'Down', unknown: "Can't see", off: 'Off' }
 
@@ -169,6 +170,28 @@ export function Btn({ href, children, primary, external, onClick, label }: { hre
 }
 
 /** A segmented control: one of a few views of the same list. */
+const MODE_ICON = { system: IconDevice, light: IconSun, dark: IconMoon }
+
+/** The theme control: follow the device, or hold day or night. Where room is
+ *  short it shows the three icons alone; each still carries its word for a
+ *  screen reader and on hover. */
+export function ThemeSwitch({ compact }: { compact?: boolean }) {
+  const mode = useMode()
+  return (
+    <div class={`seg seg-theme${compact ? '' : ' wide'}`} role="group" aria-label="Theme">
+      {MODES.map(([k, word]) => {
+        const Icon = MODE_ICON[k]
+        const say = k === 'system' ? 'Follow this device' : `${word} theme`
+        return (
+          <button key={k} type="button" aria-pressed={mode === k} aria-label={compact ? say : undefined} title={compact ? say : undefined} onClick={() => setMode(k)}>
+            <Icon size={compact ? 14 : 15} />{!compact && <span>{word}</span>}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function Seg<T extends string>({ options, value, onChange, label }: { options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void; label: string }) {
   return (
     <div class="seg" role="group" aria-label={label}>

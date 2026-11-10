@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.0 "Daybreak"
+
+Vesper by day: a second theme, and a control to choose it.
+
+- **A day theme.** The same forest in morning fog: a pale sage ground, forest ink for the text, and the sky thinned to a wash. It is the night design with its values changed, not a second design. Every colour in the stylesheet is a token; night's values sit on the root and day's in one block, so no rule asks which theme it is in. The masthead's ribbon follows the light: by night its threads add light to a dark sky, by day they are ink on a pale one, so a lane keeps the colour of its service.
+- **System, light or dark.** Vesper follows the device until you choose. The control is at the foot of the sidebar, under More on a phone, and in the command bar (<kbd>Ctrl</kbd> <kbd>K</kbd>, then "theme"). The choice is kept in that browser, other open tabs follow it at once, and a device that changes theme at sunset is followed live. The page is painted in the right theme from its first frame. The change is a short dissolve, or immediate with reduced motion.
+- **Contrast by day.** State colours were tuned again for a pale ground instead of being reused from the night. Every text colour keeps 4.5:1 and every mark 3:1 against each ground it can sit on, checked token against token.
+- Installed on an iPhone, the day theme keeps a strip of ink under the status bar, so the white clock stays readable.
+- Files that keep their name from one release to the next (the icons, the manifest, the theme script) are checked on every load and answered with `304 Not Modified` when nothing changed, so an upgrade cannot leave an old script in a browser. Hashed assets are still cached for a year.
+- README: the light images now show the day theme, captured from the real UI like the dark ones.
+
 ## 2.1.0 "First light"
 
 A new look after the film *Vesper*, an Overview that shows the fleet as light, and a pass over every page.
