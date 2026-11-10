@@ -5,6 +5,7 @@ import type { ComponentChildren } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import type { Level } from '../types'
 import { bucket } from '../derive'
+import { IconBack } from './icons'
 
 export const WORD: Record<Level, string> = { ok: 'Fine', info: 'Note', warn: 'Needs you', crit: 'Down', unknown: "Can't see", off: 'Off' }
 
@@ -95,6 +96,17 @@ export function Empty({ children, left }: { children: ComponentChildren; left?: 
   return <div class={`empty${left ? ' left' : ''}`}>{children}</div>
 }
 
+/** A detail page whose thing is gone: the way back, a heading, and why. */
+export function NotFound({ back, backLabel, title, children }: { back: string; backLabel: string; title: string; children: ComponentChildren }) {
+  return (
+    <div>
+      <a class="back" href={back}><IconBack size={14} /> {backLabel}</a>
+      <PageHead title={title} />
+      <Empty>{children}</Empty>
+    </div>
+  )
+}
+
 const CELL: Record<string, string> = { u: '', d: 'd', x: 'x', '?': 'q', o: 'o' }
 
 /** A day line drawn as `n` cells (the worst state in each). `past` turns a
@@ -102,10 +114,16 @@ const CELL: Record<string, string> = { u: '', d: 'd', x: 'x', '?': 'q', o: 'o' }
 export function Day({ day, n, size, label, onCell }: { day: string; n: number; size?: 'mid' | 'tall'; label: string; onCell?: (i: number | null, e?: MouseEvent) => void }) {
   const cells = bucket(day, n)
   const last = cells.length - 1
+  // the cell under the pointer comes from its position along the line, not from the element
+  // it lands on: on a phone the gaps between 96 cells are wider than the cells themselves
+  const at = (e: MouseEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    onCell?.(r.width ? Math.max(0, Math.min(cells.length - 1, Math.floor(((e.clientX - r.left) / r.width) * cells.length))) : null, e)
+  }
   return (
     <span class={`day${size ? ' ' + size : ''}`} role="img" aria-label={label}
-      onMouseMove={onCell && ((e) => { const i = (e.target as HTMLElement).dataset?.i; onCell(i == null ? null : Number(i), e as unknown as MouseEvent) })}
-      onClick={onCell && ((e) => { const i = (e.target as HTMLElement).dataset?.i; onCell(i == null ? null : Number(i), e as unknown as MouseEvent) })}
+      onMouseMove={onCell && ((e) => at(e as unknown as MouseEvent))}
+      onClick={onCell && ((e) => at(e as unknown as MouseEvent))}
       onMouseLeave={onCell && (() => onCell(null))}>
       {cells.split('').map((c, i) => <i key={i} data-i={i} class={c === 'x' && i < last ? 'w' : CELL[c] ?? 'q'} />)}
     </span>
@@ -201,15 +219,33 @@ export function Runs({ items, selected, onPick, label }: { items: { level: Level
 export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e?: MouseEvent | FocusEvent) => void] {
   const [tip, setTip] = useState<{ body: ComponentChildren; x: number; y: number } | null>(null)
   const timer = useRef(0)
+  const pinned = useRef(0)
   useEffect(() => () => clearTimeout(timer.current), [])
-  const node = tip ? <div class="tip" role="status" style={{ left: `${Math.max(8, Math.min(tip.x + 12, innerWidth - 280))}px`, top: `${tip.y - 44}px` }}>{tip.body}</div> : null
+  // a tip is pinned to the screen, so it must not stay behind when the page scrolls under it
+  useEffect(() => {
+    if (!tip) return
+    const hide = () => setTip(null)
+    addEventListener('scroll', hide, { passive: true, once: true })
+    return () => removeEventListener('scroll', hide)
+  }, [tip !== null])
+  // .tip is at most 272px wide: keep it 8px inside both edges, and below the top when there is no room above
+  const node = tip ? <div class="tip" role="status" style={{ left: `${Math.max(8, Math.min(tip.x + 12, innerWidth - 280))}px`, top: `${tip.y < 60 ? tip.y + 18 : tip.y - 44}px` }}>{tip.body}</div> : null
   return [node, (body, e) => {
+    if (!body || !e) {
+      // a phone sends mouseleave right after the tap itself: that must not close what the tap opened
+      if (Date.now() < pinned.current) return
+      clearTimeout(timer.current)
+      return setTip(null)
+    }
     clearTimeout(timer.current)
-    if (!body || !e) return setTip(null)
+    pinned.current = 0
     if (e.type === 'focus') {
       const r = (e.target as HTMLElement).getBoundingClientRect()
       setTip({ body, x: r.left, y: r.top })
     } else setTip({ body, x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY })
-    if (e.type === 'click' || e.type === 'focus') timer.current = window.setTimeout(() => setTip(null), 3500)
+    if (e.type === 'click' || e.type === 'focus') {
+      timer.current = window.setTimeout(() => setTip(null), 3500)
+      if (e.type === 'click' && typeof matchMedia === 'function' && matchMedia('(hover: none)').matches) pinned.current = Date.now() + 3500
+    }
   }]
 }

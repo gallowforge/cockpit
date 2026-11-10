@@ -127,8 +127,8 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
         <div class="palette-input">
           <IconSearch size={16} />
           <input ref={input} value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} onKeyDown={onKey}
-            placeholder="Jump to a service, backup, alert, timer or checklist" aria-label="Search" spellcheck={false} autocomplete="off" />
-          <kbd>esc</kbd>
+            placeholder="Search or jump to anything" aria-label="Search services, backups, alerts, jobs and checklists" spellcheck={false} autocomplete="off" />
+          <button type="button" class="palette-close" aria-label="Close search" onClick={onClose}><kbd>esc</kbd><span>Cancel</span></button>
         </div>
         <div class="palette-list" ref={list} role="listbox">
           {results.length === 0 && <div class="palette-empty">Nothing matches "{q}".</div>}
@@ -141,8 +141,10 @@ export function Palette({ snap, onClose, initial = '' }: { snap: Snapshot; onClo
                 <button type="button" key={it.id} data-i={n} role="option" aria-selected={n === active}
                   class={`palette-item${n === active ? ' on' : ''}`} onMouseMove={() => setActive(n)} onClick={() => open(it)}>
                   {it.level && it.level !== 'ok' ? <Glyph level={it.level} size={13} /> : <span class="palette-bullet" />}
-                  <span class="palette-title">{it.title}</span>
-                  {it.sub && <span class="palette-sub">{it.sub}</span>}
+                  <span class="palette-text">
+                    <span class="palette-title">{it.title}</span>
+                    {it.sub && <span class="palette-sub">{it.sub}</span>}
+                  </span>
                   {it.external && <IconExternal size={13} />}
                   {it.keys && <span class="palette-keys">{it.keys.split(' ').map((k) => <kbd key={k}>{k}</kbd>)}</span>}
                 </button>

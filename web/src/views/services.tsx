@@ -4,7 +4,7 @@ import type { ViewProps } from '../app'
 import type { Service } from '../types'
 import { bucket, dayRuns, daySeen, dayUptime, durationWords, fullDay, groupServices, latencyStats, levelRank, slotStart } from '../derive'
 import { ago, clock, dateTime, ms, plural, precise, short } from '../format'
-import { Beats, Btn, Day, Dot, Empty, Figures, PageHead, Section, Seg, Spark, State, useTip } from '../components/ui'
+import { Beats, Btn, Day, Dot, Empty, Figures, NotFound, PageHead, Section, Seg, Spark, State, useTip } from '../components/ui'
 import { IconBack, IconChevron, IconExternal } from '../components/icons'
 import { safeHref } from '../markdown'
 
@@ -104,7 +104,7 @@ export function Services(p: ViewProps) {
 function ServiceDetail({ snap, now, id }: ViewProps & { id: string }) {
   const s = snap.services.find((x) => x.id === id)
   const [tip, setTip] = useTip()
-  if (!s) return <Empty>No service called <code>{id}</code>. <a class="linklike" href="#/services">All services</a></Empty>
+  if (!s) return <NotFound back="#/services" backLabel="Services" title="Service not found">No service is called<code>{id}</code></NotFound>
   const day = fullDay(s.day)
   const up = dayUptime(day)
   const lats = s.probe?.latencies ?? []
@@ -133,9 +133,9 @@ function ServiceDetail({ snap, now, id }: ViewProps & { id: string }) {
         { label: 'Availability, 24 h', value: fmtPct(up).replace('%', ''), unit: up != null ? '%' : undefined, caption: outages.length ? `${plural(outages.length, 'outage')} in 24 h` : 'no outage seen', level: up != null && up < 99.9 ? 'warn' : undefined },
         { label: 'Median answer', value: s.probe ? fmtMs(p50).replace(' ms', '') : '—', unit: s.probe && p50 != null ? 'ms' : undefined, caption: s.probe ? `p95 ${fmtMs(p95)}` : 'not probed' },
         { label: 'Certificate', value: s.probe?.cert_days ?? '—', unit: s.probe?.cert_days != null ? 'days' : undefined, caption: s.probe?.cert_days != null ? 'until it expires' : 'no TLS check', level: s.probe?.cert_days != null && s.probe.cert_days < 14 ? 'warn' : undefined },
-        { label: 'Restarts', value: s.restarts ?? '—', caption: s.kind === 'container' ? 'since the container was created' : 'not tracked for units', level: (s.restarts ?? 0) > 3 ? 'warn' : undefined },
+        { label: 'Restarts', value: s.restarts ?? '—', caption: s.kind !== 'container' ? 'not tracked for units' : s.restarts == null ? 'not reported' : 'since the container was created', level: (s.restarts ?? 0) > 3 ? 'warn' : undefined },
       ]} />
-      <Section title="Last 24 hours" aside={<span class="num">{daySeen(day) < 276 ? `seen ${Math.round(daySeen(day) / 12)} of 24 h` : 'five-minute resolution'}</span>}>
+      <Section title="Last 24 hours" aside={<span class="tnum">{daySeen(day) < 276 ? `seen ${Math.round(daySeen(day) / 12)} of 24 h` : 'five-minute resolution'}</span>}>
         <div class="panel">
           <Day day={day} n={96} size="tall" label={`${s.title}, last 24 hours`} onCell={cell} />
           <DayAxis generated={snap.generated} />
@@ -145,7 +145,7 @@ function ServiceDetail({ snap, now, id }: ViewProps & { id: string }) {
               {outages.slice(-5).reverse().map((r) => {
                 const current = r.to >= ms(snap.generated) && s.state === 'down'
                 return (
-                  <li key={r.from} class="row">
+                  <li key={r.from} class="row" style={{ gridTemplateColumns: '16px minmax(0,1fr) auto' }}>
                     <Dot level={current ? 'crit' : 'off'} live={current} />
                     <span class="main-col">
                       <span class="ttl"><span>{current ? 'Down now' : 'Down, then recovered'}</span></span>
@@ -159,7 +159,7 @@ function ServiceDetail({ snap, now, id }: ViewProps & { id: string }) {
           )}
         </div>
       </Section>
-      <Section title="Last 30 minutes" aside={<span class="num">one sample every 20 s</span>}>
+      <Section title="Last 30 minutes" aside={<span class="tnum">one sample every 20 s</span>}>
         <div class="panel">
           <Beats beats={s.beats} label={`${s.title}, last ${s.beats.length} samples`} />
           {lats.length > 1 && (

@@ -5,7 +5,7 @@ import type { ViewProps } from '../app'
 import type { Incident } from '../types'
 import { alertHistogram, durationWords, events, foldRepeats, prioLevel, type Event, type EventKind } from '../derive'
 import { clock, dateTime, dayLabel, ms, plural } from '../format'
-import { Btn, Empty, Figures, Glyph, Hist, PageHead, Section, Seg } from '../components/ui'
+import { Btn, Empty, Figures, Glyph, Hist, NotFound, PageHead, Section, Seg } from '../components/ui'
 import { IconBack, IconChevron } from '../components/icons'
 
 type F = 'all' | 'alerts' | 'backups' | 'jobs'
@@ -61,7 +61,7 @@ export function HistoryView(p: ViewProps) {
                     <span class="ttl"><span>{e.title}</span></span>
                     {e.sub && <span class="sub">{e.sub}</span>}
                   </span>
-                  <span class="end">{e.count && e.count > 1 ? `${e.count}×` : e.end ? durationWords(e.end - e.t) : ''}</span>
+                  <span class="end">{e.count && e.count > 1 ? `${e.count}×` : ''}</span>
                   <IconChevron size={14} />
                 </a>
               )
@@ -87,7 +87,7 @@ function clearTime(d: number): { value: string | number; unit?: string } {
 function IncidentDetail({ snap, now, k }: ViewProps & { k: string }) {
   const all = snap.alerts.incidents.filter((i) => i.key === k)
   const i: Incident | undefined = all[0]
-  if (!i) return <Empty>No alert with the key <code>{k}</code> in the last 30 days. <a class="linklike" href="#/history">History</a></Empty>
+  if (!i) return <NotFound back="#/history" backLabel="History" title="Alert not found">No alert in the last 30 days has the key<code>{k}</code></NotFound>
   const lv = i.state === 'open' ? prioLevel(i.prio) : 'ok'
   const rb = i.runbook ? snap.runbooks.find((r) => r.id === i.runbook) : undefined
   return (

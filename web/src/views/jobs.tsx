@@ -55,7 +55,7 @@ function JobRow({ t, now }: { t: Timer; now: number }) {
       <Glyph level={lv} size={14} />
       <span class="main-col">
         <span class="ttl"><span>{name(t)}</span></span>
-        <span class="sub"><code>{t.unit}</code>{t.last ? ` · last ${ago(t.last, now)}${t.result && t.result !== 'success' ? `, ${t.result}` : ''}` : ' · has not run yet'}{off ? ` · ${t.enabled}` : ''}</span>
+        <span class="sub"><code>{t.unit}</code> · <span class="nb">{t.last ? `last ${ago(t.last, now)}${t.result && t.result !== 'success' ? `, ${t.result}` : ''}` : 'has not run yet'}</span>{off ? <> · <span class="nb">{t.enabled}</span></> : ''}</span>
       </span>
       <span class="end stack">{t.next ? <>{clock(t.next)}<small>{inAbout(t.next, now)}</small></> : <small>not scheduled</small>}</span>
     </div>

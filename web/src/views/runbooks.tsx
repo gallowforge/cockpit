@@ -78,6 +78,9 @@ export function RunbooksView({ snap, route }: ViewProps) {
   // checkbox button over the step number, so links inside a step stay links for
   // screen readers; a tap anywhere else on the step ticks it too.
   useEffect(() => {
+    // the page head already carries the title: a first heading that repeats it is not drawn twice
+    const first = doc.current?.firstElementChild as HTMLElement | null | undefined
+    if (first?.tagName === 'H1') first.hidden = (first.textContent ?? '').trim().toLowerCase() === (current?.title ?? '').trim().toLowerCase()
     const items = doc.current ? Array.from(doc.current.querySelectorAll<HTMLLIElement>(':scope > ol > li')) : []
     items.forEach((li, i) => {
       li.dataset.step = String(i)

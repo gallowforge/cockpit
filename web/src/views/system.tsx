@@ -26,6 +26,11 @@ export function throttleWords(hex?: string): string | null {
   return `Flags ${hex}`
 }
 
+/** The collector's "1 problem(s) found" in plain words: "1 problem found", "2 problems found". */
+export function plainCount(text: string): string {
+  return text.replace(/\b(\d+) (\w+)\(s\)/g, (_, n: string, w: string) => `${n} ${w}${n === '1' ? '' : 's'}`)
+}
+
 export function SystemView({ snap, now, route }: ViewProps) {
   useEffect(() => {
     if (route[1]) document.getElementById('sys-' + route[1])?.scrollIntoView({ block: 'start' })
@@ -87,10 +92,10 @@ export function SystemView({ snap, now, route }: ViewProps) {
             <span />
           </div>
           <div class="row" style={{ gridTemplateColumns: '16px minmax(0,1fr) auto' }}>
-            <Glyph level={snap.health.level === 'info' ? 'ok' : snap.health.level} size={14} />
+            <Glyph level={snap.health.level} size={14} />
             <span class="main-col">
               <span class="ttl"><span>Daily health check</span></span>
-              <span class="sub wrap">{snap.health.level === 'off' ? 'Not set up.' : snap.health.last ? `Ran ${ago(snap.health.last, now)}${snap.health.result ? `: ${snap.health.result}` : ''}.` : 'No run in the journal yet.'}</span>
+              <span class="sub wrap">{snap.health.level === 'off' ? 'Not set up.' : snap.health.last ? `Ran ${ago(snap.health.last, now)}${snap.health.result ? `: ${plainCount(snap.health.result).replace(/\.$/, '')}` : ''}.` : 'No run in the journal yet.'}</span>
             </span>
             <span />
           </div>
@@ -140,9 +145,9 @@ function Drift({ snap, now }: { snap: Snapshot; now: number }) {
   if (d.result !== 'clean' && d.result !== 'drift') return <div class="panel"><State level="unknown">Can't be checked</State> <span class="muted">{d.error ?? 'The MANIFEST could not be read.'}</span></div>
   return (
     <div class="panel">
-      <p>
+      <p class="drift-head">
         {d.result === 'clean' ? <span class="strong">All {d.tracked} tracked files match the repo.</span> : <State level="warn">{plural(d.files.length + d.disabled_timers.length, 'difference')} from the repo</State>}
-        <span class="muted"> Checked {ago(d.checked, now)}.{d.uncommitted ? ` ${plural(d.uncommitted, 'uncommitted change')} in the repo.` : ''}</span>
+        <span class="muted">Checked {ago(d.checked, now)}.{d.uncommitted ? ` ${plural(d.uncommitted, 'uncommitted change')} in the repo.` : ''}</span>
       </p>
       {(d.files.length > 0 || d.disabled_timers.length > 0) ? (
         <ul class="drift-files" style={{ marginTop: '10px', borderTop: '1px solid var(--line)' }}>

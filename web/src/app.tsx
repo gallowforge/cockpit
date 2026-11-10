@@ -5,7 +5,7 @@ import { follow, getSession, logout, readCachedSnap, type StreamState } from './
 import { levelRank, normalizeSnap, serverNow, servicesLevel, worst } from './derive'
 import { ago, precise } from './format'
 import { IconBackups, IconChecklist, IconHistory, IconJobs, IconLogout, IconMore, IconOverview, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
-import { Dot, Glyph } from './components/ui'
+import { Dot, Empty, Glyph, PageHead } from './components/ui'
 import { Login } from './views/login'
 import { Palette, PAGES } from './components/palette'
 import { readLastLook, writeLastLook } from './lastlook'
@@ -120,6 +120,10 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionErr, setSessionErr] = useState('')
   const shot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot')
+  // screenshots: the drifting haze and every other animation hold still
+  useEffect(() => {
+    if (shot) document.documentElement.classList.add('shot')
+  }, [])
   // open on the last known state at once, clearly marked by its time, while the stream connects
   const [snap, setSnap] = useState<Snapshot | null>(() => {
     if (shot) return null
@@ -310,7 +314,7 @@ export function App() {
           </div>
           <span>Read-only. Vesper never changes the server.</span>
           {session?.auth === 'password' && (
-            <button type="button" class="linklike" style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={() => logout().then(load)}><IconLogout size={14} />Sign out</button>
+            <button type="button" class="linklike" onClick={() => logout().then(load)}><IconLogout size={14} />Sign out</button>
           )}
         </div>
       </aside>
@@ -332,7 +336,7 @@ export function App() {
             {page === 'system' && <div class="page"><SystemView {...props} /></div>}
             {page === 'runbooks' && <div class="page"><RunbooksView {...props} /></div>}
             {page === 'more' && <div class="page"><More snap={snap} levels={state} onSearch={() => setPalette(true)} /></div>}
-            {!known && <div class="page empty">Nothing here. <a class="linklike" href="#/">Back to the overview</a></div>}
+            {!known && <div class="page"><PageHead title="Page not found" /><Empty>Vesper has no page at this address.<code>#/{route.join('/')}</code><a class="btn" href="#/">Back to the overview</a></Empty></div>}
           </div>
         </Guard>
       </main>

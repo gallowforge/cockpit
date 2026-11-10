@@ -48,13 +48,14 @@ export function Overview({ snap, now, since, online }: ViewProps) {
 const LIGHT_LEVEL: Record<Hero['light'], Level> = { calm: 'ok', attn: 'warn', down: 'crit', blind: 'unknown', none: 'off' }
 
 function StatusIcon({ level }: { level: Level }) {
-  const tone = { ok: ['#163a2b', '#3ecf8e'], warn: ['#3d2b14', '#f0a33a'], crit: ['#3d191b', '#f15b5b'], unknown: ['transparent', '#8a92a3'], off: ['#1b1d22', '#787e8a'], info: ['#1b1d22', '#787e8a'] }[level]
+  // [disc, mark]: the state colours of styles.css on a disc of the same hue sunk into the ground
+  const tone = { ok: ['#10301f', '#58de86'], warn: ['#33240c', '#f7ab3e'], crit: ['#3a1512', '#ff6a5c'], unknown: ['transparent', '#93a59a'], off: ['#13211a', '#8fa395'], info: ['#13211a', '#8fa395'] }[level]
   return (
     <svg class="status-glyph" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
       <circle cx="14" cy="14" r={level === 'unknown' ? 12.2 : 13} fill={tone[0]} stroke={level === 'unknown' ? tone[1] : 'none'} stroke-width="1.6" stroke-dasharray={level === 'unknown' ? '3 3' : undefined} />
       {level === 'ok' && <path d="M8.6 14.4l3.6 3.6 7.2-8" fill="none" stroke={tone[1]} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />}
       {(level === 'crit' || level === 'warn') && <path d="M14 8.6v6.4M14 19h.01" fill="none" stroke={tone[1]} stroke-width="2.2" stroke-linecap="round" />}
-      {level === 'unknown' && <path d="M11.5 11.2a2.6 2.6 0 1 1 3.7 2.4c-.75.37-1.2.95-1.2 1.75M14 18.6h.01" fill="none" stroke="#c2c8d2" stroke-width="1.8" stroke-linecap="round" />}
+      {level === 'unknown' && <path d="M11.5 11.2a2.6 2.6 0 1 1 3.7 2.4c-.75.37-1.2.95-1.2 1.75M14 18.6h.01" fill="none" stroke="#bccabf" stroke-width="1.8" stroke-linecap="round" />}
       {(level === 'off' || level === 'info') && <path d="M14 9v5l3 2" fill="none" stroke={tone[1]} stroke-width="1.8" stroke-linecap="round" />}
     </svg>
   )
@@ -64,7 +65,7 @@ function StatusIcon({ level }: { level: Level }) {
 function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }) {
   const err = hero.kind === 'blind' && hero.blind.length === 1 ? hero.blind[0].evidence : undefined
   return (
-    <section class="status" aria-live="polite">
+    <section class={`status ${hero.light}`} aria-live="polite">
       <div class="status-row">
         <StatusIcon level={LIGHT_LEVEL[hero.light]} />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -160,7 +161,7 @@ function DayStrip({ snap }: { snap: Snapshot }) {
   }
   return (
     <section class="daystrip" aria-label="The last 24 hours">
-      <div class="strip-h"><span><b>Last 24 hours</b><span class="opt"> · every service, in quarter hours</span></span><span class="num">{seen && seen < 276 ? `watched ${Math.round(seen / 12)} of 24 h · ` : ''}{summary}</span></div>
+      <div class="strip-h"><span><b>Last 24 hours</b><span class="opt"> · every service, in quarter hours</span></span><span class="tnum">{seen && seen < 276 ? `watched ${Math.round(seen / 12)} of 24 h · ` : ''}{summary}</span></div>
       <Day day={day} n={96} size="tall" label={`All services, last 24 hours: ${summary}`} onCell={cell} />
       <DayAxis generated={snap.generated} />
       {tip}
@@ -200,7 +201,7 @@ function SinceLooked({ snap, now, since }: { snap: Snapshot; now: number; since?
   const shown = list.slice(0, 6)
   return (
     <section class="rail-sec" aria-label="Since you last looked">
-      <div class="sec-h"><h2>{first ? 'Since you last looked' : 'Last 24 hours'}</h2><span class="aside num">{first ? `${clock(new Date(from).toISOString())} · ${ago(new Date(from).toISOString(), now)}` : ''}</span></div>
+      <div class="sec-h"><h2>{first ? 'Since you last looked' : 'Events, last 24 hours'}</h2><span class="aside tnum">{first ? `${clock(new Date(from).toISOString())} · ${ago(new Date(from).toISOString(), now)}` : ''}</span></div>
       {shown.length === 0 && <div class="ev ok"><span /><IconCheck size={15} /><div><b>Nothing happened</b><span>No alert, failed job or backup problem.</span></div></div>}
       {shown.map((e) => {
         const Icon = e.kind === 'alert' && e.level !== 'crit' && e.level !== 'warn' ? IconPulse : EV_ICON[e.kind]
@@ -306,7 +307,8 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
     }
   }, [])
   const svcs = snap.services.filter((x) => x.state !== 'off')
-  const rows: { level: Level; name: string; text: string; href: string }[] = [
+  // 'info' reads as fine everywhere but the health check, where it means a low-priority category is still open
+  const rows: { level: Level; name: string; text: string; href: string; note?: boolean }[] = [
     { level: servicesLevel(snap.services), name: 'Services', text: `${svcs.filter((x) => x.state === 'up').length} of ${svcs.length} up; any down or degraded counts`, href: '#/services' },
     { level: snap.backups.level, name: 'Backups', text: `every set verified within its own limit (${[...new Set(snap.backups.sets.map((b) => b.max_age_h))].join(' or ')} hours)`, href: '#/backups' },
     { level: snap.drill.level, name: 'Restore drill', text: snap.drill.level === 'off' ? 'no drill is set up, so none is expected' : snap.drill.runs[0] ? `the last drill passed and ran within 8 days (${ago(snap.drill.runs[0].end, now)})` : 'no drill has run yet', href: '#/backups' },
@@ -314,7 +316,7 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
     { level: worst(snap.timers.filter((t) => t.highlight).map((t) => t.level)), name: 'Scheduled jobs', text: 'every homelab job enabled and its last run fine', href: '#/jobs' },
     { level: snap.drift.level === 'info' ? 'ok' : snap.drift.level, name: 'Config drift', text: 'the live files match the repo', href: '#/system' },
     { level: snap.heartbeat.level, name: 'Heartbeat', text: 'the dead-man switch pinged in the last 30 minutes', href: '#/system' },
-    { level: snap.health.level, name: 'Daily health check', text: snap.health.level === 'off' ? 'none is set up, so none is expected' : 'ran in the last 29 hours with no open category', href: '#/system' },
+    { level: snap.health.level, note: true, name: 'Daily health check', text: snap.health.level === 'off' ? 'none is set up, so none is expected' : snap.health.level === 'info' ? 'ran in the last 29 hours; only a low-priority category is open' : 'ran in the last 29 hours with no open category', href: '#/system' },
     { level: snap.host.level, name: 'Host', text: 'temperature, power, memory and disks inside their limits', href: '#/system' },
     { level: snap.sources.every((s) => s.ok) ? 'ok' : 'unknown', name: 'What Vesper reads', text: `${snap.sources.filter((s) => s.ok).length} of ${snap.sources.length} sources read on the last pass`, href: '#/system' },
   ]
@@ -330,7 +332,7 @@ function HowSheet({ snap, now, onClose }: { snap: Snapshot; now: number; onClose
           {rows.map((r) => (
             <li key={r.name}>
               <a href={r.href} onClick={onClose}>
-                <Glyph level={r.level === 'info' ? 'ok' : r.level} size={16} />
+                <Glyph level={r.level === 'info' && !r.note ? 'ok' : r.level} size={16} />
                 <span><b>{r.name}</b><span>{r.text}</span></span>
               </a>
             </li>

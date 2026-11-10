@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { BackupSet, Level, Snapshot } from '../types'
 import { ago, bytes, clock, dateTime, dayLabel, duration, inAbout, ms, pct, plural } from '../format'
-import { Btn, Empty, Figures, Glyph, Meter, PageHead, Runs, Section, Seg, Spark, State } from '../components/ui'
+import { Btn, Empty, Figures, Glyph, Meter, NotFound, PageHead, Runs, Section, Seg, Spark, State } from '../components/ui'
 import { IconBack, IconChevron } from '../components/icons'
 
 function growth(b: BackupSet): string | null {
@@ -51,7 +51,7 @@ export function BackupsView(p: ViewProps) {
         { label: 'Restore drill', value: drill ? drill.passed : '—', unit: drill ? `/ ${drill.passed + drill.failed}` : undefined, caption: drill ? `restored ${ago(drill.end, now)}` : 'none has run yet', level: lv(snap.drill.level) },
       ]} />
 
-      <Section title="Sets" aside={nb?.next ? <span class="num">next run {clock(nb.next)} · {inAbout(nb.next, now)}</span> : undefined}>
+      <Section title="Sets" aside={nb?.next ? <span class="tnum">next run {clock(nb.next)} · {inAbout(nb.next, now)}</span> : undefined}>
         <div class="rows">
           {sets.map((b) => {
             const age = b.last_ok ? now - ms(b.last_ok) : Infinity
@@ -62,11 +62,11 @@ export function BackupsView(p: ViewProps) {
                 <Glyph level={b.level === 'info' ? 'ok' : b.level} size={14} />
                 <span class="main-col">
                   <span class="ttl"><span>{b.name}</span></span>
-                  <span class="sub">{typeName(b.type)} · keeps {b.keep} · {b.level === 'ok' ? `verified ${b.last_ok ? ago(b.last_ok, now) : 'never'}` : b.detail}</span>
+                  <span class="sub"><span class="nb">{typeName(b.type)}</span> · <span class="nb">keeps {b.keep}</span> · {b.level === 'ok' ? <span class="nb">verified {b.last_ok ? ago(b.last_ok, now) : 'never'}</span> : b.detail}</span>
                 </span>
                 <span class="bk-age">
                   <Meter pct={used} level={b.level !== 'ok' ? b.level : used > 80 ? 'warn' : 'ok'} label={`Age against the ${b.max_age_h}-hour limit`} />
-                  <span class="muted num" style={{ fontSize: '11px' }}>{isFinite(age) ? `${Math.round(age / 3600e3)} of ${b.max_age_h} h` : `limit ${b.max_age_h} h`}</span>
+                  <span class="num">{isFinite(age) ? `${Math.round(age / 3600e3)} of ${b.max_age_h} h` : `limit ${b.max_age_h} h`}</span>
                 </span>
                 <span class="end stack">{bytes(b.bytes)}<small>{g ?? ''}</small></span>
                 <IconChevron size={14} />
@@ -98,7 +98,7 @@ export function BackupsView(p: ViewProps) {
       )}>
         {!dw ? <Empty left>No restore drill in the journal yet. Until one has run, no backup has been proven restorable.</Empty> : (
           <div class="panel">
-            <p style={{ marginBottom: '12px' }}>
+            <p class="drill-sum">
               {dw.failed ? <State level="crit">{dw.failed} of {dw.passed + dw.failed} sets failed to restore</State> : <span class="strong">All {dw.passed} sets restored into memory and compared with the live data.</span>}
               <span class="muted"> {dateTime(dw.end)} · took {duration(dw.start, dw.end)}</span>
             </p>
@@ -119,7 +119,7 @@ export function BackupsView(p: ViewProps) {
 
 function SetDetail({ snap, now, name }: ViewProps & { name: string }) {
   const b = snap.backups.sets.find((x) => x.name === name)
-  if (!b) return <Empty>No backup set called <code>{name}</code>. <a class="linklike" href="#/backups">All sets</a></Empty>
+  if (!b) return <NotFound back="#/backups" backLabel="Backups" title="Backup set not found">No backup set is called<code>{name}</code></NotFound>
   const arch = b.archives.slice().sort((x, y) => ms(x.time) - ms(y.time))
   const drills = snap.drill.runs.map((d) => ({ d, r: d.results.find((x) => x.set === b.name) })).filter((x) => x.r)
   const passed = drills.filter((x) => x.r!.ok).length
