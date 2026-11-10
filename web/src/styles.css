@@ -126,7 +126,8 @@ body::after {
     radial-gradient(max(30vw, 260px) 140px at 74% 560px, rgba(var(--haze-c), 0.045), transparent 70%),
     radial-gradient(max(46vw, 360px) 130px at 56% calc(100% - 180px), rgba(var(--haze-y), 0.055), transparent 70%);
 }
-@media (prefers-reduced-motion: no-preference) {
+/* the drift runs on a desktop only: on a phone the bars above it blur, and a moving layer would make them blur again every frame */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (min-width: 1100px) {
   body::after { animation: fog 90s ease-in-out infinite alternate; will-change: transform; }
   @keyframes fog { from { transform: translate3d(-4%, 1%, 0); } to { transform: translate3d(4%, -2%, 0); } }
 }

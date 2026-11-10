@@ -217,7 +217,7 @@ export function Runs({ items, selected, onPick, label }: { items: { level: Level
 /** A quiet tooltip that follows the pointer. Opened by a tap or the keyboard
  *  (no pointer to leave), it closes by itself after a few seconds. */
 export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e?: MouseEvent | FocusEvent) => void] {
-  const [tip, setTip] = useState<{ body: ComponentChildren; x: number; y: number } | null>(null)
+  const [tip, setTip] = useState<{ body: ComponentChildren; x: number; y: number; below: number } | null>(null)
   const timer = useRef(0)
   const pinned = useRef(0)
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -228,8 +228,8 @@ export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e
     addEventListener('scroll', hide, { passive: true, once: true })
     return () => removeEventListener('scroll', hide)
   }, [tip !== null])
-  // .tip is at most 272px wide: keep it 8px inside both edges, and below the top when there is no room above
-  const node = tip ? <div class="tip" role="status" style={{ left: `${Math.max(8, Math.min(tip.x + 12, innerWidth - 280))}px`, top: `${tip.y < 60 ? tip.y + 18 : tip.y - 44}px` }}>{tip.body}</div> : null
+  // .tip is at most 272px wide: keep it 8px inside both edges, and below the pointer or the element when there is no room above
+  const node = tip ? <div class="tip" role="status" style={{ left: `${Math.max(8, Math.min(tip.x + 12, innerWidth - 280))}px`, top: `${tip.y < 60 ? tip.below : tip.y - 44}px` }}>{tip.body}</div> : null
   return [node, (body, e) => {
     if (!body || !e) {
       // a phone sends mouseleave right after the tap itself: that must not close what the tap opened
@@ -241,8 +241,8 @@ export function useTip(): [ComponentChildren, (html: ComponentChildren | null, e
     pinned.current = 0
     if (e.type === 'focus') {
       const r = (e.target as HTMLElement).getBoundingClientRect()
-      setTip({ body, x: r.left, y: r.top })
-    } else setTip({ body, x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY })
+      setTip({ body, x: r.left, y: r.top, below: r.bottom + 6 })
+    } else setTip({ body, x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, below: (e as MouseEvent).clientY + 18 })
     if (e.type === 'click' || e.type === 'focus') {
       timer.current = window.setTimeout(() => setTip(null), 3500)
       if (e.type === 'click' && typeof matchMedia === 'function' && matchMedia('(hover: none)').matches) pinned.current = Date.now() + 3500

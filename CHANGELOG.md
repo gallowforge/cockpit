@@ -3,7 +3,7 @@
 ## Unreleased
 
 - A config with both `[vesper]` and its old name `[cockpit]` is refused with a clear error, instead of quietly ignoring `[cockpit]`.
-- **Haze**, a new look after the film *Vesper*: a green-black forest ground, moss surfaces, an ochre haze and cyan for what is live or can be pressed, built in CSS behind the data (the fog drifts only without reduced motion). State colours stay the only colours on marks, every text keeps 4.5:1 and every mark 3:1, and day lines now show an outage by height as well as colour. New mark and app icons.
+- **Haze**, a new look after the film *Vesper*: a green-black forest ground, moss surfaces, an ochre haze and cyan for what is live or can be pressed, built in CSS behind the data (the fog drifts only on a desktop without reduced motion). State colours stay the only colours on marks, every text keeps 4.5:1 and every mark 3:1, and day lines now show an outage by height as well as colour. New mark and app icons.
 - UI fixes: titles and lines on phones wrap instead of being cut off (History, Jobs, Backups, figure captions, search results); a tap on a day line on a phone shows its tooltip instead of closing it at once, and a tooltip no longer stays behind when the page scrolls; backup age bars line up; check marks in the restore drill keep their size; the search sheet on a phone has a Cancel button and no keyboard hints; a checklist no longer repeats its title; a missing service, set, alert or page gets a real page with the way back; the daily health check shows a note instead of a tick when it left a category open; "1 problem(s)" reads "1 problem".
 
 ## 2.0.0 "Vesper"
