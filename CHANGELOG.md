@@ -1,10 +1,13 @@
 # Changelog
 
-## 2.1.0 "Haze"
+## 2.1.0 "First light"
 
-A new look after the film Vesper, and a pass over every page.
+A new look after the film *Vesper*, an Overview that shows the fleet as light, and a pass over every page.
 
-- **The look.** A green-black forest ground, moss surfaces and hairlines, fog-coloured text, an ochre haze and a cyan glow, built in CSS behind the data: two fixed layers with a fine grain, and fog banks that drift only on a desktop without reduced motion. Haze bands sit behind the key figures, the Overview status, the sidebar, the rail and the dialogs. State colours stay the only colours on marks; cyan means live or pressable; the ochre is never a mark. Every text keeps 4.5:1 and every mark 3:1 against the ground, the surfaces and the brightest haze. New mark, favicon, app icons and theme colour.
+- **The look.** A green-black forest ground, moss surfaces and fog-coloured text. The console itself is solid: a panel is the ground raised one step inside one hairline, the four key figures are one readout strip, the primary button is fog white, and nothing glows behind the data. The light has one place, the sky: a still layer at the top of the page, cyan from a source just beyond the top right corner over a spread of moss green, grained so it never bands and eased out at every edge. New mark, favicon, app icons and theme colour.
+- **The Overview's masthead.** The answer stands on a stage of its own above the console. On a desktop a ribbon of fine threads pours out of the sky's source across the right of it: one lane for each service, lit by that service's state (cool cyan to green when it is up, amber when it is degraded, red when it is down, a grey ghost when Vesper cannot see it), so a lane that turns can be seen turning. Each snapshot sends a few glints down the threads, and the collector's last round is typed out, three lines at a time, above the rail. Under the masthead runs the horizon, a hairline in the colour of the answer, and the sky dims when something is down or cannot be seen. The ribbon and the lines are decoration: hidden from assistive technology, out of reach of the pointer, and saying nothing the page does not already say in words. They rest while the tab is hidden; reduced motion and `?shot` get one still frame; a phone gets the masthead and the horizon without the ribbon.
+- Key figures ease to their new value when a live update changes them, instead of jumping.
+- **Colour still only means state.** State colours stay the only colours on marks, and cyan means live or pressable. Every text keeps 4.5:1 and every mark 3:1 against the ground and the surfaces; text was also measured against the rendered page, with the sky, the ribbon and the grain painted.
 - **Status never by colour alone.** Day lines also show an outage by height, and a failed backup run carries the same bar cut as the down mark.
 - **Fixed, page by page** (every page checked at 1440x900 and 390x844 in all four demo scenarios):
   - titles, lines and captions wrap on a phone instead of being cut off (History, Jobs, Backups, search results);
@@ -17,8 +20,6 @@ A new look after the film Vesper, and a pass over every page.
   - section headers with a toggle keep their title on one line; the sidebar background reaches the end of long pages.
 - A config with both `[vesper]` and its old name `[cockpit]` is refused with a clear error, instead of quietly ignoring `[cockpit]`.
 - The demo runs on UTC and its operator jobs have generic names.
-- **Haze**, a new look after the film *Vesper*: a green-black forest ground, moss surfaces, an ochre haze and cyan for what is live or can be pressed, built in CSS behind the data (the fog drifts only on a desktop without reduced motion). State colours stay the only colours on marks, every text keeps 4.5:1 and every mark 3:1, and day lines now show an outage by height as well as colour. New mark and app icons.
-- UI fixes: titles and lines on phones wrap instead of being cut off (History, Jobs, Backups, figure captions, search results); a tap on a day line on a phone shows its tooltip instead of closing it at once, and a tooltip no longer stays behind when the page scrolls; backup age bars line up; check marks in the restore drill keep their size; the search sheet on a phone has a Cancel button and no keyboard hints; a checklist no longer repeats its title; a missing service, set, alert or page gets a real page with the way back; the daily health check shows a note instead of a tick when it left a category open; "1 problem(s)" reads "1 problem".
 
 ## 2.0.0 "Vesper"
 

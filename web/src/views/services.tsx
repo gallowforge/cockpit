@@ -94,7 +94,7 @@ export function Services(p: ViewProps) {
         { label: 'Probed', value: probed.length, unit: `/ ${snap.services.length}`, caption: 'answer HTTP, TCP or DNS checks' },
         { label: 'Slowest answer', value: slowest ? fmtMs(slowest.p).replace(' ms', '') : '—', unit: slowest ? 'ms' : undefined, caption: slowest ? `${slowest.s.title}, median` : 'no probes' },
       ]} />
-      <div style={{ marginTop: '22px' }}>
+      <div class="sec">
         {list.length ? <ServiceTable list={list} now={now} grouped={filter !== 'needs'} /> : <Empty>{filter === 'needs' ? 'Nothing needs you. Every service is up.' : 'No services of this kind.'}</Empty>}
       </div>
     </div>
@@ -194,7 +194,7 @@ export function DayAxis({ generated }: { generated: string }) {
       <span class="opt" style={{ left: '25%' }}>{at(72)}</span>
       <span style={{ left: '50%' }}>{at(144)}</span>
       <span class="opt" style={{ left: '75%' }}>{at(216)}</span>
-      <span class="r" style={{ left: '100%' }}>now</span>
+      <span class="r now" style={{ left: '100%' }}>now</span>
     </div>
   )
 }

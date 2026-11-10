@@ -1,6 +1,6 @@
 // Derived views of a snapshot that more than one page needs. Pure, tested.
 import type { Attention, Incident, Level, Service, Snapshot, Timer } from './types'
-import { ago, clock, dayLabel, ms, plural } from './format'
+import { ago, bytes, clock, dayLabel, ms, plural } from './format'
 import { safeHref } from './markdown'
 
 export const levelRank: Record<Level, number> = { ok: 0, off: 0, info: 1, unknown: 2, warn: 3, crit: 4 }
@@ -413,4 +413,41 @@ export function latencyStats(v: number[] | undefined): { p50: number | null; p95
   if (!x.length) return { p50: null, p95: null }
   const m = Math.floor(x.length / 2)
   return { p50: x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2, p95: x[Math.min(x.length - 1, Math.floor(0.95 * x.length))] }
+}
+
+/** The collector's last round as it would read in a log, a line for each thing
+ *  it looked at. Only what the snapshot already says; the Overview sets a few
+ *  of these lines beside the ribbon. */
+export function telemetry(s: Snapshot): string[] {
+  const out: string[] = []
+  for (const v of s.services) {
+    if (v.probe) out.push(v.probe.ok ? `probe ${v.id} ${v.probe.latency_ms < 10 ? v.probe.latency_ms.toFixed(1) : Math.round(v.probe.latency_ms)} ms ${v.probe.code ?? 'ok'}` : `probe ${v.id} ${v.probe.error ?? 'no answer'}`)
+    else if (v.kind === 'container') out.push(`container ${v.id} ${v.state === 'up' ? 'running' : v.state}`)
+    else if (v.kind === 'unit') out.push(`unit ${v.id}.service ${v.state === 'up' ? 'active' : v.state}`)
+  }
+  for (const b of s.backups.sets) if (b.last_ok) out.push(`backup ${b.name} verified ${bytes(b.bytes)}`)
+  const d = s.drill.runs[0]
+  if (d) out.push(`drill ${d.failed ? 'failed' : 'passed'} ${d.passed}/${d.passed + d.failed}`)
+  if (s.drift.result === 'clean') out.push(`drift clean · ${plural(s.drift.tracked, 'file')}`)
+  if (s.heartbeat.last) out.push(`heartbeat ${s.heartbeat.pings_24h}/${s.heartbeat.runs_24h} pings`)
+  for (const src of s.sources) out.push(src.ok ? `read ${src.name} ${Math.round(src.duration_ms)} ms` : `read ${src.name} failed`)
+  const h = s.host
+  const load = h.load?.[0]
+  if (h.cpu_pct != null) out.push(`host cpu ${Math.round(h.cpu_pct)}%${load != null ? ` · load ${load.toFixed(2)}` : ''}`)
+  if (h.temp_c != null) out.push(`host ${h.temp_c.toFixed(1)} °C`)
+  out.push(`snapshot ${clock(s.generated)} · schema ${s.schema}`)
+  return out
+}
+
+/** A line of a log on show, with a key that stays its own as it rises. */
+export interface TailRow { key: number; text: string }
+
+/** What a log of `lines` shows once `at` more of them have arrived: the last
+ *  `show`, and above them the one on its way out. The log goes round, so it
+ *  never runs dry. One too short to go round is shown whole, and stays put. */
+export function tailRows(lines: readonly string[], at: number, show: number): TailRow[] {
+  const len = lines.length
+  if (len <= show) return lines.map((text, key) => ({ key, text }))
+  const first = len - 1 - show + at
+  return Array.from({ length: show + 1 }, (_, k) => ({ key: at + k, text: lines[(((first + k) % len) + len) % len] }))
 }

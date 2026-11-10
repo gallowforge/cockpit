@@ -2,7 +2,7 @@ import { Component, type ComponentChildren } from 'preact'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { Level, Session, Snapshot } from './types'
 import { follow, getSession, logout, readCachedSnap, type StreamState } from './api'
-import { levelRank, normalizeSnap, serverNow, servicesLevel, worst } from './derive'
+import { heroOf, levelRank, normalizeSnap, serverNow, servicesLevel, worst } from './derive'
 import { ago, precise } from './format'
 import { IconBackups, IconChecklist, IconHistory, IconJobs, IconLogout, IconMore, IconOverview, IconSearch, IconServices, IconSystem, Mark } from './components/icons'
 import { Dot, Empty, Glyph, PageHead } from './components/ui'
@@ -120,7 +120,7 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionErr, setSessionErr] = useState('')
   const shot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot')
-  // screenshots: the drifting haze and every other animation hold still
+  // screenshots: the ribbon and every other animation hold still
   useEffect(() => {
     if (shot) document.documentElement.classList.add('shot')
   }, [])
@@ -180,6 +180,13 @@ export function App() {
   // a cached snapshot is judged against the wall clock until a live one arrives
   const now = useMemo(() => (fresh ? serverNow(snap, received, performance.now()) : Date.now()), [snap, received, tick, fresh])
   nowRef.current = now
+
+  // the horizon and the sky take the colour of the answer (styles.css, atmosphere); signed out, they take none
+  const sky = authed && snap ? heroOf(snap, now, { online }).light : null
+  useEffect(() => {
+    if (sky) document.documentElement.dataset.sky = sky
+    else delete document.documentElement.dataset.sky
+  }, [sky])
 
   useEffect(() => {
     if (snap && fresh && since === undefined) setSince(readLastLook(now))

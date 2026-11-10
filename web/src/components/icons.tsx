@@ -37,7 +37,7 @@ export const IconMore = ({ size }: P) => <I size={size}><circle cx="3.75" cy="8"
 export const IconDrill = ({ size }: P) => <I size={size}><path d="M2.75 8a5.25 5.25 0 0 1 9.1-3.6" /><path d="M13.25 8a5.25 5.25 0 0 1-9.1 3.6" /><path d="M12.25 2v2.75H9.5M3.75 14v-2.75H6.5" /></I>
 
 /** The mark: a V with the evening star above it, the first light of the
- *  night, glowing like the living things in the haze. The V stays fog white;
+ *  night, glowing like the living technology of the film. The V stays fog white;
  *  state is shown by status marks, never by the logo. */
 export function Mark({ size = 24 }: { size?: number }) {
   return (

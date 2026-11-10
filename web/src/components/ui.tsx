@@ -2,7 +2,7 @@
 // no colour beyond a quiet green, and a state is never shown by colour alone:
 // it always has a shape and, where there is room, a word.
 import type { ComponentChildren } from 'preact'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useId, useRef, useState } from 'preact/hooks'
 import type { Level } from '../types'
 import { bucket } from '../derive'
 import { IconBack } from './icons'
@@ -67,12 +67,97 @@ export function Figures({ items, four = true }: { items: FigProps[]; four?: bool
       {items.map((f) => (
         <div key={f.label} class={`fig${f.level && f.level !== 'ok' ? ' ' + f.level : ''}`}>
           <div class="k">{f.label}</div>
-          <div class="v">{f.value}{f.unit && <small>{f.unit}</small>}</div>
+          <div class="v"><Tween value={f.value} />{f.unit && <small>{f.unit}</small>}</div>
           {f.caption && <div class="c">{f.caption}</div>}
         </div>
       ))}
     </div>
   )
+}
+
+/** A figure that can ease: a plain number, or a string that is only digits
+ *  with an optional decimal part ("99.94"), with the decimals it is shown at. */
+export function figureNumber(v: unknown): { n: number; dec: number } | null {
+  if (typeof v === 'number') return isFinite(v) ? { n: v, dec: Number.isInteger(v) ? 0 : Math.min(2, String(v).split('.')[1]?.length ?? 0) } : null
+  if (typeof v === 'string' && /^\d+(\.\d+)?$/.test(v)) return { n: Number(v), dec: v.split('.')[1]?.length ?? 0 }
+  return null
+}
+
+const DESK = '(hover: hover) and (min-width: 1100px)'
+
+/** True on a desktop: a pointer that hovers and room for the sidebar. The
+ *  layout turns at the same width (styles.css, wider screens). */
+export function useDesk(): boolean {
+  const [desk, setDesk] = useState(() => typeof matchMedia === 'function' && matchMedia(DESK).matches)
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return
+    const m = matchMedia(DESK)
+    const on = () => setDesk(m.matches)
+    m.addEventListener('change', on)
+    on()
+    return () => m.removeEventListener('change', on)
+  }, [])
+  return desk
+}
+
+/** Motion is off for reduced motion and for screenshots (?shot). */
+export function still(): boolean {
+  return (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+    (typeof document !== 'undefined' && document.documentElement.classList.contains('shot'))
+}
+
+/** True while the page may move: the tab is on show, and neither the reader
+ *  nor a screenshot asked for stillness. Follows both as they change. */
+export function useMotion(): boolean {
+  const read = () => !still() && !document.hidden
+  const [on, setOn] = useState(read)
+  useEffect(() => {
+    const set = () => setOn(read())
+    const calm = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null
+    document.addEventListener('visibilitychange', set)
+    calm?.addEventListener('change', set)
+    set()
+    return () => {
+      document.removeEventListener('visibilitychange', set)
+      calm?.removeEventListener('change', set)
+    }
+  }, [])
+  return on
+}
+
+/** Shows a figure; when a live update changes it, the number eases to its new
+ *  value instead of jumping. The first paint never animates, and anything that
+ *  is not a plain number (a time, a dash, "None") is shown as it is. */
+function Tween({ value }: { value: ComponentChildren }) {
+  const fig = figureNumber(value)
+  const [shown, setShown] = useState(fig?.n ?? 0)
+  const at = useRef<number | null>(fig?.n ?? null)
+  useEffect(() => {
+    if (!fig) {
+      at.current = null
+      return
+    }
+    const from = at.current
+    const to = fig.n
+    if (from == null || from === to || still()) {
+      at.current = to
+      setShown(to)
+      return
+    }
+    let raf = 0
+    const t0 = performance.now()
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / 700)
+      const v = from + (to - from) * (1 - Math.pow(1 - p, 3))
+      at.current = v // an update that lands mid-way starts from here, so the number never jumps back
+      setShown(v)
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [fig?.n])
+  if (!fig) return <>{value}</>
+  return <>{(at.current === fig.n ? fig.n : shown).toFixed(fig.dec)}</>
 }
 
 export function Btn({ href, children, primary, external, onClick, label }: { href?: string; children: ComponentChildren; primary?: boolean; external?: boolean; onClick?: () => void; label?: string }) {
@@ -109,9 +194,18 @@ export function NotFound({ back, backLabel, title, children }: { back: string; b
 
 const CELL: Record<string, string> = { u: '', d: 'd', x: 'x', '?': 'q', o: 'o' }
 
-/** A day line drawn as `n` cells (the worst state in each). `past` turns a
- *  down cell that is over into a quieter red, so only what is down now is loud. */
-export function Day({ day, n, size, label, onCell }: { day: string; n: number; size?: 'mid' | 'tall'; label: string; onCell?: (i: number | null, e?: MouseEvent) => void }) {
+// the strip rises in once per page load, never again when a page is opened or a snapshot lands
+let revealed = false
+
+/** A day line drawn as `n` cells (the worst state in each). A down cell that
+ *  is over turns a quieter red, so only what is down now is loud. With
+ *  `reveal`, the first one drawn after the page loads rises in once. */
+export function Day({ day, n, size, label, onCell, reveal }: { day: string; n: number; size?: 'mid' | 'tall'; label: string; onCell?: (i: number | null, e?: MouseEvent) => void; reveal?: boolean }) {
+  const [rise] = useState(() => {
+    if (!reveal || revealed) return false
+    revealed = true
+    return true
+  })
   const cells = bucket(day, n)
   const last = cells.length - 1
   // the cell under the pointer comes from its position along the line, not from the element
@@ -121,11 +215,11 @@ export function Day({ day, n, size, label, onCell }: { day: string; n: number; s
     onCell?.(r.width ? Math.max(0, Math.min(cells.length - 1, Math.floor(((e.clientX - r.left) / r.width) * cells.length))) : null, e)
   }
   return (
-    <span class={`day${size ? ' ' + size : ''}`} role="img" aria-label={label}
+    <span class={`day${size ? ' ' + size : ''}${rise ? ' reveal' : ''}`} role="img" aria-label={label}
       onMouseMove={onCell && ((e) => at(e as unknown as MouseEvent))}
       onClick={onCell && ((e) => at(e as unknown as MouseEvent))}
       onMouseLeave={onCell && (() => onCell(null))}>
-      {cells.split('').map((c, i) => <i key={i} data-i={i} class={c === 'x' && i < last ? 'w' : CELL[c] ?? 'q'} />)}
+      {cells.split('').map((c, i) => <i key={i} data-i={i} class={c === 'x' && i < last ? 'w' : CELL[c] ?? 'q'} style={rise ? { '--i': i } : undefined} />)}
     </span>
   )
 }
@@ -139,9 +233,11 @@ export function Beats({ beats, label }: { beats: string; label: string }) {
   )
 }
 
-/** A line over values with a faint area under it and a dot at the newest
- *  value; negative values are gaps (a failed probe). */
+/** A line over values with an area under it that fades to nothing and a dot
+ *  at the newest value; negative values are gaps (a failed probe). A `fluid`
+ *  chart stretches to its width, so its dot is drawn in HTML to stay round. */
 export function Spark({ values, w = 120, h = 28, level, grid, fluid }: { values: number[]; w?: number; h?: number; level?: Level; grid?: boolean; fluid?: boolean }) {
+  const fade = 'f' + useId().replace(/[^\w-]/g, '')
   const ok = values.filter((v) => v >= 0)
   if (ok.length < 2) return <svg class="spark" width={fluid ? '100%' : w} height={h} aria-hidden="true" />
   const max = Math.max(...ok)
@@ -167,13 +263,27 @@ export function Spark({ values, w = 120, h = 28, level, grid, fluid }: { values:
   flush()
   const lastI = values.length - 1
   const endV = values[lastI]
-  return (
-    <svg class={`spark${level && level !== 'ok' ? ' ' + level : ''}`} width={fluid ? '100%' : w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+  const tone = level && level !== 'ok' ? ' ' + level : ''
+  const svg = (
+    <svg class={`spark${tone}`} width={fluid ? '100%' : w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={fade} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="currentColor" stop-opacity={fluid ? 0.16 : 0.2} />
+          <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+        </linearGradient>
+      </defs>
       {grid && <g class="grid">{[0.25, 0.5, 0.75].map((f) => <line key={f} x1="0" x2={w} y1={(h * f).toFixed(1)} y2={(h * f).toFixed(1)} />)}</g>}
-      <path class="area" d={area} />
+      <path class="area" d={area} fill={`url(#${fade})`} />
       <path class="line" d={line} />
-      {endV >= 0 && !fluid && <circle class="end" cx={(lastI * step).toFixed(1)} cy={y(endV).toFixed(1)} r={1.8} />}
+      {endV >= 0 && !fluid && <><circle class="halo" cx={(lastI * step).toFixed(1)} cy={y(endV).toFixed(1)} r={3.6} /><circle class="end" cx={(lastI * step).toFixed(1)} cy={y(endV).toFixed(1)} r={1.9} /></>}
     </svg>
+  )
+  if (!fluid) return svg
+  return (
+    <div class="spark-fluid">
+      {svg}
+      {endV >= 0 && <i class={`spark-dot${tone}`} style={{ top: `${((y(endV) / h) * 100).toFixed(2)}%` }} aria-hidden="true" />}
+    </div>
   )
 }
 

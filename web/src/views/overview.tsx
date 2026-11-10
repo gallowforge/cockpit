@@ -3,26 +3,28 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { Attention, Level, Snapshot } from '../types'
-import { areaHref, awayEvents, bucket, clearFacts, dayUptime, daySeen, durationWords, fleetDay, fullDay, heroOf, notableTimers, prioLevel, servicesLevel, slotStart, weekday, worst, type Event, type Hero } from '../derive'
+import { areaHref, awayEvents, bucket, clearFacts, dayUptime, daySeen, durationWords, fleetDay, fullDay, heroOf, notableTimers, prioLevel, servicesLevel, slotStart, tailRows, telemetry, weekday, worst, type Event, type Hero } from '../derive'
 import { ago, bytes, clock, inAbout, ms, pct, plural, precise, sourceName } from '../format'
 import { safeHref } from '../markdown'
-import { Btn, Day, Empty, Figures, Glyph, Meter, type FigProps, useTip } from '../components/ui'
-import { IconAlert, IconBackups, IconCheck, IconChevron, IconClose, IconDrill, IconExternal, IconEyeOff, IconInfo, IconPulse, IconX } from '../components/icons'
+import { Btn, Day, Empty, Figures, Glyph, Meter, still, type FigProps, useDesk, useMotion, useTip } from '../components/ui'
+import { IconAlert, IconBackups, IconCheck, IconChevron, IconClose, IconDrill, IconExternal, IconEyeOff, IconPulse, IconX } from '../components/icons'
+import { startRibbon, type Ribbon } from '../stage'
 import { DayAxis, fmtPct, ServiceTable } from './services'
 
 export function Overview({ snap, now, since, online }: ViewProps) {
   const hero = heroOf(snap, now, { online })
   const [how, setHow] = useState(false)
+  const desk = useDesk()
   const att = snap.status.attention
   const blind = snap.status.blind ?? []
   return (
     <div class="ov">
+      <header class="masthead">
+        {desk && <Stage snap={snap} />}
+        <h1 class="eyebrow">Overview</h1>
+        <Status hero={hero} snap={snap} now={now} onHow={() => setHow(true)} />
+      </header>
       <div class="ov-main">
-        <header class="page-head">
-          <div><h1>Overview</h1></div>
-          <div class="aside"><button type="button" class="btn" onClick={() => setHow(true)}><IconInfo size={14} />How Vesper decides</button></div>
-        </header>
-        <Status hero={hero} snap={snap} now={now} />
         {att.length > 1 && <Needs list={att} snap={snap} label="Needs you" />}
         {att.length > 0 && blind.length > 0 && <Needs list={blind} snap={snap} label="Can't see" />}
         <DayStrip snap={snap} />
@@ -61,8 +63,54 @@ function StatusIcon({ level }: { level: Level }) {
   )
 }
 
+/** The fleet as light, and the collector's last lines beside it. Decoration:
+ *  everything it shows is said in words on the page. */
+function Stage({ snap }: { snap: Snapshot }) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const ribbon = useRef<Ribbon | null>(null)
+  useEffect(() => {
+    const r = startRibbon(canvas.current!, { still: still() })
+    ribbon.current = r
+    return () => r.stop()
+  }, [])
+  useEffect(() => {
+    ribbon.current?.set(snap.services.map((s) => s.state))
+    ribbon.current?.pulse()
+  }, [snap])
+  return (
+    <div class="stage" aria-hidden="true">
+      <canvas ref={canvas} />
+      <Tail lines={useMemo(() => telemetry(snap), [snap])} />
+    </div>
+  )
+}
+
+const TAIL = 3 // lines on show
+const TAIL_MS = 2600 // a new line this often
+
+/** A log that keeps arriving: the newest line is typed in at the foot and the
+ *  oldest rises out at the top. It rests while the page does (a hidden tab,
+ *  reduced motion, a screenshot); at rest from the start, it shows the round's
+ *  closing lines. */
+function Tail({ lines }: { lines: string[] }) {
+  const [at, setAt] = useState(0)
+  const turning = useMotion() && lines.length > TAIL
+  useEffect(() => {
+    if (!turning) return
+    const id = setInterval(() => setAt((n) => n + 1), TAIL_MS)
+    return () => clearInterval(id)
+  }, [turning])
+  return (
+    <ol class="tail">
+      {tailRows(lines, at, TAIL).map(({ key, text }) => (
+        <li key={key} class={at > 0 && key === at + TAIL ? 'in' : undefined} style={{ '--n': text.length }}><span>{text}</span></li>
+      ))}
+    </ol>
+  )
+}
+
 /** The answer, then the proof or the facts behind it, then what to do. */
-function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }) {
+function Status({ hero, snap, now, onHow }: { hero: Hero; snap: Snapshot; now: number; onHow: () => void }) {
   const err = hero.kind === 'blind' && hero.blind.length === 1 ? hero.blind[0].evidence : undefined
   return (
     <section class={`status ${hero.light}`} aria-live="polite">
@@ -76,13 +124,12 @@ function Status({ hero, snap, now }: { hero: Hero; snap: Snapshot; now: number }
               ? <ul class="proof plain">{attnFacts(hero, snap, now).map((f) => <li key={f}>{f}</li>)}</ul>
               : <p class="detail">{hero.detail.map((p, i) => (p.href ? <a key={i} href={p.href}>{p.text}</a> : <span key={i}>{p.text}</span>))}</p>}
           {err && <p class="evidence"><b>Error</b>{err}</p>}
-          {hero.actions.length > 0 && (
-            <div class="acts">
-              {hero.actions.map((a) => (
-                <Btn key={a.label} href={a.href} primary={a.primary} external={a.external}>{a.label}{a.external ? <IconExternal size={13} /> : <IconChevron size={13} />}</Btn>
-              ))}
-            </div>
-          )}
+          <div class="acts">
+            {hero.actions.map((a) => (
+              <Btn key={a.label} href={a.href} primary={a.primary} external={a.external}>{a.label}{a.external ? <IconExternal size={13} /> : <IconChevron size={13} />}</Btn>
+            ))}
+            <button type="button" class="linklike how" onClick={onHow}>How Vesper decides</button>
+          </div>
         </div>
       </div>
     </section>
@@ -162,7 +209,7 @@ function DayStrip({ snap }: { snap: Snapshot }) {
   return (
     <section class="daystrip" aria-label="The last 24 hours">
       <div class="strip-h"><span><b>Last 24 hours</b><span class="opt"> · every service, in quarter hours</span></span><span class="tnum">{seen && seen < 276 ? `watched ${Math.round(seen / 12)} of 24 h · ` : ''}{summary}</span></div>
-      <Day day={day} n={96} size="tall" label={`All services, last 24 hours: ${summary}`} onCell={cell} />
+      <Day day={day} n={96} size="tall" label={`All services, last 24 hours: ${summary}`} onCell={cell} reveal />
       <DayAxis generated={snap.generated} />
       {tip}
     </section>

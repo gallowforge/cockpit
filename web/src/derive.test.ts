@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeSnap, alertHistogram, areaHref, awayEvents, clearFacts, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, serverNow, sortTimers, worst, fullDay, fleetDay, bucket, dayUptime, daySeen, dayRuns, slotStart, latencyStats, DAY_SLOTS, DAY_SLOT_MS } from './derive'
+import { normalizeSnap, alertHistogram, areaHref, awayEvents, clearFacts, durationWords, events, foldRepeats, groupServices, heroOf, notableTimers, prioLevel, serverNow, sortTimers, tailRows, telemetry, worst, fullDay, fleetDay, bucket, dayUptime, daySeen, dayRuns, slotStart, latencyStats, DAY_SLOTS, DAY_SLOT_MS } from './derive'
+import { clock } from './format'
 import type { Incident, Service, Snapshot, Timer } from './types'
 
 const svc = (id: string, group?: string): Service =>
@@ -172,5 +173,90 @@ describe('day line', () => {
   it('summarises answer times without the failed probes', () => {
     expect(latencyStats([3, 1, -1, 2])).toEqual({ p50: 2, p95: 3 })
     expect(latencyStats(undefined)).toEqual({ p50: null, p95: null })
+  })
+})
+
+describe('the collector’s last round, as lines', () => {
+  const probe = (ok: boolean, latency_ms: number, extra: object = {}) => ({ target: 't', ok, latency_ms, ...extra })
+  it('writes one line for each thing it checked, in the order it checked them', () => {
+    const s = base()
+    s.services = [
+      { ...svc('adguard'), probe: probe(true, 1.53) },
+      { ...svc('caddy'), probe: probe(true, 26.4, { code: 200 }) },
+      { ...svc('ha'), state: 'down', probe: probe(false, 0, { error: 'timeout' }) },
+      { ...svc('kuma'), state: 'down', probe: probe(false, 0) },
+      svc('vault'),
+      { ...svc('dockge'), state: 'degraded' },
+      { ...svc('tailscale'), kind: 'unit' },
+      { ...svc('fail2ban'), kind: 'unit', state: 'down' },
+    ] as Service[]
+    s.sources = [{ name: 'docker', ok: true, duration_ms: 41.6 }, { name: 'journal', ok: false, duration_ms: 0 }] as Snapshot['sources']
+    s.host = { ...s.host, cpu_pct: 13.6, temp_c: 54.23, load: [0.274, 0, 0] }
+    s.heartbeat = { ...s.heartbeat, last: '2026-03-10T07:40:00Z', pings_24h: 287, runs_24h: 288 }
+    expect(telemetry(s)).toEqual([
+      'probe adguard 1.5 ms ok',
+      'probe caddy 26 ms 200',
+      'probe ha timeout',
+      'probe kuma no answer',
+      'container vault running',
+      'container dockge degraded',
+      'unit tailscale.service active',
+      'unit fail2ban.service down',
+      'backup vault verified 1 B',
+      'drill passed 9/9',
+      'drift clean · 1 file',
+      'heartbeat 287/288 pings',
+      'read docker 42 ms',
+      'read journal failed',
+      'host cpu 14% · load 0.27',
+      'host 54.2 °C',
+      `snapshot ${clock('2026-03-10T07:41:58Z')} · schema 1`,
+    ])
+  })
+  it('says only what it knows', () => {
+    const s = base()
+    s.services = []
+    s.backups.sets = [{ ...s.backups.sets[0], last_ok: undefined }]
+    s.drill.runs = [{ ...s.drill.runs[0], passed: 7, failed: 2 }]
+    s.drift = { ...s.drift, result: 'drift' }
+    s.heartbeat = { ...s.heartbeat, last: undefined }
+    const lines = telemetry(s)
+    expect(lines).toEqual(['drill failed 7/9', `snapshot ${clock('2026-03-10T07:41:58Z')} · schema 1`])
+  })
+  it('leaves the load out when the host did not report one', () => {
+    const s = base()
+    s.services = []
+    s.host = { ...s.host, cpu_pct: 14.2, load: undefined as unknown as [number, number, number] }
+    expect(telemetry(s)).toContain('host cpu 14%')
+  })
+})
+
+describe('the log on show', () => {
+  const log = ['a', 'b', 'c', 'd', 'e', 'f']
+  const texts = (at: number, lines = log) => tailRows(lines, at, 3).map((r) => r.text)
+
+  it('opens on the closing lines, with the one before them on its way out', () => {
+    expect(texts(0)).toEqual(['c', 'd', 'e', 'f'])
+  })
+  it('goes round, a line at a time, and never runs dry', () => {
+    expect(texts(1)).toEqual(['d', 'e', 'f', 'a'])
+    expect(texts(4)).toEqual(['a', 'b', 'c', 'd'])
+    expect(texts(6)).toEqual(texts(0))
+    for (let at = 0; at < 40; at++) expect(texts(at).every((t) => log.includes(t))).toBe(true)
+  })
+  it('keeps a line’s key as it rises, so only the new line is new', () => {
+    const before = tailRows(log, 7, 3), after = tailRows(log, 8, 3)
+    expect(after.slice(0, 3)).toEqual(before.slice(1))
+    expect(after[3].key).toBe(before[3].key + 1)
+  })
+  it('goes round a log only one line longer than the window', () => {
+    expect(texts(0, ['a', 'b', 'c', 'd'])).toEqual(['a', 'b', 'c', 'd'])
+    expect(texts(1, ['a', 'b', 'c', 'd'])).toEqual(['b', 'c', 'd', 'a'])
+  })
+  it('shows a log too short to go round whole, and holds it there', () => {
+    for (const lines of [[], ['a'], ['a', 'b'], ['a', 'b', 'c']]) {
+      expect(texts(0, lines)).toEqual(lines)
+      expect(tailRows(lines, 5, 3)).toEqual(tailRows(lines, 0, 3))
+    }
   })
 })
