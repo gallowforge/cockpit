@@ -927,3 +927,16 @@ a.ev:hover b { text-decoration: underline; text-decoration-color: var(--cyan-lin
   .rb-nav a { border-color: transparent; }
   .backdrop { padding-top: 14vh; }
 }
+
+/* Between the desktop layout and a wide screen, the overview's middle column sits between the sidebar and
+   the rail and is too narrow for the seven-column service table (it needs about 810px; at 1135 it gets
+   about 470), which then ran under the rail. There the rows keep the compact two-line form tablets use. */
+@media (min-width: 1100px) and (max-width: 1399.98px) {
+  .ov-main .svc-head { display: none; }
+  .ov-main .svc { grid-template-columns: 16px minmax(0, 1fr) auto; grid-template-areas: 'd n r' 'd b b'; column-gap: 10px; row-gap: 8px; padding: 11px 0; }
+  .ov-main .svc > .dot { grid-area: d; align-self: start; margin-top: 6px; }
+  .ov-main .svc .n { grid-area: n; }
+  .ov-main .svc .resp { grid-area: r; }
+  .ov-main .svc .day { grid-area: b; height: 8px; }
+  .ov-main .svc .stt, .ov-main .svc .upt, .ov-main .svc .chev { display: none; }
+}
