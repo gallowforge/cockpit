@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 2.2.1
+
+A live demo, and three small fixes.
 
 - **A live demo.** [gallowforge.github.io/vesper](https://gallowforge.github.io/vesper/) is the real interface with no server behind it. The generator behind `vesper demo` is compiled to WebAssembly and runs in the visitor's tab, so the page shows the same synthetic homelab, live, at the visitor's own time, in any of the four scenarios. One line above the app says what the page is; everything under it is what the binary serves. `make pages` builds it.
 - The demo's code takes the place of the server's API while the page is built, so the UI inside the binary is built without it. CI checks that, and that the browser build returns exactly the snapshot `vesper demo` writes (`scripts/wasm-parity.mjs`).
 - A link that arrives with a fragment that is not a Vesper address (GitHub appends `#gh-dark-mode-only` to themed README links) opens the Overview instead of "Page not found". Pages are still `#/name`.
+- A backup set's page wrote the date of its last restore drill in lower case ("last sun, mar 8"). A date now keeps its capitals ("last Sun, Mar 8"); only "today" and "yesterday" are lowered.
+- A build made between two releases has a long version, such as `v2.2.0-2-gcb7d3ca`, and the foot of the sidebar broke it across two or three lines. It now takes one line of its own, whole. A release build looks as it did.
 
 ## 2.2.0 "Daybreak"
 

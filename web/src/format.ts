@@ -88,6 +88,13 @@ export function dayLabel(iso: string, now: number): string {
   return d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+/** A day label in the middle of a sentence: "today" and "yesterday" lose their
+ *  capital, a date keeps its own ("Sun, Mar 8"). */
+export function dayWord(iso: string, now: number): string {
+  const s = dayLabel(iso, now)
+  return s === 'Today' || s === 'Yesterday' ? s.toLowerCase() : s
+}
+
 export function dateTime(iso: string | undefined): string {
   const t = ms(iso)
   if (!isFinite(t)) return '—'

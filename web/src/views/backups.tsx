@@ -3,7 +3,7 @@ import { Fragment } from 'preact'
 import { useState } from 'preact/hooks'
 import type { ViewProps } from '../app'
 import type { BackupSet, Level, Snapshot } from '../types'
-import { ago, bytes, clock, dateTime, dayLabel, duration, inAbout, ms, pct, plural } from '../format'
+import { ago, bytes, clock, dateTime, dayLabel, dayWord, duration, inAbout, ms, pct, plural } from '../format'
 import { Btn, Empty, Figures, Glyph, Meter, NotFound, PageHead, Runs, Section, Seg, Spark, State } from '../components/ui'
 import { IconBack, IconChevron } from '../components/icons'
 
@@ -134,7 +134,7 @@ function SetDetail({ snap, now, name }: ViewProps & { name: string }) {
         { label: 'Newest archive', value: bytes(b.bytes).split(' ')[0], unit: bytes(b.bytes).split(' ')[1], caption: g ?? 'one archive so far' },
         { label: 'Archives kept', value: arch.length, unit: `/ ${b.keep}`, caption: arch[0] ? `since ${dateTime(arch[0].time)}` : 'none yet' },
         { label: 'Age limit', value: b.max_age_h, unit: 'h', caption: 'older counts as not verified' },
-        { label: 'Drills restored it', value: drills.length ? passed : '—', unit: drills.length ? `/ ${drills.length}` : undefined, caption: drills[0] ? `last ${dayLabel(drills[0].d.end, now).toLowerCase()}` : 'no drill yet', level: passed < drills.length ? 'crit' : undefined },
+        { label: 'Drills restored it', value: drills.length ? passed : '—', unit: drills.length ? `/ ${drills.length}` : undefined, caption: drills[0] ? `last ${dayWord(drills[0].d.end, now)}` : 'no drill yet', level: passed < drills.length ? 'crit' : undefined },
       ]} />
       <Section title="Archive size">
         <div class="panel">

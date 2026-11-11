@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ago, bytes, duration, inAbout, pct, plural, precise, short, until } from './format'
+import { ago, bytes, dayLabel, dayWord, duration, inAbout, pct, plural, precise, short, until } from './format'
 
 const now = Date.parse('2026-03-10T07:42:00Z')
 
@@ -22,6 +22,10 @@ describe('format', () => {
     expect(ago(undefined, now)).toBe('never')
     expect(until('2026-03-10T07:42:39Z', now)).toBe('in 39s')
     expect(until('2026-03-10T07:40:00Z', now)).toBe('now')
+    // inside a sentence a relative day loses its capital and a date keeps its own
+    expect(dayWord('2026-03-10T07:00:00Z', now)).toBe('today')
+    expect(dayWord('2026-03-09T07:42:00Z', now)).toBe('yesterday')
+    expect(dayWord('2026-03-05T07:42:00Z', now)).toBe(dayLabel('2026-03-05T07:42:00Z', now))
   })
   it('uses decimal byte units', () => {
     expect(bytes(999)).toBe('999 B')
