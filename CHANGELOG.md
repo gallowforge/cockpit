@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 2.2.2
+
+One fix, for a browser window that is not full screen.
 
 - In a window between about 1100 and 1400 pixels wide (a browser that is not full screen), the Overview's service table was wider than the column between the sidebar and the rail, and its last columns ran under the rail, over the backups and the jobs. In that range the rows now take the two-line form tablets use: the name and response time, with the day's ribbon below. Wider windows keep the full table.
 
